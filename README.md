@@ -2,175 +2,62 @@
 
 This project aims to create a programming language that is simple but expressive, that is easy to learn and write but also easy to read and understand, that supports complex programs but encorages simple arquitectures. 
 
-The Golden Programming Language is procedural static and strong typed strongly language based on Go and Gleam, borrowing some inspirations from other languages such as Rust, Austral and other functional languages.
+The Golden Programming Language is a procedural, static and strong typed language based on Go and Gleam, borrowing some inspirations from other languages such as Rust, Austral and other functional languages.
 
 > This repository contains ongoing work and most of the content here is dynamic or temporary accordingly to the development phase.
 
-## TODO
+## The Language
 
-## Language Overview
+At this point, this section works only for development reference.
 
-### Modules and Organization
+### The Foundation
 
-In golden every file represents a module and every folder represents a package. Packages cannot have circular dependency, and modules inside the same package don't have to import each other.
+- Modules, Packages and Imports
+  - Modules are files
+  - Packages are folders
+  - `@` denotes the main package (root package of the project)
+  - Packages cannot have circular dependency
+  - Modules inside the same package auto import other modules
+  - `import <package>*/<module>` is the base syntax
 
-```
-project/          -- root is already the package `@`
-  main.gold       -- package @ | module main
-  utilities/
-    random.gold   -- package @/utilities | module random
-    lists.gold    -- package @/utilities | module lists
-```
+- Variable Definitions
+  - Variables can be named as the regex: `_?[a-z]([a-z][A-Z][0-9]_)*`
+    - first letter MUST be lower case
+    - optionally, it can have a single `_` as first character
+  - Variables are declared as:
+    - `let <name> = <expression>` with compiler deciding the type
+    - `let <name> <typeref>` with default initialization
+    - `let <name> <typeref> = <expression>` with complete information
+  - Variables are immutable by default, thus:
+    - It cannot have reassignment
+    - It can be passed as argument
+    - It can be redeclared and shadowed
 
-Modules should be named in `snake_case` and the language enforces it.
+- Functions
+  - Functions can have the same name as variables
+  - Function declaration follows:
+    - `fn <name>(<params>) <return> { <expression> }`
+    - `fn (<params>) <return> { <expression> }`
+    - params are a list of:
+      - `<name> <typeref>`
+    - return is a `<typeref>`
+  - Functions can be called
+  - Functions can be used as variable
+  - Functions must have closure
 
-Imports always insert the whole module in the scope, never a package and never the content inside the module directly. After importing, you can access the module based on its name.
+- Types
+  - Basic types: `I64`, `F64`, `Bool` and `String`
 
-```
-import @/utilities/random
+- Temporary Builtin Functions
+  - `debug(string)` and `debugln(string)`
 
-random.stuff()
-```
+### Planned Features
 
-This organization is intended to encourage flat hierarchies without too much abstraction (or indirection) in the project layers.
-
-### Types and Variables
-
-Types must start with an uppercase letter and recommended to be in `PascalCase`. Variables must start with a lowercase letter and recommended to be in `camelCase`.
-
-Simples types include:
-
-- Integers: I8, I16, I32, I64
-- Unsigned Integers: U8, U16, U32, U64
-- Floats: F32, F64
-- Char
-- String
-- Byte
-- Bool
-- Function
-
-Composite types include:
-
-- Lists
-- Maps
-- Structs
-- Tuples
-- Aliases
-- Union: Number, Int, UInt, Float
-
-Golden uses an algebric type system and have an universal definition syntax:
-
-```
-type NamedTuple = (Int, Int, Bool)
-type NamedStruct = (scoreA, scoreB Int, result Bool)
-type ListAlias = List<Int>
-type IntUnion = I8 | I16 | I32 | I64
-type NamedUnion = Bomb | Cell | Value(Int)
-
-type NamedTupleShort(Int, Int, Bool)
-type NamedStructShort(scoreA, scoreB Int, result Bool)
-```
-
-Initialization patterns follow some strict rules. Heterogeneous fixed sized structures (known at compile time) uses `()` and homogeneous dynamic sized structures (dynamic in runtime) uses `[]`. Unlabelled structures (tuples and lists) uses a list of elements `a, b` while labelled (structs and maps) uses pair key-value: `a=1, b=2`:
-
-```
-let namedTuple = NamedTuple(1, 2, true)
-let anonTuple = (1, 2, true)
-let namedStruct = NamedStruct(scoreA=1, scoreB=2, result=true)
-let anonStruct = (scoreA=1, scoreB=2, result=true)
-
-let list = List<Int>([1, 2, 3])
-let map = Map<String, Int>([a=1, b=2])
-```
-
-#### Ownership
-
-TODO
-
-#### Visibility
-
-Public as default, private using `_` as prefix. Works for both types and variables. Inside the same module, you can access public and private elements.
-
-```
-type User(
-  _private Int
-  public   Int
-)
-
-let _private Int
-let public Int
-```
-
-### Functions!
-
-Functions are first class and follow the same variable rules. The general form of a function is:
-
-```
-let function = fn (scoreA, scoreB Int, result Bool) Bool { ... }
-```
-
-In module scope, we provide the shortcut for named functions:
-
-```
-fn function(...) {}
-```
-
-#### Partial Application
-
-Partial application can be done using:
-
-```
-let add = fn(a, b Number) Number { return a + b }
-let add2 = add(_, 2)
-```
-
-#### Lambdas
-
-Lambdas can be defined by:
-
-```
-:0        // javascript equivalent: `() => 0`
-a:0       // javascript equivalent: `a => 0`
-(a, b): 0 // javascript equivalent: `(a, b) => 0`
-```
-
-#### Pipelines
-
-```
-value
-| functionCall()
-| otherFunction()
-```
-
-#### Labelled Arguments
-
-```
-fn add(a, b Int) Int { ... }
-
-add(b=2, a=2)
-```
-
-#### Generics
-
-```
-fn add<T any>() { ... }
-```
-
-### Flow Controls
-
-```
-if expression {
-} else if expression {
-} else {
-}
-
-
-for {}
-for expression {}
-for a in iterator {}
-
-match expression {
-  pattern: expression
-  pattern: expression
-}
-```
+- Type definition: struct
+- Type definition: tuple
+- Type definition: untagged union
+- Type definition: tagged union
+- Mutable variables
+- Generics
+- Result object (with `?` and `!`)
+- Short parameters (`<name>, <name> <type>`)
