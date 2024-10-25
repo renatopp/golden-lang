@@ -6,6 +6,19 @@ The Golden Programming Language is a procedural, static and strong typed languag
 
 > This repository contains ongoing work and most of the content here is dynamic or temporary accordingly to the development phase.
 
+## TODO
+
+- [ ] Create base for the CLI
+- [ ] Package and Module processing
+  - [ ] Given a folder, list all files and formalize each reference
+  - [ ] Validate package name
+  - [ ] Enqueue the package for processing
+- [ ] Process package
+  - [ ] Read each file
+  - [ ] Parse each file
+  - [ ] Read imports and make dependency list
+  - [ ] Enqueue next packages
+
 ## The Language
 
 At this point, this section works only for development reference.
