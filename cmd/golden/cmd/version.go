@@ -4,17 +4,17 @@ import "github.com/renatopp/golden"
 
 type Version struct{}
 
-func (v *Version) Name() string { return "version" }
+func (c *Version) Name() string { return "version" }
 
-func (v *Version) Description() string {
+func (c *Version) Description() string {
 	return "Prints the version of Golden"
 }
 
-func (v *Version) Help() string {
-	return v.Description()
+func (c *Version) Help() string {
+	return c.Description()
 }
 
-func (v *Version) Run(args []string) int {
+func (c *Version) Run(args []string) error {
 	println(golden.Version)
-	return 0
+	return nil
 }

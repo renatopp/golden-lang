@@ -14,6 +14,6 @@ func (c *Build) Help() string {
 	return "Builds the project"
 }
 
-func (c *Build) Run(args []string) int {
-	return 0
+func (c *Build) Run(args []string) error {
+	return nil
 }

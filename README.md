@@ -8,7 +8,7 @@ The Golden Programming Language is a procedural, static and strong typed languag
 
 ## TODO
 
-- [ ] Create base for the CLI
+- [x] Create base for the CLI
 - [ ] Package and Module processing
   - [ ] Given a folder, list all files and formalize each reference
   - [ ] Validate package name

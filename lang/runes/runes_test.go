@@ -3,7 +3,7 @@ package runes_test
 import (
 	"testing"
 
-	"github.com/renatopp/skal/lang/runes"
+	"github.com/renatopp/golden/lang/runes"
 	"github.com/stretchr/testify/assert"
 )
 

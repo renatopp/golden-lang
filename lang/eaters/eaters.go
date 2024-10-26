@@ -3,8 +3,8 @@ package eaters
 import (
 	"strconv"
 
-	"github.com/renatopp/skal/lang"
-	"github.com/renatopp/skal/lang/runes"
+	"github.com/renatopp/golden/lang"
+	"github.com/renatopp/golden/lang/runes"
 )
 
 var (

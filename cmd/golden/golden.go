@@ -11,7 +11,7 @@ type Command interface {
 	Name() string
 	Description() string
 	Help() string
-	Run(args []string) int
+	Run(args []string) error
 }
 
 var commands = []Command{
@@ -28,7 +28,12 @@ func main() {
 
 	for _, cmd := range commands {
 		if cmd.Name() == os.Args[1] {
-			os.Exit(cmd.Run(os.Args))
+			err := cmd.Run(os.Args[2:])
+			if err != nil {
+				fmt.Println("Error!", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
 		}
 	}
 
