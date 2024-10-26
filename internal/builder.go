@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/renatopp/golden/lang/strutils"
 )
 
 // A directory
@@ -17,6 +19,21 @@ type Package struct {
 	Imports []*Package
 }
 
+func (p *Package) Debug() string {
+	s := fmt.Sprint(strutils.PadRight("Package:", 15), "\n")
+	s += fmt.Sprint(strutils.PadRight("  name:", 15), p.Name, "\n")
+	s += fmt.Sprint(strutils.PadRight("  path:", 15), p.Path, "\n")
+	s += fmt.Sprint(strutils.PadRight("  private:", 15), p.Private, "\n")
+	s += fmt.Sprint(strutils.PadRight("  modules:", 15), "\n")
+	for _, mod := range p.Modules {
+		s += fmt.Sprint(strutils.PadRight("  - name:", 15), mod.Name, "\n")
+		s += fmt.Sprint(strutils.PadRight("    path:", 15), mod.Path, "\n")
+		s += fmt.Sprint(strutils.PadRight("    private:", 15), mod.Private, "\n")
+		s += fmt.Sprint(strutils.PadRight("    package:", 15), mod.Package.Name, "\n")
+	}
+	return s
+}
+
 // A file
 type Module struct {
 	Name    string
@@ -24,6 +41,15 @@ type Module struct {
 	Path    string // absolute path
 	Private bool
 	Imports []*Module
+}
+
+func (m *Module) Debug() string {
+	s := fmt.Sprint(strutils.PadRight("Module:", 15), "\n")
+	s += fmt.Sprint(strutils.PadRight("  name:", 15), m.Name, "\n")
+	s += fmt.Sprint(strutils.PadRight("  path:", 15), m.Path, "\n")
+	s += fmt.Sprint(strutils.PadRight("  private:", 15), m.Private, "\n")
+	s += fmt.Sprint(strutils.PadRight("  package:", 15), m.Package.Name, "\n")
+	return s
 }
 
 func ReadPackage(path string) (*Package, error) {
@@ -73,6 +99,7 @@ func createModule(pkg *Package, path string) *Module {
 	imports := []*Module{}
 	return &Module{
 		Package: pkg,
+		Path:    path,
 		Name:    name,
 		Private: private,
 		Imports: imports,

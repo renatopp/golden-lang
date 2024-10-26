@@ -36,6 +36,7 @@ func (c *Run) Run(args []string) error {
 		return fmt.Errorf("error reading package: %v", err)
 	}
 
+	println(pkg.Debug())
 	_ = pkg
 	return nil
 }
