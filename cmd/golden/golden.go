@@ -18,6 +18,7 @@ var commands = []Command{
 	&cmd.Version{},
 	&cmd.Build{},
 	&cmd.Run{},
+	&cmd.Debug{},
 }
 
 func main() {

@@ -395,7 +395,7 @@ func EatUntilEndOfLine(s *lang.ByteScanner) *lang.Token {
 	first := s.PeekChar()
 	for {
 		c := s.PeekChar()
-		if c.Is('\n', 0) {
+		if c.Is('\r', '\n', 0) {
 			break
 		}
 
