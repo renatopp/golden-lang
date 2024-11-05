@@ -64,6 +64,10 @@ func (p *Parser) ExpectToken(kinds ...string) bool {
 }
 
 func (p *Parser) ExpectLiteral(literals ...string) bool {
+	if len(literals) == 0 {
+		return true
+	}
+
 	cur := p.PeekToken()
 	for _, lit := range literals {
 		if cur.Literal == lit {
@@ -77,8 +81,8 @@ func (p *Parser) ExpectLiteral(literals ...string) bool {
 	return false
 }
 
-func (p *Parser) ExpectKeyword(t_keyword string, keywords ...string) bool {
-	return p.ExpectToken(t_keyword) && p.ExpectLiteral(keywords...)
+func (p *Parser) Expect(kind string, literals ...string) bool {
+	return p.ExpectToken(kind) && p.ExpectLiteral(literals...)
 }
 
 func (p *Parser) ExpectSkipToken1(kinds ...string) bool {
@@ -113,13 +117,13 @@ func (p *Parser) ExpectSkipLiteralAll(literals ...string) bool {
 	return once
 }
 
-func (p *Parser) ExpectSkipKeyword1(t_keyword string, keywords ...string) bool {
-	return p.ExpectKeyword(t_keyword, keywords...) && p.ExpectSkipLiteral1(keywords...)
+func (p *Parser) ExpectSkip1(kind string, literals ...string) bool {
+	return p.Expect(kind, literals...) && p.ExpectSkipLiteral1(literals...)
 }
 
-func (p *Parser) ExpectSkipKeywordAll(t_keyword string, keywords ...string) bool {
+func (p *Parser) ExpectSkipAll(kind string, literals ...string) bool {
 	once := false
-	for p.ExpectSkipKeyword1(t_keyword, keywords...) {
+	for p.ExpectSkip1(kind, literals...) {
 		once = true
 	}
 	return once
@@ -145,6 +149,6 @@ func (p *Parser) IsNextLiteral(literals ...string) bool {
 	return false
 }
 
-func (p *Parser) IsNextKeyword(t_keyword string, keywords ...string) bool {
-	return p.IsNextToken(t_keyword) && p.IsNextLiteral(keywords...)
+func (p *Parser) IsNext(kind string, literals ...string) bool {
+	return p.IsNextToken(kind) && p.IsNextLiteral(literals...)
 }

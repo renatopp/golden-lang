@@ -31,7 +31,7 @@ func (p *PrattSolver[T]) RegisterPostfixFn(kind string, fn func(T) T) *PrattSolv
 	return p
 }
 
-func (p *PrattSolver[T]) SetPrecedence(fn func(*Token) int) *PrattSolver[T] {
+func (p *PrattSolver[T]) SetPrecedenceFn(fn func(*Token) int) *PrattSolver[T] {
 	p.precedence = fn
 	return p
 }

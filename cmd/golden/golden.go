@@ -32,6 +32,7 @@ func main() {
 			err := cmd.Run(os.Args[2:])
 			if err != nil {
 				fmt.Println("Error!", err)
+				fmt.Println()
 				os.Exit(1)
 			}
 			os.Exit(0)

@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
-
-	"github.com/renatopp/golden/internal"
 )
 
 type Run struct{}
@@ -26,17 +23,5 @@ func (c *Run) Run(args []string) error {
 		return fmt.Errorf("no project specified")
 	}
 
-	project, err := filepath.Abs(args[0])
-	if err != nil {
-		return fmt.Errorf("error getting absolute path: %v", err)
-	}
-
-	pkg, err := internal.ReadPackage(project)
-	if err != nil {
-		return fmt.Errorf("error reading package: %v", err)
-	}
-
-	println(pkg.Debug())
-	_ = pkg
 	return nil
 }

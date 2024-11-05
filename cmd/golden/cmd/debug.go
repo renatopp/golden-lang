@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/renatopp/golden/internal"
 )
@@ -37,15 +38,27 @@ func (c *Debug) Run(args []string) error {
 		return fmt.Errorf("error reading file: %v", err)
 	}
 
+	println("## Lexer Output:\n")
 	tokens, err := internal.Lex(file)
 	if err != nil {
-		return fmt.Errorf("error lexing file: %v", err)
+		return fmt.Errorf("lexing file:\n%v", err)
 	}
 
-	println("## Tokens")
 	for _, t := range tokens {
 		fmt.Printf("- %s: %q\n", t.Kind, t.Literal)
 	}
+	println("\n")
+
+	println("## Parser Output:\n")
+	node, err := internal.Parse(tokens)
+	if err != nil {
+		return fmt.Errorf("parsing file:\n%v", err)
+	}
+
+	node.Traverse(func(n *internal.Node, depth int) bool {
+		fmt.Printf("%s%s\n", strings.Repeat("  ", depth), n)
+		return true
+	})
 
 	return nil
 }
