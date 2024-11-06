@@ -50,6 +50,7 @@ const (
 	KImport = "import"
 	KData   = "data"
 	KFn     = "fn"
+	KFN     = "Fn"
 	KLet    = "let"
 	KAs     = "as"
 )
@@ -58,6 +59,7 @@ var Keywords = []string{
 	KImport,
 	KData,
 	KFn,
+	KFN,
 	KLet,
 	KAs,
 }

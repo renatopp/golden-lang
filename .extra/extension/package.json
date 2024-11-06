@@ -1,0 +1,34 @@
+{
+  "name": "golden-syntax-highlighter",
+  "displayName": "Golden Syntax Highlighter",
+  "description": "Color highlight for Golden language",
+  "version": "0.0.0",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "golden",
+        "aliases": [
+          "golden",
+          "Golden"
+        ],
+        "extensions": [
+          ".gold"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "golden",
+        "scopeName": "source.golden",
+        "path": "./syntaxes/golden.tmLanguage.json"
+      }
+    ]
+  }
+}

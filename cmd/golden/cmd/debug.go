@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/renatopp/golden/internal"
 )
@@ -50,15 +49,28 @@ func (c *Debug) Run(args []string) error {
 	println("\n")
 
 	println("## Parser Output:\n")
-	node, err := internal.Parse(tokens)
+	module, err := internal.Parse(tokens)
 	if err != nil {
 		return fmt.Errorf("parsing file:\n%v", err)
 	}
 
-	node.Traverse(func(n *internal.Node, depth int) bool {
-		fmt.Printf("%s%s\n", strings.Repeat("  ", depth), n)
-		return true
-	})
+	for _, imp := range module.Imports {
+		if imp.Alias != "" {
+			fmt.Printf("[import %s as %s]\n", imp.Path, imp.Alias)
+		} else {
+			fmt.Printf("[import %s]\n", imp.Path)
+		}
+	}
+
+	for _, decl := range module.Types {
+		println(decl.String())
+	}
+	for _, decl := range module.Functions {
+		println(decl.String())
+	}
+	for _, decl := range module.Variables {
+		println(decl.String())
+	}
 
 	return nil
 }

@@ -1,3 +1,15 @@
-let mult = fn(x Int) Fn(Int, Int) Int {
-  fn (a Int, b Int) { {a + b}*x }
+fn add(a Int, b Int) Int {
+  a + b
 }
+
+fn multAdd(x Int) Fn(Int, Int) Int {
+  fn(y Int, z Int) Int {
+    x * {y + z}
+  }
+}
+
+fn main() {
+  multAdd(2)(3, 4)()
+}
+
+let other = fn() {}

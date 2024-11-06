@@ -3,8 +3,8 @@ package internal
 import "github.com/renatopp/golden/lang"
 
 type AstData interface {
+	Kind() string // type or value
 	String() string
-	Children() []*Node
 }
 
 type Node struct {
@@ -20,242 +20,246 @@ func (n *Node) ReplaceBy(node *Node) {
 	n.Token = node.Token
 	n.Data = node.Data
 }
+
 func (n *Node) WithToken(token *lang.Token) *Node {
 	n.Token = token
 	return n
 }
+
 func (n *Node) WithData(data AstData) *Node {
 	n.Data = data
 	return n
 }
+
 func (n *Node) String() string {
 	if n == nil || n.Data == nil {
 		return ""
 	}
 	value := n.Data.String()
-	return f("[%s]", value)
-}
-func (n *Node) Children() []*Node {
-	if n == nil || n.Data == nil {
-		return []*Node{}
-	}
-	return n.Data.Children()
-}
-func (n *Node) Traverse(visitor func(*Node, int) bool) {
-	n.traverse(visitor, 0)
-}
-func (n *Node) traverse(visitor func(*Node, int) bool, depth int) {
-	if n == nil {
-		return
-	}
-	if visitor(n, depth) {
-		for _, child := range n.Children() {
-			child.traverse(visitor, depth+1)
-		}
-	}
+	return f("%s", value)
 }
 
-// Module
-type AstModule struct {
-	Imports   []*Node
-	Types     []*Node
-	Functions []*Node
-	Variables []*Node
-}
+//
 
-func (a *AstModule) String() string { return "module" }
-func (a *AstModule) Children() []*Node {
-	return appendAll(a.Imports, a.Types, a.Functions, a.Variables)
-}
+//
 
-// Import
-type AstImport struct {
-	Path  string
-	Alias string
-}
+//
 
-func (a *AstImport) String() string {
-	if a.Alias != "" {
-		return f("import %s as %s", a.Path, a.Alias)
-	}
-	return f("import %s", a.Path)
-}
-func (a *AstImport) Children() []*Node { return []*Node{} }
+//
 
-// Data Declaration
-type AstDataDecl struct {
-	Name         string
-	Constructors []*Node // *AstConstructor
-}
+//
 
-func (a *AstDataDecl) String() string    { return f("data decl %s", a.Name) }
-func (a *AstDataDecl) Children() []*Node { return a.Constructors }
+//
 
-type AstConstructor struct {
-	Name   string
-	Shape  string  // unit, tuple or record
-	Fields []*Node // *AstField
-}
+//
 
-func (a *AstConstructor) String() string    { return f("constructor %s", a.Name) }
-func (a *AstConstructor) Children() []*Node { return a.Fields }
+//
 
-type AstField struct {
-	Name string
-	Type *Node
-}
+//
 
-func (a *AstField) String() string    { return f("field %s", a.Name) }
-func (a *AstField) Children() []*Node { return []*Node{a.Type} }
+//
 
-// Function Declaration
-type AstFunctionDecl struct {
-	Name       string
-	Parameters []*Node // *AstParameter
-	ReturnType *Node   // *AstTypeRef or *AstFnTypeRef
-	Body       *Node   // *AstBlock
-}
+// // Module
+// type AstModule struct {
+// 	Imports   []*Node
+// 	Types     []*Node
+// 	Functions []*Node
+// 	Variables []*Node
+// }
 
-func (a *AstFunctionDecl) String() string { return f("function decl %s", a.Name) }
-func (a *AstFunctionDecl) Children() []*Node {
-	return append(a.Parameters, []*Node{a.ReturnType, a.Body}...)
-}
+// func (a *AstModule) String() string { return "module" }
+// func (a *AstModule) Children() []*Node {
+// 	return appendAll(a.Imports, a.Types, a.Functions, a.Variables)
+// }
 
-// Variable Declaration
-type AstVariableDecl struct {
-	Name       string
-	Type       *Node // *AstTypeRef or *AstFnTypeRef
-	Expression *Node
-}
+// // Import
+// type AstImport struct {
+// 	Path  string
+// 	Alias string
+// }
 
-func (a *AstVariableDecl) String() string    { return f("variable decl %s", a.Name) }
-func (a *AstVariableDecl) Children() []*Node { return []*Node{a.Type, a.Expression} }
+// func (a *AstImport) String() string {
+// 	if a.Alias != "" {
+// 		return f("import %s as %s", a.Path, a.Alias)
+// 	}
+// 	return f("import %s", a.Path)
+// }
+// func (a *AstImport) Children() []*Node { return []*Node{} }
 
-// Parameter
-type AstParameter struct {
-	Name string
-	Type *Node // *AstTypeRef or *AstFnTypeRef
-}
+// // Data Declaration
+// type AstDataDecl struct {
+// 	Name         string
+// 	Constructors []*Node // *AstConstructor
+// }
 
-func (a *AstParameter) String() string    { return f("parameter %s", a.Name) }
-func (a *AstParameter) Children() []*Node { return []*Node{a.Type} }
+// func (a *AstDataDecl) String() string    { return f("data decl %s", a.Name) }
+// func (a *AstDataDecl) Children() []*Node { return a.Constructors }
 
-// Type Ref
-type AstTypeRef struct {
-	Name string
-}
+// type AstConstructor struct {
+// 	Name   string
+// 	Shape  string  // unit, tuple or record
+// 	Fields []*Node // *AstField
+// }
 
-func (a *AstTypeRef) String() string    { return f("typeref %s", a.Name) }
-func (a *AstTypeRef) Children() []*Node { return []*Node{} }
+// func (a *AstConstructor) String() string    { return f("constructor %s", a.Name) }
+// func (a *AstConstructor) Children() []*Node { return a.Fields }
 
-type AstFnTypeRef struct {
-	Parameters []*Node
-	ReturnType *Node
-}
+// type AstField struct {
+// 	Name string
+// 	Type *Node
+// }
 
-func (a *AstFnTypeRef) String() string    { return "typeref Fn" }
-func (a *AstFnTypeRef) Children() []*Node { return append(a.Parameters, a.ReturnType) }
+// func (a *AstField) String() string    { return f("field %s", a.Name) }
+// func (a *AstField) Children() []*Node { return []*Node{a.Type} }
 
-// Block
-type AstBlock struct {
-	Expressions []*Node
-}
+// // Function Declaration
+// type AstFunctionDecl struct {
+// 	Name       string
+// 	Parameters []*Node // *AstParameter
+// 	ReturnType *Node   // *AstTypeRef or *AstFnTypeRef
+// 	Body       *Node   // *AstBlock
+// }
 
-func (a *AstBlock) String() string    { return "block" }
-func (a *AstBlock) Children() []*Node { return a.Expressions }
+// func (a *AstFunctionDecl) String() string { return f("function decl %s", a.Name) }
+// func (a *AstFunctionDecl) Children() []*Node {
+// 	return append(a.Parameters, []*Node{a.ReturnType, a.Body}...)
+// }
 
-// Int
-type AstInt struct {
-	Value int64
-}
+// // Variable Declaration
+// type AstVariableDecl struct {
+// 	Name       string
+// 	Type       *Node // *AstTypeRef or *AstFnTypeRef
+// 	Expression *Node
+// }
 
-func (a *AstInt) String() string    { return f("int %d", a.Value) }
-func (a *AstInt) Children() []*Node { return []*Node{} }
+// func (a *AstVariableDecl) String() string    { return f("variable decl %s", a.Name) }
+// func (a *AstVariableDecl) Children() []*Node { return []*Node{a.Type, a.Expression} }
 
-// Float
-type AstFloat struct {
-	Value float64
-}
+// // Parameter
+// type AstParameter struct {
+// 	Name string
+// 	Type *Node // *AstTypeRef or *AstFnTypeRef
+// }
 
-func (a *AstFloat) String() string    { return f("float %f", a.Value) }
-func (a *AstFloat) Children() []*Node { return []*Node{} }
+// func (a *AstParameter) String() string    { return f("parameter %s", a.Name) }
+// func (a *AstParameter) Children() []*Node { return []*Node{a.Type} }
 
-// String
-type AstString struct {
-	Value string
-}
+// // Type Ref
+// type AstTypeRef struct {
+// 	Name string
+// }
 
-func (a *AstString) String() string    { return f("string %s", esc(a.Value)) }
-func (a *AstString) Children() []*Node { return []*Node{} }
+// func (a *AstTypeRef) String() string    { return f("typeref %s", a.Name) }
+// func (a *AstTypeRef) Children() []*Node { return []*Node{} }
 
-// Bool
-type AstBool struct {
-	Value bool
-}
+// type AstFnTypeRef struct {
+// 	Parameters []*Node
+// 	ReturnType *Node
+// }
 
-func (a *AstBool) String() string    { return f("bool %t", a.Value) }
-func (a *AstBool) Children() []*Node { return []*Node{} }
+// func (a *AstFnTypeRef) String() string    { return "typeref Fn" }
+// func (a *AstFnTypeRef) Children() []*Node { return append(a.Parameters, a.ReturnType) }
 
-// Var Identifier
-type AstVarIdent struct {
-	Name string
-}
+// // Block
+// type AstBlock struct {
+// 	Expressions []*Node
+// }
 
-func (a *AstVarIdent) String() string    { return f("varident %s", a.Name) }
-func (a *AstVarIdent) Children() []*Node { return []*Node{} }
+// func (a *AstBlock) String() string    { return "block" }
+// func (a *AstBlock) Children() []*Node { return a.Expressions }
 
-// Unary
-type AstUnary struct {
-	Op    string
-	Right *Node
-}
+// // Int
+// type AstInt struct {
+// 	Value int64
+// }
 
-func (a *AstUnary) String() string    { return f("unary %s", a.Op) }
-func (a *AstUnary) Children() []*Node { return []*Node{a.Right} }
+// func (a *AstInt) String() string    { return f("int %d", a.Value) }
+// func (a *AstInt) Children() []*Node { return []*Node{} }
 
-// Binary
-type AstBinary struct {
-	Op    string
-	Left  *Node
-	Right *Node
-}
+// // Float
+// type AstFloat struct {
+// 	Value float64
+// }
 
-func (a *AstBinary) String() string    { return f("binary %s", a.Op) }
-func (a *AstBinary) Children() []*Node { return []*Node{a.Left, a.Right} }
+// func (a *AstFloat) String() string    { return f("float %f", a.Value) }
+// func (a *AstFloat) Children() []*Node { return []*Node{} }
 
-// Function Call
-type AstFnCall struct {
-	Target *Node   // VarIdent
-	Args   []*Node // FnArgument
-}
+// // String
+// type AstString struct {
+// 	Value string
+// }
 
-func (a *AstFnCall) String() string    { return "fncall" }
-func (a *AstFnCall) Children() []*Node { return append([]*Node{a.Target}, a.Args...) }
+// func (a *AstString) String() string    { return f("string %s", esc(a.Value)) }
+// func (a *AstString) Children() []*Node { return []*Node{} }
 
-// Type Call
-type AstTypeCall struct {
-	Shape string  // tuple or record
-	Type  *Node   // TypeRef or nil
-	Args  []*Node // *AstArgument
-}
+// // Bool
+// type AstBool struct {
+// 	Value bool
+// }
 
-func (a *AstTypeCall) String() string    { return "typecall" }
-func (a *AstTypeCall) Children() []*Node { return append([]*Node{a.Type}, a.Args...) }
+// func (a *AstBool) String() string    { return f("bool %t", a.Value) }
+// func (a *AstBool) Children() []*Node { return []*Node{} }
 
-type AstArgument struct {
-	Name       string
-	Expression *Node
-}
+// // Var Identifier
+// type AstVarIdent struct {
+// 	Name string
+// }
 
-func (a *AstArgument) String() string    { return f("argument %s", a.Name) }
-func (a *AstArgument) Children() []*Node { return []*Node{a.Expression} }
+// func (a *AstVarIdent) String() string    { return f("varident %s", a.Name) }
+// func (a *AstVarIdent) Children() []*Node { return []*Node{} }
 
-// Member Access
+// // Unary
+// type AstUnary struct {
+// 	Op    string
+// 	Right *Node
+// }
 
-type AstAccess struct {
-	Target *Node
-	Member string
-}
+// func (a *AstUnary) String() string    { return f("unary %s", a.Op) }
+// func (a *AstUnary) Children() []*Node { return []*Node{a.Right} }
 
-func (a *AstAccess) String() string    { return f("access .%s", a.Member) }
-func (a *AstAccess) Children() []*Node { return []*Node{a.Target} }
+// // Binary
+// type AstBinary struct {
+// 	Op    string
+// 	Left  *Node
+// 	Right *Node
+// }
+
+// func (a *AstBinary) String() string    { return f("binary %s", a.Op) }
+// func (a *AstBinary) Children() []*Node { return []*Node{a.Left, a.Right} }
+
+// // Function Call
+// type AstFnCall struct {
+// 	Target *Node   // VarIdent
+// 	Args   []*Node // FnArgument
+// }
+
+// func (a *AstFnCall) String() string    { return "fncall" }
+// func (a *AstFnCall) Children() []*Node { return append([]*Node{a.Target}, a.Args...) }
+
+// // Type Call
+// type AstTypeCall struct {
+// 	Shape string  // tuple or record
+// 	Type  *Node   // TypeRef or nil
+// 	Args  []*Node // *AstArgument
+// }
+
+// func (a *AstTypeCall) String() string    { return "typecall" }
+// func (a *AstTypeCall) Children() []*Node { return append([]*Node{a.Type}, a.Args...) }
+
+// type AstArgument struct {
+// 	Name       string
+// 	Expression *Node
+// }
+
+// func (a *AstArgument) String() string    { return f("argument %s", a.Name) }
+// func (a *AstArgument) Children() []*Node { return []*Node{a.Expression} }
+
+// // Member Access
+
+// type AstAccess struct {
+// 	Target *Node
+// 	Member string
+// }
+
+// func (a *AstAccess) String() string    { return f("access .%s", a.Member) }
+// func (a *AstAccess) Children() []*Node { return []*Node{a.Target} }

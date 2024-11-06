@@ -1,11 +1,6 @@
 package lang
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/renatopp/golden/lang/strutils"
-)
+import "slices"
 
 type Parser struct {
 	*ErrorData
@@ -37,7 +32,7 @@ func (p *Parser) PreviousToken() *Token { return p.previous }
 
 func (p *Parser) Skip(kinds ...string) []*Token {
 	res := []*Token{}
-	for p.IsNextToken(kinds...) {
+	for p.IsNextTokens(kinds...) {
 		res = append(res, p.EatToken())
 	}
 	return res
@@ -45,115 +40,26 @@ func (p *Parser) Skip(kinds ...string) []*Token {
 
 func (p *Parser) SkipN(n int, kinds ...string) []*Token {
 	res := []*Token{}
-	for i := 0; i < n && p.IsNextToken(kinds...); i++ {
+	for i := 0; i < n && p.IsNextTokens(kinds...); i++ {
 		res = append(res, p.EatToken())
 	}
 	return res
 }
 
-func (p *Parser) ExpectToken(kinds ...string) bool {
-	cur := p.PeekToken()
-	for _, k := range kinds {
-		if cur.Kind == k {
-			return true
-		}
+func (p *Parser) IsNextTokens(kinds ...string) bool {
+	if len(kinds) == 0 {
+		return true
 	}
-
-	expected := strings.Join(kinds, ", ")
-	err := cur.AsError(ErrSyntax, fmt.Sprintf(errMsgUnexpectedToken, expected, cur.Kind))
-	p.RegisterError(err)
-	return false
+	return slices.Contains(kinds, p.PeekToken().Kind)
 }
 
-func (p *Parser) ExpectLiteral(literals ...string) bool {
+func (p *Parser) IsNextLiterals(literals ...string) bool {
 	if len(literals) == 0 {
 		return true
 	}
-
-	cur := p.PeekToken()
-	for _, lit := range literals {
-		if cur.Literal == lit {
-			return true
-		}
-	}
-
-	expected := strings.Join(literals, ", ")
-	err := cur.AsError(ErrSyntax, fmt.Sprintf(errMsgUnexpectedLiteral, expected, strutils.EscapeNewlines(cur.Literal)))
-	p.RegisterError(err)
-	return false
+	return slices.Contains(literals, p.PeekToken().Literal)
 }
 
-func (p *Parser) Expect(kind string, literals ...string) bool {
-	return p.ExpectToken(kind) && p.ExpectLiteral(literals...)
-}
-
-func (p *Parser) ExpectSkipToken1(kinds ...string) bool {
-	if p.ExpectToken(kinds...) {
-		p.EatToken()
-		return true
-	}
-	return false
-}
-
-func (p *Parser) ExpectSkipTokenAll(kinds ...string) bool {
-	once := false
-	for p.ExpectSkipToken1(kinds...) {
-		once = true
-	}
-	return once
-}
-
-func (p *Parser) ExpectSkipLiteral1(literals ...string) bool {
-	if p.ExpectLiteral(literals...) {
-		p.EatToken()
-		return true
-	}
-	return false
-}
-
-func (p *Parser) ExpectSkipLiteralAll(literals ...string) bool {
-	once := false
-	for p.ExpectSkipLiteral1(literals...) {
-		once = true
-	}
-	return once
-}
-
-func (p *Parser) ExpectSkip1(kind string, literals ...string) bool {
-	return p.Expect(kind, literals...) && p.ExpectSkipLiteral1(literals...)
-}
-
-func (p *Parser) ExpectSkipAll(kind string, literals ...string) bool {
-	once := false
-	for p.ExpectSkip1(kind, literals...) {
-		once = true
-	}
-	return once
-}
-
-func (p *Parser) IsNextToken(kinds ...string) bool {
-	cur := p.PeekToken()
-	for _, k := range kinds {
-		if cur.Kind == k {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *Parser) IsNextLiteral(literals ...string) bool {
-	if len(literals) == 0 {
-		return true
-	}
-	cur := p.PeekToken()
-	for _, lit := range literals {
-		if cur.Literal == lit {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *Parser) IsNext(kind string, literals ...string) bool {
-	return p.IsNextToken(kind) && p.IsNextLiteral(literals...)
+func (p *Parser) IsNextLiteralsOf(kind string, literals ...string) bool {
+	return p.IsNextTokens(kind) && p.IsNextLiterals(literals...)
 }

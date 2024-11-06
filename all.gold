@@ -1,0 +1,17 @@
+import "renato" as rp
+import "math"
+
+data Unit
+data Unit()
+data Unit(Int, Float)
+data Unit(x Int, y Float)
+
+data Unit = Unit
+data Unit = Unit()
+data Unit = Unit(Int, Float)
+data Unit = Unit(x Int, y Float)
+
+data Unit = Unit | Other
+data Unit = Unit() | Other
+data Unit = Unit(Int, Float) | Other
+data Unit = Unit(x Int, y Float) | Other

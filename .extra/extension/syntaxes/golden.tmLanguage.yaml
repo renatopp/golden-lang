@@ -1,0 +1,56 @@
+$schema: https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json
+name: golden
+scopeName: source.golden
+fileTypes:
+  - golden
+patterns:
+  - name: comment.line.golden
+    match: "--.*$"
+
+  - name: constant.numeric.float.golden
+    match: "\\b((\\d+(\\.\\d+)?)|(\\.\\d+))(e[\\+\\-]?\\d+)?\\b"
+  - name: constant.numeric.int.golden
+    match: "\\b(\\d+|0x[0..9A..F]|0o[0..7]|0b[0..1])\\b"
+  - name: "constant.language.golden"
+    match: "\\b(true|false|void)\\b"
+
+  - name: "keyword.other.fn.golden"
+    match: "\\b(fn)\\b"
+  - name: "keyword.other.let.golden storage.type.golden"
+    match: "\\b(let)\\b"
+  - name: "storage.type.data.golden"
+    match: "\\b(data)\\b"
+  - name: "keyword.control.flow.golden"
+    match: "\\b()\\b"
+  - name: "keyword.other.import.golden"
+    match: "\\b(import)\\b"
+
+  - name: "keyword.operator.assignment.golden"
+    match: "\\="
+  - name: "keyword.operator.comparison.golden"
+    match: "<\\=|>\\=|\\=\\=|<|>|\\!\\=|<\\=>"
+  - name: "keyword.operator.arithmetic.golden"
+    match: "\\+|\\-|\\*|/|%"
+  - name: "keyword.operator.logical.golden"
+    match: "\\b(and|or|xor|!)\\b"
+  - name: "keyword.operator.pipe.golden"
+    match: "\\|"
+        
+  - name: "string.quoted.double.golden"
+    begin: '"'
+    end: '"'
+    patterns:
+      - match": "\\\\\""
+  - name: "string.quoted.backtick.golden"
+    begin: "`"
+    end: "`"
+    contentName: "string.escaped"
+    patterns:
+      - match: "\\\\."
+
+  - name: "entity.name.function.golden"
+    match: "\\b_*[a-zA-Z_][a-zA-Z0-9_]*\\b"
+  - name: "entity.name.type.golden"
+    match: "\\b_*[A-Z][a-zA-Z0-9_]*\\b"
+
+repository: {}
