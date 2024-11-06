@@ -22,6 +22,24 @@ const (
 	TRbrace    = "rbrace"    // }
 	TLbracket  = "lbracket"  // [
 	TRbracket  = "rbracket"  // ]
+	TSemicolon = "semicolon" // ;
+	TPlus      = "plus"      // +
+	TMinus     = "minus"     // -
+	TStar      = "star"      // *
+	TSlash     = "slash"     // /
+	TPercent   = "percent"   // %
+	TLt        = "lt"        // <
+	TLte       = "lte"       // <=
+	TGt        = "gt"        // >
+	TGte       = "gte"       // >=
+	TSpaceship = "spaceship" // <=>
+	TAssign    = "assign"    // =, +=, -=, *=, /=
+	TEqual     = "equal"     // ==
+	TNequal    = "nequal"    // !=
+	TBang      = "bang"      // !
+	TAnd       = "and"       // and
+	TOr        = "or"        // or
+	TXor       = "xor"       // xor
 )
 
 const (
@@ -34,42 +52,46 @@ var Keywords = []string{
 	KFn,
 }
 
+var KeywordTokens = map[string]string{
+	"and": TAnd,
+	"or":  TOr,
+	"xor": TXor,
+}
+
 var TripleCharTokens = map[string]string{
-	// "<=>": t_spaceship,
+	"<=>": TSpaceship,
 }
 
 var DoubleCharTokens = map[string]string{
-	// "==": t_eq,
-	// "!=": t_ne,
-	// "<=": t_le,
-	// ">=": t_ge,
-	// "&&": t_and,
-	// "||": t_or,
-	// "..": t_spread,
-	// "->": t_arrow,
-	// "+=": t_assigncomp,
-	// "-=": t_assigncomp,
-	// "*=": t_assigncomp,
-	// "/=": t_assigncomp,
-	// "%=": t_assigncomp,
+	"==": TEqual,
+	"!=": TNequal,
+	"<=": TLte,
+	">=": TGte,
+	// "..": TSpread,
+	// "->": TArrow,
+	// "+=": TAssign,
+	// "-=": TAssigncomp,
+	// "*=": TAssigncomp,
+	// "/=": TAssigncomp,
+	// "%=": TAssigncomp,
 }
 
 var SingleCharTokens = map[string]string{
-	// "+": t_plus,
-	// "-": t_minus,
-	// "*": t_star,
-	// "/": t_slash,
-	// "%": t_percent,
-	// "<": t_lt,
-	// ">": t_gt,
-	// "!": t_bang,
-	// "?": t_question,
-	// ".": t_dot,
-	// ",": t_comma,
-	// ":": t_colon,
-	// ";": t_semicolon,
-	// "=": t_assign,
-	// "|": t_pipe,
+	"+": TPlus,
+	"-": TMinus,
+	"*": TStar,
+	"/": TSlash,
+	"%": TPercent,
+	"<": TLt,
+	">": TGt,
+	"!": TBang,
+	// "?": TQuestion,
+	// ".": TDot,
+	// ",": TComma,
+	// ":": TColon,
+	"=": TAssign,
+	// "|": TPipe,
+	";": TSemicolon,
 	"(": TLparen,
 	")": TRparen,
 	"{": TLbrace,

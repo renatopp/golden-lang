@@ -33,7 +33,7 @@ func (n *Node) String() string {
 		return ""
 	}
 	value := n.Data.String()
-	return f("<%s>", value)
+	return f("[%s]", value)
 }
 func (n *Node) Children() []*Node {
 	if n == nil || n.Data == nil {
@@ -77,8 +77,67 @@ type AstFunctionDecl struct {
 func (a *AstFunctionDecl) String() string    { return f("function %s", a.Name) }
 func (a *AstFunctionDecl) Children() []*Node { return []*Node{a.Body} }
 
+// Block
+type AstBlock struct {
+	Expressions []*Node
+}
+
+func (a *AstBlock) String() string    { return "block" }
+func (a *AstBlock) Children() []*Node { return a.Expressions }
+
 // Variable Declaration
 type AstVariableDecl struct {
 	Name string
 	Expr *Node
 }
+
+// Int
+type AstInt struct {
+	Value int64
+}
+
+func (a *AstInt) String() string    { return f("int %d", a.Value) }
+func (a *AstInt) Children() []*Node { return []*Node{} }
+
+// Float
+type AstFloat struct {
+	Value float64
+}
+
+func (a *AstFloat) String() string    { return f("float %f", a.Value) }
+func (a *AstFloat) Children() []*Node { return []*Node{} }
+
+// String
+type AstString struct {
+	Value string
+}
+
+func (a *AstString) String() string    { return f("string %s", esc(a.Value)) }
+func (a *AstString) Children() []*Node { return []*Node{} }
+
+// Bool
+type AstBool struct {
+	Value bool
+}
+
+func (a *AstBool) String() string    { return f("bool %t", a.Value) }
+func (a *AstBool) Children() []*Node { return []*Node{} }
+
+// Unary
+type AstUnary struct {
+	Op    string
+	Right *Node
+}
+
+func (a *AstUnary) String() string    { return f("unary %s", a.Op) }
+func (a *AstUnary) Children() []*Node { return []*Node{a.Right} }
+
+// Binary
+type AstBinary struct {
+	Op    string
+	Left  *Node
+	Right *Node
+}
+
+func (a *AstBinary) String() string    { return f("binary %s", a.Op) }
+func (a *AstBinary) Children() []*Node { return []*Node{a.Left, a.Right} }

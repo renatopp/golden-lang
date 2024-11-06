@@ -10,7 +10,7 @@ var (
 	ErrIO                   = "IO error"
 	errMsgInvalidChar       = "invalid UTF-8 encoding"
 	errMsgUnexpectedToken   = "expect token(s): %s; got %s"
-	errMsgUnexpectedLiteral = "expect: %s; got %s"
+	errMsgUnexpectedLiteral = "expect literal(s): %s; got %s"
 )
 
 // An error that occurred during lexing or parsing, including the source code

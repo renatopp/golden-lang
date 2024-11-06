@@ -46,13 +46,18 @@ func (t *Token) WithLiteral(lit string) *Token {
 }
 
 // Returns true if the token is of the given type.
-func (t *Token) IsType(tys ...string) bool {
-	return slices.Contains(tys, t.Kind)
+func (t *Token) IsKind(kinds ...string) bool {
+	return slices.Contains(kinds, t.Kind)
 }
 
 // Returns true if the token is the given literal.
 func (t *Token) IsLiteral(lits ...string) bool {
 	return slices.Contains(lits, t.Literal)
+}
+
+// Check if it matches the given kind and literals.
+func (t *Token) Is(kind string, literals ...string) bool {
+	return t.Kind == kind && t.IsLiteral(literals...)
 }
 
 // Pretty string representation of the token.

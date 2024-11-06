@@ -3,6 +3,8 @@ package lang
 import (
 	"fmt"
 	"strings"
+
+	"github.com/renatopp/golden/lang/strutils"
 )
 
 type Parser struct {
@@ -76,7 +78,7 @@ func (p *Parser) ExpectLiteral(literals ...string) bool {
 	}
 
 	expected := strings.Join(literals, ", ")
-	err := cur.AsError(ErrSyntax, fmt.Sprintf(errMsgUnexpectedLiteral, expected, cur.Literal))
+	err := cur.AsError(ErrSyntax, fmt.Sprintf(errMsgUnexpectedLiteral, expected, strutils.EscapeNewlines(cur.Literal)))
 	p.RegisterError(err)
 	return false
 }

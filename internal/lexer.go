@@ -83,6 +83,12 @@ func (l *lexer) Next() *lang.Token {
 			switch {
 			case t.IsLiteral("true", "false"):
 				return t.WithType(TBool)
+			case t.IsLiteral("and"):
+				return t.WithType(TAnd)
+			case t.IsLiteral("or"):
+				return t.WithType(TOr)
+			case t.IsLiteral("xor"):
+				return t.WithType(TXor)
 			case slices.Contains(Keywords, t.Literal):
 				return t.WithType(TKeyword)
 			default:

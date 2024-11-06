@@ -46,9 +46,7 @@ Design Pillars:
 
 The foundation is a core set of features that defines the minimum base of the language, which will support all following developments. They should be simple to expand and useful enough to be used without additions.
 
-### The Foundation
-
-- Modules, Packages and Imports
+### Modules, Packages and Imports
   - Modules are files
   - Packages are folders
   - `@` denotes the main package (root package of the project)
@@ -56,34 +54,126 @@ The foundation is a core set of features that defines the minimum base of the la
   - Modules inside the same package auto import other modules
   - `import <package>*/<module>` is the base syntax
 
-- Visibility
-  - The prefix `_` marks the name as private and cannot be accessed outside the module
+### Visibility
 
-- Bindings
-  - Variables can be named as the regex: `_?[a-z]([a-z][A-Z][0-9]_)*`
-    - first letter MUST be lower case
-    - optionally, it can have a single `_` as first character
-  - Variables are declared as:
-    - `let <name> = <expression>` with compiler deciding the type
-    - `let <name> <typeref>` with default initialization
-    - `let <name> <typeref> = <expression>` with complete information
-  - Variables are immutable by default, thus:
-    - It cannot have reassignment
-    - It can be passed as argument
-    - It can be redeclared and shadowed
+Definitions (both types and variables) starting with `_` are private and can only be accessed inside the module it was declared. 
 
-- Functions
-  - Functions are expressions
-  - Function declaration follows:
-    - `fn <params> <return>: <expression>`
-  - The form `fn <name><params><return>: <expression>` can be used instead of
-    `let <name> = fn <params><return>: <expression>` for simplicity.
-  - Functions can be called
-  - Functions are first class
-  - Functions must have closure
+### Expressions
 
-- Types
-  - Basic types: `Integer`, `Float`, `Bool` and `String`
-  - Algebraic data types can be defined by `type <Name> = <Constructor> | <Constructor> ...`
-  - Constructors can be tuple or struct `<Name>(Type)` or `<Name>(field Type)`
-  - Types with constructors of the same name can be written as `type <Name>(...)`
+Expressions are terms that will be evaluated to a value and everything in the language is an expression, however, some just evaluates to `void`.
+
+Anywhere a term asks for an expression, you can use a block instead, i.e. `{}`, which will return the last list executed. Empty blocks also evaluates to `void`.
+
+Notice that common mathematical expressions should use `{}` instead of `()`:
+
+```rust
+{x*x} + {y*y}
+```
+
+### Bindings
+
+Bindings assign an expression to a name, which will be registered in the scope.
+
+```rust
+let pi = 3.1415      // Inferred type
+let time Float = 10  // Complete information
+let name String      // Default initialization
+```
+
+Variables are immutable by default and cannot be reassigned. However, they may be redeclared:
+
+```rust
+let x = 1
+let x = "renato"
+```
+
+### Functions
+
+Functions can be declared as:
+
+```rust
+fn add(a Int, b Int) Int { a + b }
+
+add(1, 2)
+```
+
+Functions declared with a name inserts the name into the scope and is equivalent to:
+
+```rust
+let add = fn(a Int, b Int) Int { a + b }
+```
+
+Function type notation is a bit special:
+
+```rust
+let mult = fn(x Int) Fn(Int, Int) Int {
+  fn (a Int, b Int) { {a + b}*x }
+}
+```
+
+### Types
+
+Golden have the following primitive types:
+
+- `Void`
+- `Bool`
+- `Int`
+- `Float`
+- `String`
+- `Fn`
+
+Custom types can be declared using Algebraic data types:
+
+```rust
+type Weekday = Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday
+```
+
+where `Weekday` is the type and `Monday`, `Tuesday`, etc... are the constructors for that type. For example, calling 
+
+```rust
+let x = Monday
+```
+
+x is of type `Weekday` and its value is `Monday`.
+
+Constructor may use structs or tuples:
+
+```rust
+type Vector = 
+| Vector1(Int)       // 1-tuple
+| Vector2(Int, Int)  // 2-tuple
+
+let vec = Vector2(0, 0)
+
+type Point = 
+| Point1(x Int)        // struct
+| Point2(x Int, y Int) // struct
+
+let pnt = Point2(x=0, y=0)
+```
+
+Sum types may have a simple element:
+
+```rust
+type Dollar(Float)
+type Euro(Float)
+```
+
+If a constructor have the same name as the type and is the only element, it can be written in a simplified way:
+
+```rust
+type Person(name String, age Int)
+```
+
+Anonymous types can be declared and used as:
+
+```rust
+fn bounds() (Int, Int) {
+  (0, 10)
+}
+
+fn rect() (x Int, y Int, w Int, h Int) {
+  (x=0, y=0, w=0, h=0)
+}
+```
+
