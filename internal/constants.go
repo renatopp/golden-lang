@@ -25,6 +25,7 @@ const (
 	TSemicolon = "semicolon" // ;
 	TComma     = "comma"     // ,
 	TPipe      = "pipe"      // |
+	TDot       = "dot"       // .
 
 	TPlus      = "plus"      // +
 	TMinus     = "minus"     // -
@@ -95,8 +96,8 @@ var SingleCharTokens = map[string]string{
 	">": TGt,
 	"!": TBang,
 	// "?": TQuestion,
-	// ".": TDot,
 	// ":": TColon,
+	".": TDot,
 	",": TComma,
 	"=": TAssign,
 	"|": TPipe,

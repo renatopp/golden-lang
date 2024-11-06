@@ -16,3 +16,8 @@ func appendAll[T any](arrays ...[]T) []T {
 	}
 	return out
 }
+
+func isData[T any](node *Node) bool {
+	_, ok := node.Data.(T)
+	return ok
+}

@@ -85,7 +85,7 @@ func (a *AstImport) Children() []*Node { return []*Node{} }
 // Data Declaration
 type AstDataDecl struct {
 	Name         string
-	Constructors []*Node
+	Constructors []*Node // *AstConstructor
 }
 
 func (a *AstDataDecl) String() string    { return f("data decl %s", a.Name) }
@@ -93,8 +93,8 @@ func (a *AstDataDecl) Children() []*Node { return a.Constructors }
 
 type AstConstructor struct {
 	Name   string
-	Shape  string // unit, tuple or record
-	Fields []*Node
+	Shape  string  // unit, tuple or record
+	Fields []*Node // *AstField
 }
 
 func (a *AstConstructor) String() string    { return f("constructor %s", a.Name) }
@@ -111,9 +111,9 @@ func (a *AstField) Children() []*Node { return []*Node{a.Type} }
 // Function Declaration
 type AstFunctionDecl struct {
 	Name       string
-	Parameters []*Node
-	ReturnType *Node
-	Body       *Node
+	Parameters []*Node // *AstParameter
+	ReturnType *Node   // *AstTypeRef or *AstFnTypeRef
+	Body       *Node   // *AstBlock
 }
 
 func (a *AstFunctionDecl) String() string { return f("function decl %s", a.Name) }
@@ -124,7 +124,7 @@ func (a *AstFunctionDecl) Children() []*Node {
 // Variable Declaration
 type AstVariableDecl struct {
 	Name       string
-	Type       *Node
+	Type       *Node // *AstTypeRef or *AstFnTypeRef
 	Expression *Node
 }
 
@@ -134,7 +134,7 @@ func (a *AstVariableDecl) Children() []*Node { return []*Node{a.Type, a.Expressi
 // Parameter
 type AstParameter struct {
 	Name string
-	Type *Node
+	Type *Node // *AstTypeRef or *AstFnTypeRef
 }
 
 func (a *AstParameter) String() string    { return f("parameter %s", a.Name) }
@@ -222,3 +222,40 @@ type AstBinary struct {
 
 func (a *AstBinary) String() string    { return f("binary %s", a.Op) }
 func (a *AstBinary) Children() []*Node { return []*Node{a.Left, a.Right} }
+
+// Function Call
+type AstFnCall struct {
+	Target *Node   // VarIdent
+	Args   []*Node // FnArgument
+}
+
+func (a *AstFnCall) String() string    { return "fncall" }
+func (a *AstFnCall) Children() []*Node { return append([]*Node{a.Target}, a.Args...) }
+
+// Type Call
+type AstTypeCall struct {
+	Shape string  // tuple or record
+	Type  *Node   // TypeRef or nil
+	Args  []*Node // *AstArgument
+}
+
+func (a *AstTypeCall) String() string    { return "typecall" }
+func (a *AstTypeCall) Children() []*Node { return append([]*Node{a.Type}, a.Args...) }
+
+type AstArgument struct {
+	Name       string
+	Expression *Node
+}
+
+func (a *AstArgument) String() string    { return f("argument %s", a.Name) }
+func (a *AstArgument) Children() []*Node { return []*Node{a.Expression} }
+
+// Member Access
+
+type AstAccess struct {
+	Target *Node
+	Member string
+}
+
+func (a *AstAccess) String() string    { return f("access .%s", a.Member) }
+func (a *AstAccess) Children() []*Node { return []*Node{a.Target} }

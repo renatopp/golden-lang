@@ -31,7 +31,7 @@ analyser --> backend
 | Build    | <span style="color:#F05D5E">uncertain</span>    | Package loading, module loading, caching, etc.        |
 | Lexer    | <span style="color:#018E42">certain</span>      | Lexer working as intended.                            |
 | Parser   | <span style="color:#018E42">certain</span>      | Parser working as intended.                           |
-| Analyser | <span style="color:#F7D002">fair certain</span> | Testing type checks and type inference.               |
+| Analyser | <span style="color:#F7D002">fair certain</span> | Scope analysis, type checks and type inference.       |
 | Backend  | <span style="color:#F05D5E">uncertain</span>    | Unsure about which backend to use. Probabily using C. |
 
 ## The Language Foundation

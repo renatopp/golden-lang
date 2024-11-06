@@ -24,10 +24,12 @@ func Parse(tokens []*lang.Token) (*Node, error) {
 	parser.Pratt.RegisterPrefixFn(TBool, parser.parseBool)
 	parser.Pratt.RegisterPrefixFn(TString, parser.parseString)
 	parser.Pratt.RegisterPrefixFn(TVarIdent, parser.parseVarIdent)
+	parser.Pratt.RegisterPrefixFn(TTypeIdent, parser.parseTypeCall)
 	parser.Pratt.RegisterPrefixFn(TLbrace, parser.parseBlock)
 	parser.Pratt.RegisterPrefixFn(TPlus, parser.parseUnaryOperator)
 	parser.Pratt.RegisterPrefixFn(TMinus, parser.parseUnaryOperator)
 	parser.Pratt.RegisterPrefixFn(TBang, parser.parseUnaryOperator)
+	parser.Pratt.RegisterPrefixFn(TLparen, parser.parseAnonymousType)
 
 	parser.Pratt.RegisterInfixFn(TPlus, parser.parseBinaryOperator)
 	parser.Pratt.RegisterInfixFn(TMinus, parser.parseBinaryOperator)
@@ -44,6 +46,8 @@ func Parse(tokens []*lang.Token) (*Node, error) {
 	parser.Pratt.RegisterInfixFn(TLte, parser.parseBinaryOperator)
 	parser.Pratt.RegisterInfixFn(TGt, parser.parseBinaryOperator)
 	parser.Pratt.RegisterInfixFn(TGte, parser.parseBinaryOperator)
+	parser.Pratt.RegisterInfixFn(TLparen, parser.parseFunctionCall)
+	parser.Pratt.RegisterInfixFn(TDot, parser.parseAccess)
 
 	node := parser.Parse()
 	if parser.Scanner.HasErrors() || parser.HasErrors() {
@@ -60,14 +64,13 @@ type parser struct {
 
 func (p *parser) Parse() (out *Node) {
 	defer func() {
-		if r := recover(); r != nil {
-			if r == nil {
-				return
-			} else if err, ok := r.(lang.Error); ok {
-				p.RegisterError(err)
-			} else {
-				p.RegisterError(lang.NewError(lang.Loc{}, "unknown error", fmt.Sprintf("%v", r)))
-			}
+		r := recover()
+		if r == nil {
+			return
+		} else if err, ok := r.(lang.Error); ok {
+			p.RegisterError(err)
+		} else {
+			p.RegisterError(lang.NewError(lang.Loc{}, "unknown error", fmt.Sprintf("%v", r)))
 		}
 	}()
 
@@ -128,6 +131,8 @@ func (p *parser) precedence(t *lang.Token) int {
 	switch {
 	case t.IsKind(TAssign):
 		return 10
+	case t.IsKind(TPipe):
+		return 20
 	case t.IsKind(TOr):
 		return 40
 	case t.IsKind(TXor):
@@ -148,7 +153,7 @@ func (p *parser) precedence(t *lang.Token) int {
 		return 120
 	case t.IsKind(TLparen):
 		return 130
-	case t.IsKind(TLbrace):
+	case t.IsKind(TDot):
 		return 140
 	}
 
@@ -717,7 +722,21 @@ func (p *parser) parseBlock() *Node {
 	})
 }
 
-// nullable
+// Parse a single expression.
+//
+// ATTENTION: this functions may return nil if not expression is found.
+//
+// Example:
+//
+//			10
+//			10 + 20
+//			call()
+//	   let x = 10
+//			...
+//
+// Returns:
+// - nil
+// - Node(<multiple>)
 func (p *parser) parseExpression(precedence ...int) *Node {
 	switch {
 	case p.IsNext(TKeyword, KLet):
@@ -733,6 +752,7 @@ func (p *parser) parseExpression(precedence ...int) *Node {
 	return p.Pratt.SolveExpression(p.Scanner, pr)
 }
 
+// Parse an integer literal with support for different bases.
 func (p *parser) parseInteger() *Node {
 	p.ExpectToken(TInteger, THex, TOctal, TBinary)
 
@@ -755,6 +775,7 @@ func (p *parser) parseInteger() *Node {
 	return NewNode(token, &AstInt{Value: value})
 }
 
+// Parse a float literal.
 func (p *parser) parseFloat() *Node {
 	p.ExpectToken(TFloat)
 	token := p.EatToken()
@@ -765,6 +786,7 @@ func (p *parser) parseFloat() *Node {
 	return NewNode(token, &AstFloat{Value: value})
 }
 
+// Parse a boolean literal.
 func (p *parser) parseBool() *Node {
 	p.ExpectToken(TBool)
 	p.ExpectLiteral("true", "false")
@@ -773,6 +795,7 @@ func (p *parser) parseBool() *Node {
 	return NewNode(token, &AstBool{Value: value})
 }
 
+// Parse a string literal.
 func (p *parser) parseString() *Node {
 	p.ExpectToken(TString)
 	token := p.EatToken()
@@ -780,12 +803,34 @@ func (p *parser) parseString() *Node {
 	return NewNode(token, &AstString{Value: value})
 }
 
+// Parse a variable identifier.
 func (p *parser) parseVarIdent() *Node {
 	p.ExpectToken(TVarIdent)
 	token := p.EatToken()
 	return NewNode(token, &AstVarIdent{Name: token.Literal})
 }
 
+func (p *parser) parseTypeCall() *Node {
+	p.ExpectToken(TTypeIdent)
+	first := p.PeekToken()
+	tp := p.parseTypeRef()
+
+	shape := "unit"
+	args := []*Node{}
+	if p.IsNext(TLparen) {
+		p.EatToken()
+		shape, args = p.parseArguments()
+		p.Expect(TRparen)
+		p.EatToken()
+	}
+	return NewNode(first, &AstTypeCall{
+		Shape: shape,
+		Type:  tp,
+		Args:  args,
+	})
+}
+
+// Parse a unary operator expression.
 func (p *parser) parseUnaryOperator() *Node {
 	op := p.EatToken()
 	right := p.parseExpression(p.precedence(op))
@@ -795,6 +840,96 @@ func (p *parser) parseUnaryOperator() *Node {
 	})
 }
 
+// Parse an anonymous type expression.
+func (p *parser) parseAnonymousType() *Node {
+	p.Expect(TLparen)
+	first := p.EatToken()
+	shape, args := p.parseArguments()
+	p.Expect(TRparen)
+	p.EatToken()
+	return NewNode(first, &AstTypeCall{
+		Shape: shape,
+		Type:  nil, // anonymous
+		Args:  args,
+	})
+}
+
+// Parse a list of expressions in a record format or tuple format.
+//
+// Example:
+//
+//	   10, 20
+//			x=10, y=20
+//
+// Returns:
+// - Node([]*Ast)
+func (p *parser) parseArguments() (string, []*Node) {
+	args := []*Node{}
+	p.Skip(TNewline)
+
+	shape := ""
+	switch {
+	case p.IsNext(TVarIdent):
+		// record
+		shape = "record"
+		for {
+			p.ExpectToken(TVarIdent)
+			name := p.EatToken()
+			p.Expect(TAssign)
+			p.EatToken()
+			p.Skip(TNewline)
+			value := p.parseExpression()
+			if value == nil {
+				panic(lang.NewError(p.PeekToken().Loc, "expecting expression", ""))
+			}
+			args = append(args, NewNode(name, &AstArgument{
+				Name:       name.Literal,
+				Expression: value,
+			}))
+
+			p.ExpectToken(TComma, TNewline, TRparen)
+			p.Skip(TNewline)
+			p.SkipN(1, TComma)
+			p.Skip(TNewline)
+			if p.IsNext(TRparen) {
+				break
+			}
+		}
+
+	default:
+		// tuple
+		shape = "tuple"
+		i := 0
+		p.Skip(TNewline)
+		for {
+			value := p.parseExpression()
+			if value == nil {
+				break
+			}
+			args = append(args, NewNode(p.PeekToken(), &AstArgument{
+				Name:       strconv.Itoa(i),
+				Expression: value,
+			}))
+
+			p.ExpectToken(TComma, TNewline, TRparen)
+			p.Skip(TNewline)
+			p.SkipN(1, TComma)
+			p.Skip(TNewline)
+			if p.IsNext(TRparen) {
+				break
+			}
+			i++
+		}
+	}
+
+	if len(args) == 0 {
+		shape = "unit"
+	}
+
+	return shape, args
+}
+
+// Parse a binary operator expression.
 func (p *parser) parseBinaryOperator(left *Node) *Node {
 	op := p.EatToken()
 	right := p.parseExpression(p.precedence(op))
@@ -807,5 +942,38 @@ func (p *parser) parseBinaryOperator(left *Node) *Node {
 		Op:    op.Literal,
 		Left:  left,
 		Right: right,
+	})
+}
+
+// Parse a function call or type initialization.
+func (p *parser) parseFunctionCall(left *Node) *Node {
+	p.Expect(TLparen)
+	first := p.EatToken()
+	_, args := p.parseArguments()
+	p.Expect(TRparen)
+	p.EatToken()
+	return NewNode(first, &AstFnCall{
+		Target: left,
+		Args:   args,
+	})
+}
+
+// Parse member access.
+//
+// Example:
+//
+//	foo.bar
+//	foo.0
+//
+// Returns:
+// - Node(AstAccess)
+func (p *parser) parseAccess(left *Node) *Node {
+	p.Expect(TDot)
+	first := p.EatToken()
+	p.ExpectToken(TVarIdent, TInteger)
+	token := p.EatToken()
+	return NewNode(first, &AstAccess{
+		Target: left,
+		Member: token.Literal,
 	})
 }
