@@ -70,12 +70,43 @@ func (a *AstModule) Children() []*Node {
 
 // Function Declaration
 type AstFunctionDecl struct {
-	Name string
-	Body *Node
+	Name       string
+	Parameters []*Node
+	Type       *Node
+	Body       *Node
 }
 
-func (a *AstFunctionDecl) String() string    { return f("function %s", a.Name) }
-func (a *AstFunctionDecl) Children() []*Node { return []*Node{a.Body} }
+func (a *AstFunctionDecl) String() string { return f("function decl %s", a.Name) }
+func (a *AstFunctionDecl) Children() []*Node {
+	return append(a.Parameters, []*Node{a.Type, a.Body}...)
+}
+
+// Variable Declaration
+type AstVariableDecl struct {
+	Name       string
+	Type       *Node
+	Expression *Node
+}
+
+func (a *AstVariableDecl) String() string    { return f("variable decl %s", a.Name) }
+func (a *AstVariableDecl) Children() []*Node { return []*Node{a.Type, a.Expression} }
+
+// Parameter
+type AstParameter struct {
+	Name string
+	Type *Node
+}
+
+func (a *AstParameter) String() string    { return f("parameter %s", a.Name) }
+func (a *AstParameter) Children() []*Node { return []*Node{a.Type} }
+
+// Type Ref
+type AstTypeRef struct {
+	Name string
+}
+
+func (a *AstTypeRef) String() string    { return f("typeref %s", a.Name) }
+func (a *AstTypeRef) Children() []*Node { return []*Node{} }
 
 // Block
 type AstBlock struct {
@@ -84,12 +115,6 @@ type AstBlock struct {
 
 func (a *AstBlock) String() string    { return "block" }
 func (a *AstBlock) Children() []*Node { return a.Expressions }
-
-// Variable Declaration
-type AstVariableDecl struct {
-	Name string
-	Expr *Node
-}
 
 // Int
 type AstInt struct {

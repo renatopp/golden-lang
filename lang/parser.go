@@ -142,6 +142,9 @@ func (p *Parser) IsNextToken(kinds ...string) bool {
 }
 
 func (p *Parser) IsNextLiteral(literals ...string) bool {
+	if len(literals) == 0 {
+		return true
+	}
 	cur := p.PeekToken()
 	for _, lit := range literals {
 		if cur.Literal == lit {

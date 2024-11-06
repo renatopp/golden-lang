@@ -162,13 +162,19 @@ func (p *parser) parseModule() *Node {
 	variables := []*Node{}
 
 	for {
-		p.Skip(TNewline)
+		p.Skip(TSemicolon, TNewline)
 
 		switch {
+		case p.IsNext(TKeyword, KLet):
+			variable := p.parseVariableDecl()
+			variables = append(variables, variable)
+			continue
 		case p.IsNext(TKeyword, KFn):
 			fn := p.parseFunctionDecl()
 			functions = append(functions, fn)
 			continue
+		default:
+			p.Expect(TEof)
 		}
 
 		break
@@ -186,20 +192,87 @@ func (p *parser) parseFunctionDecl() *Node {
 	p.Expect(TKeyword, KFn)
 	fn := p.EatToken()
 
-	p.Expect(TVarIdent)
-	name := p.EatToken()
+	name := ""
+	if p.IsNext(TVarIdent) {
+		name = p.EatToken().Literal
+	}
 
 	p.Expect(TLparen)
 	p.EatToken()
 
+	parameters := p.parseParameters()
+
 	p.Expect(TRparen)
 	p.EatToken()
+
+	tp := p.parseTypeRef()
 
 	body := p.parseBlock()
 
 	return NewNode(fn, &AstFunctionDecl{
+		Name:       name,
+		Parameters: parameters,
+		Type:       tp,
+		Body:       body,
+	})
+}
+
+func (p *parser) parseVariableDecl() *Node {
+	p.Expect(TKeyword, KLet)
+	let := p.EatToken()
+
+	p.ExpectToken(TVarIdent)
+	name := p.EatToken()
+
+	p.ExpectToken(TTypeIdent, TAssign)
+	var tp *Node
+	if p.IsNextToken(TTypeIdent) {
+		tp = p.parseTypeRef()
+	}
+
+	var value *Node
+	if p.IsNextToken(TAssign) {
+		p.EatToken()
+		value = p.parseExpression()
+		if value == nil {
+			panic(lang.NewError(p.PeekToken().Loc, "expecting expression", ""))
+		}
+	}
+
+	return NewNode(let, &AstVariableDecl{
+		Name:       name.Literal,
+		Type:       tp,
+		Expression: value,
+	})
+}
+
+func (p *parser) parseParameters() []*Node {
+	parameters := []*Node{}
+	for {
+		p.Skip(TComma, TNewline)
+		if !p.IsNext(TVarIdent) {
+			break
+		}
+
+		name := p.EatToken()
+		tp := p.parseTypeRef()
+		parameters = append(parameters, NewNode(name, &AstParameter{
+			Name: name.Literal,
+			Type: tp,
+		}))
+	}
+
+	return parameters
+}
+
+// nullable
+func (p *parser) parseTypeRef() *Node {
+	if !p.IsNext(TTypeIdent) {
+		return nil
+	}
+	name := p.EatToken()
+	return NewNode(name, &AstTypeRef{
 		Name: name.Literal,
-		Body: body,
 	})
 }
 
@@ -230,6 +303,13 @@ func (p *parser) parseBlock() *Node {
 
 // nullable
 func (p *parser) parseExpression(precedence ...int) *Node {
+	switch {
+	case p.IsNext(TKeyword, KLet):
+		return p.parseVariableDecl()
+	case p.IsNext(TKeyword, KFn):
+		return p.parseFunctionDecl()
+	}
+
 	pr := 0
 	if len(precedence) > 0 {
 		pr = precedence[0]

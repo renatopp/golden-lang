@@ -125,7 +125,7 @@ Golden have the following primitive types:
 Custom types can be declared using Algebraic data types:
 
 ```rust
-type Weekday = Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday
+data Weekday = Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday
 ```
 
 where `Weekday` is the type and `Monday`, `Tuesday`, etc... are the constructors for that type. For example, calling 
@@ -139,13 +139,13 @@ x is of type `Weekday` and its value is `Monday`.
 Constructor may use structs or tuples:
 
 ```rust
-type Vector = 
+data Vector = 
 | Vector1(Int)       // 1-tuple
 | Vector2(Int, Int)  // 2-tuple
 
 let vec = Vector2(0, 0)
 
-type Point = 
+data Point = 
 | Point1(x Int)        // struct
 | Point2(x Int, y Int) // struct
 
@@ -155,14 +155,14 @@ let pnt = Point2(x=0, y=0)
 Sum types may have a simple element:
 
 ```rust
-type Dollar(Float)
-type Euro(Float)
+data Dollar(Float)
+data Euro(Float)
 ```
 
 If a constructor have the same name as the type and is the only element, it can be written in a simplified way:
 
 ```rust
-type Person(name String, age Int)
+data Person(name String, age Int)
 ```
 
 Anonymous types can be declared and used as:

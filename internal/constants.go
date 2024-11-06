@@ -23,6 +23,7 @@ const (
 	TLbracket  = "lbracket"  // [
 	TRbracket  = "rbracket"  // ]
 	TSemicolon = "semicolon" // ;
+	TComma     = "comma"     // ,
 	TPlus      = "plus"      // +
 	TMinus     = "minus"     // -
 	TStar      = "star"      // *
@@ -33,7 +34,7 @@ const (
 	TGt        = "gt"        // >
 	TGte       = "gte"       // >=
 	TSpaceship = "spaceship" // <=>
-	TAssign    = "assign"    // =, +=, -=, *=, /=
+	TAssign    = "assign"    // =
 	TEqual     = "equal"     // ==
 	TNequal    = "nequal"    // !=
 	TBang      = "bang"      // !
@@ -45,11 +46,13 @@ const (
 const (
 	KImport = "import"
 	KFn     = "fn"
+	KLet    = "let"
 )
 
 var Keywords = []string{
 	KImport,
 	KFn,
+	KLet,
 }
 
 var KeywordTokens = map[string]string{
@@ -87,7 +90,7 @@ var SingleCharTokens = map[string]string{
 	"!": TBang,
 	// "?": TQuestion,
 	// ".": TDot,
-	// ",": TComma,
+	",": TComma,
 	// ":": TColon,
 	"=": TAssign,
 	// "|": TPipe,
