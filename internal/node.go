@@ -68,6 +68,20 @@ func (a *AstModule) Children() []*Node {
 	return appendAll(a.Imports, a.Types, a.Functions, a.Variables)
 }
 
+// Import
+type AstImport struct {
+	Path  string
+	Alias string
+}
+
+func (a *AstImport) String() string {
+	if a.Alias != "" {
+		return f("import %s as %s", a.Path, a.Alias)
+	}
+	return f("import %s", a.Path)
+}
+func (a *AstImport) Children() []*Node { return []*Node{} }
+
 // Data Declaration
 type AstDataDecl struct {
 	Name         string
@@ -98,13 +112,13 @@ func (a *AstField) Children() []*Node { return []*Node{a.Type} }
 type AstFunctionDecl struct {
 	Name       string
 	Parameters []*Node
-	Type       *Node
+	ReturnType *Node
 	Body       *Node
 }
 
 func (a *AstFunctionDecl) String() string { return f("function decl %s", a.Name) }
 func (a *AstFunctionDecl) Children() []*Node {
-	return append(a.Parameters, []*Node{a.Type, a.Body}...)
+	return append(a.Parameters, []*Node{a.ReturnType, a.Body}...)
 }
 
 // Variable Declaration
@@ -133,6 +147,14 @@ type AstTypeRef struct {
 
 func (a *AstTypeRef) String() string    { return f("typeref %s", a.Name) }
 func (a *AstTypeRef) Children() []*Node { return []*Node{} }
+
+type AstFnTypeRef struct {
+	Parameters []*Node
+	ReturnType *Node
+}
+
+func (a *AstFnTypeRef) String() string    { return "typeref Fn" }
+func (a *AstFnTypeRef) Children() []*Node { return append(a.Parameters, a.ReturnType) }
 
 // Block
 type AstBlock struct {
@@ -173,6 +195,14 @@ type AstBool struct {
 
 func (a *AstBool) String() string    { return f("bool %t", a.Value) }
 func (a *AstBool) Children() []*Node { return []*Node{} }
+
+// Var Identifier
+type AstVarIdent struct {
+	Name string
+}
+
+func (a *AstVarIdent) String() string    { return f("varident %s", a.Name) }
+func (a *AstVarIdent) Children() []*Node { return []*Node{} }
 
 // Unary
 type AstUnary struct {

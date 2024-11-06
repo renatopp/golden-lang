@@ -50,6 +50,7 @@ const (
 	KData   = "data"
 	KFn     = "fn"
 	KLet    = "let"
+	KAs     = "as"
 )
 
 var Keywords = []string{
@@ -57,6 +58,7 @@ var Keywords = []string{
 	KData,
 	KFn,
 	KLet,
+	KAs,
 }
 
 var KeywordTokens = map[string]string{

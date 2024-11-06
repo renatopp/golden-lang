@@ -23,6 +23,7 @@ func Parse(tokens []*lang.Token) (*Node, error) {
 	parser.Pratt.RegisterPrefixFn(TFloat, parser.parseFloat)
 	parser.Pratt.RegisterPrefixFn(TBool, parser.parseBool)
 	parser.Pratt.RegisterPrefixFn(TString, parser.parseString)
+	parser.Pratt.RegisterPrefixFn(TVarIdent, parser.parseVarIdent)
 	parser.Pratt.RegisterPrefixFn(TLbrace, parser.parseBlock)
 	parser.Pratt.RegisterPrefixFn(TPlus, parser.parseUnaryOperator)
 	parser.Pratt.RegisterPrefixFn(TMinus, parser.parseUnaryOperator)
@@ -154,6 +155,18 @@ func (p *parser) precedence(t *lang.Token) int {
 	return 0
 }
 
+// Parse the module root node, i.e., the first depth level of the file.
+// The module node contains all the imports and declaration (types, variables and functions).
+//
+// Example:
+//
+//			import "foo"
+//			data Node = Nil | Node
+//	   let x Int = 10
+//	   fn main() { }
+//
+// Returns:
+// - Node(AstModule)
 func (p *parser) parseModule() *Node {
 	first := p.PeekToken()
 	imports := []*Node{}
@@ -165,6 +178,10 @@ func (p *parser) parseModule() *Node {
 		p.Skip(TSemicolon, TNewline)
 
 		switch {
+		case p.IsNext(TKeyword, KImport):
+			imp := p.parseImport()
+			imports = append(imports, imp)
+			continue
 		case p.IsNext(TKeyword, KData):
 			data := p.parseDataDecl()
 			types = append(types, data)
@@ -192,6 +209,47 @@ func (p *parser) parseModule() *Node {
 	})
 }
 
+// Parse the import expression with an optional alias.
+//
+// Example:
+//
+//	import "foo"
+//	import "foo" as bar
+//
+// Returns:
+// - Node(AstImport)
+func (p *parser) parseImport() *Node {
+	p.Expect(TKeyword, KImport)
+	imp := p.EatToken()
+
+	p.Expect(TString)
+	path := p.EatToken()
+
+	alias := ""
+	if p.IsNext(TKeyword, KAs) {
+		p.EatToken()
+		p.Expect(TVarIdent)
+		alias = p.EatToken().Literal
+	}
+
+	return NewNode(imp, &AstImport{
+		Alias: alias,
+		Path:  path.Literal,
+	})
+}
+
+// Parse the data declaration with all possible variations.
+//
+// Example:
+//
+//	data NodeConstructor
+//	data Node = Constructor
+//	data Node = Constructor | Constructor | ...
+//
+// see parseConstructor for more details on the constructor syntax.
+//
+// Returns:
+// - Node(AstDataDecl)
 func (p *parser) parseDataDecl() *Node {
 	p.Expect(TKeyword, KData)
 	data := p.EatToken()
@@ -200,24 +258,46 @@ func (p *parser) parseDataDecl() *Node {
 	name := p.EatToken()
 
 	constructors := []*Node{}
-	// if p.IsNext(TAssign) {
-	// 	p.EatToken()
-	// 	constructors = p.parseConstructors()
 
-	// } else if p.IsNext(TLparen) {
-	// 	c := p.parseConstructor()
-	// 	if c == nil {
-	// 		panic(lang.NewError(p.PeekToken().Loc, "expecting constructor", ""))
-	// 	}
-	// 	constructors = append(constructors, c)
+	if p.IsNext(TAssign) {
+		// Parse data declaration with explicit constructors
+		// Example:
+		//
+		// 		data Node = Nil | Node
+		// 		data Node = Node
+		// 		data Node = Node(Int)
+		// 		data Node = Node(x Int)
+		//
+		p.EatToken()
+		constructors = p.parseConstructors()
 
-	// } else {
-	// 	constructors = append(constructors, NewNode(name, &AstConstructor{
-	// 		Name:   name.Literal,
-	// 		Shape:  "unit",
-	// 		Fields: []*Node{},
-	// 	}))
-	// }
+	} else if p.IsNext(TLparen) {
+		// Parse data declaration with implicit, same-name constructors
+		// Example:
+		//
+		// 		data Node()
+		// 		data Node(Int)
+		// 		data Node(x Int)
+		//
+		c := p.parseConstructor()
+		if c == nil {
+			panic(lang.NewError(p.PeekToken().Loc, "expecting constructor", ""))
+		}
+		c.Data.(*AstConstructor).Name = name.Literal
+		constructors = append(constructors, c)
+
+	} else {
+		// Parse data declaration with implicit, same-name, unit constructor
+		// Example:
+		//
+		// 		data Node
+		//
+		constructors = append(constructors, NewNode(name, &AstConstructor{
+			Name:   name.Literal,
+			Shape:  "unit",
+			Fields: []*Node{},
+		}))
+	}
 
 	return NewNode(data, &AstDataDecl{
 		Name:         name.Literal,
@@ -225,6 +305,15 @@ func (p *parser) parseDataDecl() *Node {
 	})
 }
 
+// Parse the function declaration with parameters, return type and body.
+//
+// Example:
+//
+//	fn main() { }
+//	fn add(a Int, b Int) Int { a + b }
+//
+// Returns:
+// - Node(AstFunctionDecl)
 func (p *parser) parseFunctionDecl() *Node {
 	p.Expect(TKeyword, KFn)
 	fn := p.EatToken()
@@ -249,11 +338,21 @@ func (p *parser) parseFunctionDecl() *Node {
 	return NewNode(fn, &AstFunctionDecl{
 		Name:       name,
 		Parameters: parameters,
-		Type:       tp,
+		ReturnType: tp,
 		Body:       body,
 	})
 }
 
+// Parse the variable declaration with all variations.
+//
+// Example:
+//
+//	let x = 10
+//	let x Int
+//	let x Int = 10
+//
+// Returns:
+// - Node(AstVariableDecl)
 func (p *parser) parseVariableDecl() *Node {
 	p.Expect(TKeyword, KLet)
 	let := p.EatToken()
@@ -282,105 +381,176 @@ func (p *parser) parseVariableDecl() *Node {
 	})
 }
 
+// Parse the constructor list of a data declaration.
+//
+// Example:
+//
+//	Constructor
+//	Constructor | Constructor | ...
+//
+// Returns:
+// - []*Node(AstConstructor)
 func (p *parser) parseConstructors() []*Node {
 	constructors := []*Node{}
-	// // ignore initial newline
-	// if p.IsNextToken(TNewline) {
-	// 	p.Skip(TNewline)
 
-	// 	// ignore initial pipe if newline is present
-	// 	if p.IsNext(TPipe) {
-	// 		p.EatToken()
-	// 		p.Expect(TTypeIdent)
-	// 	}
-	// }
+	// ignore initial newline
+	if p.IsNextToken(TNewline) {
+		p.Skip(TNewline)
 
-	// // parse constructors
-	// for {
-	// 	if !p.IsNext(TTypeIdent) {
-	// 		break
-	// 	}
+		// ignore initial pipe if newline is present
+		if p.IsNext(TPipe) {
+			p.EatToken()
+			p.Expect(TTypeIdent)
+		}
+	}
 
-	// 	constructor := p.parseConstructor()
-	// 	if constructor == nil {
-	// 		break
-	// 	}
-	// 	constructors = append(constructors, constructor)
+	// parse constructors
+	for {
+		if !p.IsNext(TTypeIdent) {
+			break
+		}
 
-	// 	p.Skip(TNewline)
-	// 	if !p.IsNext(TPipe) {
-	// 		break
-	// 	}
-	// 	p.EatToken()
-	// 	p.Expect(TTypeIdent)
-	// }
+		constructor := p.parseConstructor()
+		if constructor == nil {
+			break
+		}
+		constructors = append(constructors, constructor)
+
+		p.Skip(TNewline)
+		if !p.IsNext(TPipe) {
+			break
+		}
+		p.EatToken()
+		p.Expect(TTypeIdent)
+	}
+
 	return constructors
 }
 
+// Parse a single constructor of a data declaration. It may or may not have a name.
+//
+// Example:
+//
+//	Constructor
+//	Constructor(Int)
+//	Constructor(x Int)
+//	()
+//	(Int)
+//	(x Int)
+//
+// Returns:
+// - Node(AstConstructor)
 func (p *parser) parseConstructor() *Node {
-	// p.ExpectToken(TTypeIdent)
-	// name := p.EatToken()
-	// shape := "unit"
-	// fields := []*Node{}
+	first := p.PeekToken()
 
-	// if p.IsNext(TLparen) {
-	// 	p.EatToken()
-	// 	p.Skip(TNewline)
+	name := ""
+	if p.IsNext(TTypeIdent) {
+		name = p.EatToken().Literal
+	}
 
-	// 	unit := false
-	// 	if p.IsNext(TRparen) {
-	// 		unit = true
-	// 	}
+	p.Skip(TNewline)
+	if !p.IsNext(TLparen) {
+		return NewNode(first, &AstConstructor{
+			Name:   name,
+			Shape:  "unit",
+			Fields: []*Node{},
+		})
+	}
 
-	// 	i := 0
-	// 	for !unit {
-	// 		if p.IsNext(TRparen, TEof) {
-	// 			break
-	// 		}
+	p.EatToken() // (
+	p.Skip(TNewline)
 
-	// 		first := p.PeekToken()
-	// 		name := strconv.Itoa(i)
-	// 		if p.IsNext(TVarIdent) {
-	// 			shape = "record"
-	// 			name = p.EatToken().Literal
-	// 		} else {
-	// 			shape = "tuple"
-	// 		}
+	shape, fields := p.parseConstructorFields()
 
-	// 		tp := p.parseTypeRef()
-
-	// 		if tp == nil {
-	// 			break
-	// 		}
-	// 		fields = append(fields, NewNode(first, &AstField{
-	// 			Name: name,
-	// 			Type: tp,
-	// 		}))
-
-	// 		if p.IsNext(TComma) {
-	// 			p.EatToken()
-	// 		}
-
-	// 		i++
-	// 	}
-
-	// 	p.Skip(TNewline)
-	// 	p.Expect(TRparen)
-	// 	p.EatToken()
-	// }
-
-	// return NewNode(name, &AstConstructor{
-	// 	Name:   name.Literal,
-	// 	Shape:  shape,
-	// 	Fields: fields,
-	// })
-	return nil
+	p.Skip(TNewline)
+	p.Expect(TRparen)
+	p.EatToken()
+	return NewNode(first, &AstConstructor{
+		Name:   name,
+		Shape:  shape,
+		Fields: fields,
+	})
 }
 
+// Parse the fields of a constructor, which can treated as an unit,  a tuple or a record.
+// Notice that this functions considers the content INSIDE the parenthesis.
+//
+// Example:
+//
+//	<empty>
+//	Int, ...
+//	x Int, ...
+//
+// Returns:
+// - shape, []*Node(AstField)
+func (p *parser) parseConstructorFields() (shape string, fields []*Node) {
+	shape = "unit" // or "tuple" or "record"
+	fields = []*Node{}
+
+	// discover the shape of the constructor
+	p.Skip(TNewline)
+	switch {
+	case p.IsNext(TVarIdent):
+		shape = "record"
+		for !p.IsNext(TRparen) {
+			name := p.EatToken()
+			tp := p.parseTypeRef()
+			if tp == nil {
+				panic(lang.NewError(p.PeekToken().Loc, "expecting type", ""))
+			}
+			fields = append(fields, NewNode(name, &AstField{
+				Name: name.Literal,
+				Type: tp,
+			}))
+
+			p.ExpectToken(TComma, TNewline, TRparen)
+			p.Skip(TNewline)
+			p.SkipN(1, TComma)
+			p.Skip(TNewline)
+		}
+
+	case p.IsNext(TRparen):
+		shape = "unit"
+
+	default:
+		shape = "tuple"
+		i := 0
+		for !p.IsNext(TRparen) {
+			tp := p.parseTypeRef()
+			if tp == nil {
+				panic(lang.NewError(p.PeekToken().Loc, "expecting type", ""))
+			}
+			name := strconv.Itoa(i)
+			fields = append(fields, NewNode(p.PeekToken(), &AstField{
+				Name: name,
+				Type: tp,
+			}))
+
+			p.ExpectToken(TComma, TNewline, TRparen)
+			p.Skip(TNewline)
+			p.SkipN(1, TComma)
+			p.Skip(TNewline)
+			i++
+		}
+	}
+
+	return shape, fields
+}
+
+// Parse the parameters of a function declaration.
+// This functions considers the content INSIDE the parenthesis.
+//
+// Example:
+//
+//	<empty>
+//	x Int, ...
+//
+// Returns:
+// - []*Node(AstParameter)
 func (p *parser) parseParameters() []*Node {
 	parameters := []*Node{}
+	p.Skip(TNewline)
 	for {
-		p.Skip(TComma, TNewline)
 		if !p.IsNext(TVarIdent) {
 			break
 		}
@@ -391,22 +561,137 @@ func (p *parser) parseParameters() []*Node {
 			Name: name.Literal,
 			Type: tp,
 		}))
+
+		p.ExpectToken(TComma, TNewline, TRparen)
+		p.Skip(TNewline)
+		p.SkipN(1, TComma)
+		p.Skip(TNewline)
 	}
 
 	return parameters
 }
 
-// nullable
-func (p *parser) parseTypeRef() *Node {
-	if !p.IsNext(TTypeIdent) {
-		return nil
+// Parse the parameters of a function type reference.
+// This functions considers the content INSIDE the parenthesis.
+//
+// Example:
+//
+//	<empty>
+//	Int, ...
+//
+// Returns:
+// - []*Node(AstParameter)
+func (p *parser) parseParameterTypes() []*Node {
+	parameters := []*Node{}
+	p.Skip(TNewline)
+	for {
+		if !p.IsNext(TTypeIdent) {
+			break
+		}
+
+		tp := p.parseTypeRef()
+		parameters = append(parameters, NewNode(tp.Token, &AstParameter{
+			Name: "",
+			Type: tp,
+		}))
+		p.ExpectToken(TComma, TNewline, TRparen)
+		p.Skip(TNewline)
+		p.SkipN(1, TComma)
+		p.Skip(TNewline)
 	}
-	name := p.EatToken()
-	return NewNode(name, &AstTypeRef{
-		Name: name.Literal,
-	})
+
+	return parameters
 }
 
+// Parse the reference for a type, i.e., a type expression such as the return type of a function or
+// the variable type in a declaration.
+//
+// The type reference can be a named type, a function type or a tuple/record type.
+//
+// IMPORTANT: It may return nil
+//
+// Example:
+//
+//	Int
+//	Fn(Int) Int
+//	()
+//	(Int, Int)
+//	(x Int, y Int)
+//
+// Returns:
+// - nil
+// - Node(AstTypeRef)
+// - Node(AstFnTypeRef)
+// - Node(AstDataDecl)
+func (p *parser) parseTypeRef() *Node {
+	switch {
+	case p.IsNext(TLparen):
+		// tuple or record
+		first := p.EatToken()
+		p.Skip(TNewline)
+
+		shape, fields := p.parseConstructorFields()
+
+		// unit is equivalent to void
+		if shape == "unit" {
+			p.Expect(TRparen)
+			p.EatToken()
+			return nil
+		}
+
+		p.Expect(TRparen)
+		p.EatToken()
+		return NewNode(first, &AstDataDecl{
+			Name: "",
+			Constructors: []*Node{
+				NewNode(first, &AstConstructor{
+					Name:   "",
+					Shape:  shape,
+					Fields: fields,
+				}),
+			},
+		})
+
+	case p.IsNext(TTypeIdent, "Fn"):
+		// function type
+		first := p.EatToken()
+		p.Expect(TLparen)
+		p.EatToken()
+
+		parameters := p.parseParameterTypes()
+
+		p.Skip(TNewline)
+		p.Expect(TRparen)
+		p.EatToken()
+
+		returnType := p.parseTypeRef()
+		return NewNode(first, &AstFnTypeRef{
+			Parameters: parameters,
+			ReturnType: returnType,
+		})
+
+	case p.IsNext(TTypeIdent):
+		// named type
+		name := p.EatToken()
+		return NewNode(name, &AstTypeRef{
+			Name: name.Literal,
+		})
+	}
+
+	return nil
+}
+
+// Parse a block expression, i.e., a sequence of expressions enclosed by braces.
+//
+// Example:
+//
+//		{
+//			let x = 10
+//			let y = 20
+//	 }
+//
+// Returns:
+// - Node(AstBlock)
 func (p *parser) parseBlock() *Node {
 	p.Expect(TLbrace)
 	first := p.EatToken()
@@ -493,6 +778,12 @@ func (p *parser) parseString() *Node {
 	token := p.EatToken()
 	value := strings.ReplaceAll(token.Literal, "\r", "")
 	return NewNode(token, &AstString{Value: value})
+}
+
+func (p *parser) parseVarIdent() *Node {
+	p.ExpectToken(TVarIdent)
+	token := p.EatToken()
+	return NewNode(token, &AstVarIdent{Name: token.Literal})
 }
 
 func (p *parser) parseUnaryOperator() *Node {

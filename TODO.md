@@ -17,12 +17,13 @@ Parser:
 [x] data Name = A()
 [x] data Name = A | B
 [x] data Name = | A | B
-[ ] data Name = A(Type, ...)
-[ ] data Name = A(ident Type, ...)
-[ ] data Name(Type, ...)
-[ ] data Name(ident Type, ...)
-[ ] import package
-[ ] import package as name
-[ ] Fn as type ref
-[ ] Tuple as type ref
-[ ] Struct as type ref
+[x] data Name = A(Type, ...)
+[x] data Name = A(ident Type, ...)
+[x] data Name(Type, ...)
+[x] data Name(ident Type, ...)
+[x] import package
+[x] import package as name
+[x] Fn as type ref
+[x] Tuple as type ref
+[x] Struct as type ref
+[x] Var identifier

@@ -1,2 +1,3 @@
-data Unit
-data Unit()
+fn main() {
+  x + 2
+}
