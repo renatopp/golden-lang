@@ -24,6 +24,8 @@ const (
 	TRbracket  = "rbracket"  // ]
 	TSemicolon = "semicolon" // ;
 	TComma     = "comma"     // ,
+	TPipe      = "pipe"      // |
+
 	TPlus      = "plus"      // +
 	TMinus     = "minus"     // -
 	TStar      = "star"      // *
@@ -45,12 +47,14 @@ const (
 
 const (
 	KImport = "import"
+	KData   = "data"
 	KFn     = "fn"
 	KLet    = "let"
 )
 
 var Keywords = []string{
 	KImport,
+	KData,
 	KFn,
 	KLet,
 }
@@ -90,10 +94,10 @@ var SingleCharTokens = map[string]string{
 	"!": TBang,
 	// "?": TQuestion,
 	// ".": TDot,
-	",": TComma,
 	// ":": TColon,
+	",": TComma,
 	"=": TAssign,
-	// "|": TPipe,
+	"|": TPipe,
 	";": TSemicolon,
 	"(": TLparen,
 	")": TRparen,

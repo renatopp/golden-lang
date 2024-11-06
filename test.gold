@@ -1,1 +1,2 @@
-data Sample = Sample
+data Unit
+data Unit()

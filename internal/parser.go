@@ -165,13 +165,17 @@ func (p *parser) parseModule() *Node {
 		p.Skip(TSemicolon, TNewline)
 
 		switch {
-		case p.IsNext(TKeyword, KLet):
-			variable := p.parseVariableDecl()
-			variables = append(variables, variable)
+		case p.IsNext(TKeyword, KData):
+			data := p.parseDataDecl()
+			types = append(types, data)
 			continue
 		case p.IsNext(TKeyword, KFn):
 			fn := p.parseFunctionDecl()
 			functions = append(functions, fn)
+			continue
+		case p.IsNext(TKeyword, KLet):
+			variable := p.parseVariableDecl()
+			variables = append(variables, variable)
 			continue
 		default:
 			p.Expect(TEof)
@@ -185,6 +189,39 @@ func (p *parser) parseModule() *Node {
 		Types:     types,
 		Functions: functions,
 		Variables: variables,
+	})
+}
+
+func (p *parser) parseDataDecl() *Node {
+	p.Expect(TKeyword, KData)
+	data := p.EatToken()
+
+	p.Expect(TTypeIdent)
+	name := p.EatToken()
+
+	constructors := []*Node{}
+	// if p.IsNext(TAssign) {
+	// 	p.EatToken()
+	// 	constructors = p.parseConstructors()
+
+	// } else if p.IsNext(TLparen) {
+	// 	c := p.parseConstructor()
+	// 	if c == nil {
+	// 		panic(lang.NewError(p.PeekToken().Loc, "expecting constructor", ""))
+	// 	}
+	// 	constructors = append(constructors, c)
+
+	// } else {
+	// 	constructors = append(constructors, NewNode(name, &AstConstructor{
+	// 		Name:   name.Literal,
+	// 		Shape:  "unit",
+	// 		Fields: []*Node{},
+	// 	}))
+	// }
+
+	return NewNode(data, &AstDataDecl{
+		Name:         name.Literal,
+		Constructors: constructors,
 	})
 }
 
@@ -224,10 +261,9 @@ func (p *parser) parseVariableDecl() *Node {
 	p.ExpectToken(TVarIdent)
 	name := p.EatToken()
 
-	p.ExpectToken(TTypeIdent, TAssign)
-	var tp *Node
-	if p.IsNextToken(TTypeIdent) {
-		tp = p.parseTypeRef()
+	tp := p.parseTypeRef()
+	if tp == nil {
+		p.ExpectToken(TAssign)
 	}
 
 	var value *Node
@@ -244,6 +280,101 @@ func (p *parser) parseVariableDecl() *Node {
 		Type:       tp,
 		Expression: value,
 	})
+}
+
+func (p *parser) parseConstructors() []*Node {
+	constructors := []*Node{}
+	// // ignore initial newline
+	// if p.IsNextToken(TNewline) {
+	// 	p.Skip(TNewline)
+
+	// 	// ignore initial pipe if newline is present
+	// 	if p.IsNext(TPipe) {
+	// 		p.EatToken()
+	// 		p.Expect(TTypeIdent)
+	// 	}
+	// }
+
+	// // parse constructors
+	// for {
+	// 	if !p.IsNext(TTypeIdent) {
+	// 		break
+	// 	}
+
+	// 	constructor := p.parseConstructor()
+	// 	if constructor == nil {
+	// 		break
+	// 	}
+	// 	constructors = append(constructors, constructor)
+
+	// 	p.Skip(TNewline)
+	// 	if !p.IsNext(TPipe) {
+	// 		break
+	// 	}
+	// 	p.EatToken()
+	// 	p.Expect(TTypeIdent)
+	// }
+	return constructors
+}
+
+func (p *parser) parseConstructor() *Node {
+	// p.ExpectToken(TTypeIdent)
+	// name := p.EatToken()
+	// shape := "unit"
+	// fields := []*Node{}
+
+	// if p.IsNext(TLparen) {
+	// 	p.EatToken()
+	// 	p.Skip(TNewline)
+
+	// 	unit := false
+	// 	if p.IsNext(TRparen) {
+	// 		unit = true
+	// 	}
+
+	// 	i := 0
+	// 	for !unit {
+	// 		if p.IsNext(TRparen, TEof) {
+	// 			break
+	// 		}
+
+	// 		first := p.PeekToken()
+	// 		name := strconv.Itoa(i)
+	// 		if p.IsNext(TVarIdent) {
+	// 			shape = "record"
+	// 			name = p.EatToken().Literal
+	// 		} else {
+	// 			shape = "tuple"
+	// 		}
+
+	// 		tp := p.parseTypeRef()
+
+	// 		if tp == nil {
+	// 			break
+	// 		}
+	// 		fields = append(fields, NewNode(first, &AstField{
+	// 			Name: name,
+	// 			Type: tp,
+	// 		}))
+
+	// 		if p.IsNext(TComma) {
+	// 			p.EatToken()
+	// 		}
+
+	// 		i++
+	// 	}
+
+	// 	p.Skip(TNewline)
+	// 	p.Expect(TRparen)
+	// 	p.EatToken()
+	// }
+
+	// return NewNode(name, &AstConstructor{
+	// 	Name:   name.Literal,
+	// 	Shape:  shape,
+	// 	Fields: fields,
+	// })
+	return nil
 }
 
 func (p *parser) parseParameters() []*Node {

@@ -13,10 +13,10 @@ Parser:
 [x] fn() {}
 [x] fn() Type {}
 [x] fn(Params) Type {}
-[ ] data Name = A
-[ ] data Name = A()
-[ ] data Name = A | B
-[ ] data Name = | A | B
+[x] data Name = A
+[x] data Name = A()
+[x] data Name = A | B
+[x] data Name = | A | B
 [ ] data Name = A(Type, ...)
 [ ] data Name = A(ident Type, ...)
 [ ] data Name(Type, ...)

@@ -68,6 +68,32 @@ func (a *AstModule) Children() []*Node {
 	return appendAll(a.Imports, a.Types, a.Functions, a.Variables)
 }
 
+// Data Declaration
+type AstDataDecl struct {
+	Name         string
+	Constructors []*Node
+}
+
+func (a *AstDataDecl) String() string    { return f("data decl %s", a.Name) }
+func (a *AstDataDecl) Children() []*Node { return a.Constructors }
+
+type AstConstructor struct {
+	Name   string
+	Shape  string // unit, tuple or record
+	Fields []*Node
+}
+
+func (a *AstConstructor) String() string    { return f("constructor %s", a.Name) }
+func (a *AstConstructor) Children() []*Node { return a.Fields }
+
+type AstField struct {
+	Name string
+	Type *Node
+}
+
+func (a *AstField) String() string    { return f("field %s", a.Name) }
+func (a *AstField) Children() []*Node { return []*Node{a.Type} }
+
 // Function Declaration
 type AstFunctionDecl struct {
 	Name       string
