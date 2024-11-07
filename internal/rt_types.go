@@ -2,6 +2,8 @@ package internal
 
 import "strings"
 
+var _type_id = uint64(0)
+
 var (
 	Void   = createPrimitive("Void")
 	Bool   = createPrimitive("Bool")
@@ -12,14 +14,35 @@ var (
 
 // Primitive
 type PrimitiveType struct {
+	id   uint64
 	name string
 }
 
 func NewPrimitiveType(name string) *PrimitiveType {
-	return &PrimitiveType{name}
+	_type_id++
+	return &PrimitiveType{
+		_type_id,
+		name,
+	}
 }
 
 func (t *PrimitiveType) Name() string { return t.name }
+
+func (t *PrimitiveType) Accepts(other RtType) bool {
+	if t == nil || other == nil {
+		return false
+	}
+	prim, ok := other.(*PrimitiveType)
+	if !ok {
+		return false
+	}
+
+	return t.id == prim.id
+}
+
+func (t *PrimitiveType) Default() *Node {
+	return nil
+}
 
 // Function
 type FunctionType struct {
@@ -39,6 +62,14 @@ func (t *FunctionType) Name() string {
 		r += " " + t.ReturnType.Type.Name()
 	}
 	return r
+}
+
+func (t *FunctionType) Accepts(other RtType) bool {
+	return false
+}
+
+func (t *FunctionType) Default() *Node {
+	return nil
 }
 
 func createPrimitive(name string) *Node {

@@ -78,11 +78,11 @@ func (c *Debug) Run(args []string) error {
 	println("## Analyzer Output:\n")
 
 	scope := internal.NewScope()
-	scope.Set("Void", createPrimitive("Void"))
-	scope.Set("Bool", createPrimitive("Bool"))
-	scope.Set("Int", createPrimitive("Int"))
-	scope.Set("Float", createPrimitive("Float"))
-	scope.Set("String", createPrimitive("String"))
+	scope.Set("Void", internal.Void)
+	scope.Set("Bool", internal.Bool)
+	scope.Set("Int", internal.Int)
+	scope.Set("Float", internal.Float)
+	scope.Set("String", internal.String)
 
 	module.Scope = scope.New()
 	err = internal.Analyze(module, module.Scope)
@@ -106,8 +106,4 @@ func (c *Debug) Run(args []string) error {
 	println(module.Scope.String())
 
 	return nil
-}
-
-func createPrimitive(name string) *internal.Node {
-	return internal.NewEmptyNode().WithType(internal.NewPrimitiveType(name))
 }

@@ -175,6 +175,13 @@ func (a *analyzer) resolve(node *Node) {
 	case *AstVarIdent:
 		node.WithType(a.GetOrError(ast.Name).Type)
 
+	// AstDataDecl
+	// AstFunctionType
+	// AstFunctionDecl
+	// AstAccess
+	// AstAppl
+	// ApplArgument
+
 	default:
 		a.Error(node.Token.Loc, "unknown", "unknown node %s", node)
 	}

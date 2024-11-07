@@ -4,6 +4,13 @@
 [ ] Implement `Default` in the RtType to return the default value of a type
 [ ] Test `let x Float`
 
+[ ] AstDataDecl
+[ ] AstFunctionType
+[ ] AstFunctionDecl
+[ ] AstAccess
+[ ] AstAppl
+[ ] ApplArgument
+
 [ ] Load all data before starting
 [ ] Load all functions before starting
 [ ] Validate all data
@@ -11,3 +18,5 @@
 [ ] Validate module lets
 
 [ ] Validate structs and tuples
+
+[ ] Process constants
