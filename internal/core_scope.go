@@ -5,14 +5,16 @@ import "strings"
 type Scope struct {
 	Depth  int
 	Parent *Scope
-	Map    map[string]*Node
+	Values map[string]*Node
+	Types  map[string]RtType
 }
 
 func NewScope() *Scope {
 	return &Scope{
 		Depth:  0,
 		Parent: nil,
-		Map:    map[string]*Node{},
+		Values: map[string]*Node{},
+		Types:  map[string]RtType{},
 	}
 }
 
@@ -20,24 +22,43 @@ func (s *Scope) New() *Scope {
 	return &Scope{
 		Depth:  s.Depth + 1,
 		Parent: s,
-		Map:    map[string]*Node{},
+		Values: map[string]*Node{},
+		Types:  map[string]RtType{},
 	}
 }
 
-func (s *Scope) Set(key string, value *Node) {
-	s.Map[key] = value
+func (s *Scope) SetValue(key string, value *Node) {
+	s.Values[key] = value
 }
 
-func (s *Scope) GetLocal(key string) *Node {
-	return s.Map[key]
+func (s *Scope) SetType(key string, value RtType) {
+	s.Types[key] = value
 }
 
-func (s *Scope) Get(key string) *Node {
-	if value, ok := s.Map[key]; ok {
+func (s *Scope) GetValueLocal(key string) *Node {
+	return s.Values[key]
+}
+
+func (s *Scope) GetTypeLocal(key string) RtType {
+	return s.Types[key]
+}
+
+func (s *Scope) GetValue(key string) *Node {
+	if value, ok := s.Values[key]; ok {
 		return value
 	}
 	if s.Parent != nil {
-		return s.Parent.Get(key)
+		return s.Parent.GetValue(key)
+	}
+	return nil
+}
+
+func (s *Scope) GetType(key string) RtType {
+	if tp, ok := s.Types[key]; ok {
+		return tp
+	}
+	if s.Parent != nil {
+		return s.Parent.GetType(key)
 	}
 	return nil
 }
@@ -50,8 +71,11 @@ func (s *Scope) String() string {
 
 	ident := strings.Repeat("| ", s.Depth+1)
 	r += strings.Repeat("\n| ", s.Depth) + "[scope]\n"
-	for k, v := range s.Map {
-		r += ident + k + " \u2192 " + v.String() + "\n"
+	for k, v := range s.Types {
+		r += ident + "T: " + k + " \u2192 " + v.Name() + "\n"
+	}
+	for k, v := range s.Values {
+		r += ident + "V: " + k + " \u2192 " + oneline(v.String()) + "\n"
 	}
 	return r
 }

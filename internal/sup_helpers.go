@@ -9,6 +9,9 @@ import (
 
 var f = fmt.Sprintf
 var esc = strutils.EscapeNewlines
+var oneline = func(msg string) string {
+	return strings.ReplaceAll(msg, "\n", "")
+}
 
 func appendAll[T any](arrays ...[]T) []T {
 	var out []T

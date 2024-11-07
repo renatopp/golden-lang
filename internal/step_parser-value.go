@@ -142,14 +142,24 @@ func (p *parser) parseFunctionDecl() *Node {
 	tp := p.parseTypeExpression()
 
 	p.ExpectTokens(TLbrace)
-	body := p.parseValueExpression()
+	body := p.parseBlock()
 
-	return NewNode(fn, &AstFunctionDecl{
+	node := NewNode(fn, &AstFunctionDecl{
 		Name:       name,
 		Params:     params,
 		ReturnType: tp,
 		Body:       body,
 	})
+
+	if name != "" {
+		return NewNode(fn, &AstVariableDecl{
+			Name:  name,
+			Type:  nil,
+			Value: node,
+		})
+	}
+
+	return node
 }
 
 func (p *parser) parseFunctionParams() []*FunctionParam {
@@ -277,7 +287,11 @@ func (p *parser) parseTypeExpressionAsValue() *Node {
 	if tp == nil {
 		p.Error(p.PeekToken().Loc, "unexpected token", "expected type expression")
 	}
-	return tp
+	return NewNode(tp.Token, &AstApply{
+		Shape:  "unit",
+		Args:   []*ApplArgument{},
+		Target: tp,
+	})
 }
 
 // Parse a binary operator expression. Example: `x + y`
@@ -314,7 +328,7 @@ func (p *parser) parseAppl(left *Node) *Node {
 	shape, args := p.parseApplArguments()
 	p.ExpectTokens(TRparen)
 	p.EatToken()
-	return NewNode(first, &AstAppl{
+	return NewNode(first, &AstApply{
 		Shape:  shape,
 		Target: left,
 		Args:   args,
@@ -329,7 +343,7 @@ func (p *parser) parseAnonymousDataAppl() *Node {
 	p.ExpectTokens(TRparen)
 	p.EatToken()
 
-	return NewNode(lparen, &AstAppl{
+	return NewNode(lparen, &AstApply{
 		Shape: shape,
 		Args:  args,
 	})

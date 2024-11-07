@@ -44,7 +44,7 @@ func (a *AstFunctionDecl) String() string {
 
 	type_ := ""
 	if a.ReturnType != nil {
-		type_ = ident(a.ReturnType.String(), 1)
+		type_ = " " + ident(a.ReturnType.String(), 1)
 	}
 
 	return f("fn %s(%s) %s %s", a.Name, strings.Join(params, ", "), type_, ident(a.Body.String(), 1))
@@ -116,14 +116,14 @@ func (a *AstAccess) String() string {
 }
 
 // Type Application
-type AstAppl struct {
+type AstApply struct {
 	Shape  string // unit, tuple, or record
 	Target *Node  // nullable, type OR value expression
 	Args   []*ApplArgument
 }
 
-func (a *AstAppl) Kind() string { return "value" }
-func (a *AstAppl) String() string {
+func (a *AstApply) Kind() string { return "value" }
+func (a *AstApply) String() string {
 	args := []string{}
 	for _, arg := range a.Args {
 		if arg.Name != "" {

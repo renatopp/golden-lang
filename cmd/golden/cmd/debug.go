@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,14 +76,20 @@ func (c *Debug) Run(args []string) error {
 	println(module.Temp.String())
 	println("\n")
 
+	bytes, err := json.MarshalIndent(module, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling module:\n%v", err)
+	}
+	println(string(bytes))
+
 	println("## Analyzer Output:\n")
 
 	scope := internal.NewScope()
-	scope.Set("Void", internal.Void)
-	scope.Set("Bool", internal.Bool)
-	scope.Set("Int", internal.Int)
-	scope.Set("Float", internal.Float)
-	scope.Set("String", internal.String)
+	scope.SetType("Void", internal.Void)
+	scope.SetType("Bool", internal.Bool)
+	scope.SetType("Int", internal.Int)
+	scope.SetType("Float", internal.Float)
+	scope.SetType("String", internal.String)
 
 	module.Scope = scope.New()
 	err = internal.Analyze(module, module.Scope)

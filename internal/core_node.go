@@ -9,6 +9,12 @@ type AstData interface {
 
 type RtType interface {
 	Name() string
+	Accepts(other RtType) bool
+	Default() AstData
+}
+
+type RtTypeApplicable interface {
+	Apply(args []RtType) (RtType, error)
 }
 
 type Node struct {
@@ -25,9 +31,12 @@ func NewEmptyNode() *Node {
 	return &Node{}
 }
 
-func (n *Node) ReplaceBy(node *Node) {
-	n.Token = node.Token
-	n.Data = node.Data
+func (n *Node) Copy() *Node {
+	return &Node{
+		Token: n.Token,
+		Data:  n.Data,
+		Type:  n.Type,
+	}
 }
 
 func (n *Node) WithToken(token *lang.Token) *Node {
