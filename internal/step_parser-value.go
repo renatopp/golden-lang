@@ -145,10 +145,10 @@ func (p *parser) parseFunctionDecl() *Node {
 	body := p.parseValueExpression()
 
 	return NewNode(fn, &AstFunctionDecl{
-		Name:   name,
-		Params: params,
-		Type:   tp,
-		Body:   body,
+		Name:       name,
+		Params:     params,
+		ReturnType: tp,
+		Body:       body,
 	})
 }
 
@@ -259,7 +259,7 @@ func (p *parser) parseBlock() *Node {
 	p.ExpectTokens(TRbrace)
 	p.EatToken()
 
-	return NewNode(lbrace, &AstBlock{Nodes: nodes})
+	return NewNode(lbrace, &AstBlock{Expressions: nodes})
 }
 
 // Parse a unary operator. Example: `+x`

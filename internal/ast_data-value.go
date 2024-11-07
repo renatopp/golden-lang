@@ -18,7 +18,7 @@ func (a *AstVariableDecl) String() string {
 	type_ := ""
 	value_ := ""
 	if a.Type != nil {
-		type_ = ident(a.Type.String(), 1)
+		type_ = " " + ident(a.Type.String(), 1)
 	}
 	if a.Value != nil {
 		value_ = " = " + ident(a.Value.String(), 1)
@@ -29,10 +29,10 @@ func (a *AstVariableDecl) String() string {
 
 // Function Declaration
 type AstFunctionDecl struct {
-	Name   string
-	Params []*FunctionParam
-	Type   *Node // nullable, type expression
-	Body   *Node // value expression
+	Name       string
+	Params     []*FunctionParam
+	ReturnType *Node // nullable, type expression
+	Body       *Node // value expression
 }
 
 func (a *AstFunctionDecl) Kind() string { return "value" }
@@ -43,8 +43,8 @@ func (a *AstFunctionDecl) String() string {
 	}
 
 	type_ := ""
-	if a.Type != nil {
-		type_ = ident(a.Type.String(), 1)
+	if a.ReturnType != nil {
+		type_ = ident(a.ReturnType.String(), 1)
 	}
 
 	return f("fn %s(%s) %s %s", a.Name, strings.Join(params, ", "), type_, ident(a.Body.String(), 1))
@@ -57,13 +57,13 @@ type FunctionParam struct {
 
 // Block
 type AstBlock struct {
-	Nodes []*Node
+	Expressions []*Node
 }
 
 func (a *AstBlock) Kind() string { return "value" }
 func (a *AstBlock) String() string {
 	expr := []string{}
-	for _, n := range a.Nodes {
+	for _, n := range a.Expressions {
 		expr = append(expr, ident(n.String(), 1))
 	}
 	return f("{ %s }", strings.Join(expr, "; "))

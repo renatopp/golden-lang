@@ -65,8 +65,8 @@ func (p *parser) ExpectLiteralsOf(kind string, lit ...string) {
 	p.ExpectLiterals(lit...)
 }
 
-func (p *parser) Error(loc lang.Loc, kind string, msg string, v ...any) {
-	panic(lang.NewError(loc, kind, fmt.Sprintf(msg, v...)))
+func (p *parser) Error(loc lang.Loc, kind, msg string, args ...any) {
+	panic(lang.NewError(loc, kind, fmt.Sprintf(msg, args...)))
 }
 
 func (p *parser) SkipNewlines() {
@@ -98,6 +98,8 @@ func (p *parser) parseModule() *Module {
 			module.Functions = append(module.Functions, p.parseValueExpression())
 		case p.IsNextLiteralsOf(TKeyword, KLet):
 			module.Variables = append(module.Variables, p.parseValueExpression())
+		case p.IsNextTokens(TLbrace):
+			module.Temp = p.parseValueExpression()
 		default:
 			p.Error(
 				p.PeekToken().Loc,

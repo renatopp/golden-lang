@@ -6,8 +6,10 @@ type Import struct {
 }
 
 type Module struct {
+	Scope     *Scope
 	Imports   []*Import
 	Types     []*Node
 	Functions []*Node
 	Variables []*Node
+	Temp      *Node
 }

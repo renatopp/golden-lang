@@ -23,6 +23,14 @@ func isData[T any](node *Node) bool {
 	return ok
 }
 
+func asData[T any](node *Node) T {
+	v, ok := node.Data.(T)
+	if !ok {
+		panic(f("Expected %T, got %T", v, node.Data))
+	}
+	return v
+}
+
 func ident(s string, i int) string {
 	return strings.ReplaceAll(s, "\n", "\n"+strings.Repeat("  ", i))
 }

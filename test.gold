@@ -1,15 +1,3 @@
-fn add(a Int, b Int) Int {
-  a + b
+{
+  let x Float
 }
-
-fn multAdd(x Int) Fn(Int, Int) Int {
-  fn(y Int, z Int) Int {
-    x * {y + z}
-  }
-}
-
-fn main() {
-  multAdd(2)(3, 4)()
-}
-
-let other = fn() {}

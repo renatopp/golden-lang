@@ -20,7 +20,7 @@ func (a *AstDataDecl) String() string {
 	for _, c := range a.Constructors {
 		fields := []string{}
 		for _, field := range c.Fields {
-			fields = append(fields, f("%s=%s, ", field.Name, ident(field.Type.String(), 2)))
+			fields = append(fields, f("%s %s", field.Name, ident(field.Type.String(), 2)))
 		}
 		constr = append(constr, f("%s(%s)", c.Name, strings.Join(fields, ", ")))
 	}
