@@ -23,7 +23,7 @@ func (p *parser) registerValueExpressions() {
 	p.ValueSolver.RegisterPrefixFn(TString, p.parseString)
 	p.ValueSolver.RegisterPrefixFn(TVarIdent, p.parseVarIdent)
 	p.ValueSolver.RegisterPrefixFn(TTypeIdent, p.parseTypeExpressionAsValue)
-	p.ValueSolver.RegisterPrefixFn(TLparen, p.parseAnonymousDataAppl)
+	p.ValueSolver.RegisterPrefixFn(TLparen, p.parseAnonymousDataApply)
 
 	p.ValueSolver.RegisterInfixFn(TPlus, p.parseBinaryOperator)
 	p.ValueSolver.RegisterInfixFn(TMinus, p.parseBinaryOperator)
@@ -41,7 +41,7 @@ func (p *parser) registerValueExpressions() {
 	p.ValueSolver.RegisterInfixFn(TGt, p.parseBinaryOperator)
 	p.ValueSolver.RegisterInfixFn(TGte, p.parseBinaryOperator)
 	p.ValueSolver.RegisterInfixFn(TDot, p.parseAccess)
-	p.ValueSolver.RegisterInfixFn(TLparen, p.parseAppl)
+	p.ValueSolver.RegisterInfixFn(TLparen, p.parseApply)
 
 }
 
@@ -289,7 +289,7 @@ func (p *parser) parseTypeExpressionAsValue() *Node {
 	}
 	return NewNode(tp.Token, &AstApply{
 		Shape:  "unit",
-		Args:   []*ApplArgument{},
+		Args:   []*ApplyArgument{},
 		Target: tp,
 	})
 }
@@ -322,10 +322,10 @@ func (p *parser) parseAccess(left *Node) *Node {
 }
 
 // Parse an application. Example: `f(x, y)` or `F(x=2, y=3)`
-func (p *parser) parseAppl(left *Node) *Node {
+func (p *parser) parseApply(left *Node) *Node {
 	p.ExpectTokens(TLparen)
 	first := p.EatToken()
-	shape, args := p.parseApplArguments()
+	shape, args := p.parseApplyArguments()
 	p.ExpectTokens(TRparen)
 	p.EatToken()
 	return NewNode(first, &AstApply{
@@ -335,11 +335,11 @@ func (p *parser) parseAppl(left *Node) *Node {
 	})
 }
 
-// Parse an anonymous data application. Example: `(Int, String)`
-func (p *parser) parseAnonymousDataAppl() *Node {
+// Parse an anonymous data application. Example: `(2, 4)`
+func (p *parser) parseAnonymousDataApply() *Node {
 	p.ExpectTokens(TLparen)
 	lparen := p.EatToken()
-	shape, args := p.parseApplArguments()
+	shape, args := p.parseApplyArguments()
 	p.ExpectTokens(TRparen)
 	p.EatToken()
 
@@ -350,8 +350,8 @@ func (p *parser) parseAnonymousDataAppl() *Node {
 }
 
 // Parse a sequence of type application arguments. Example: `1, 2` or `x=2, s=2`
-func (p *parser) parseApplArguments() (shape string, args []*ApplArgument) {
-	args = []*ApplArgument{}
+func (p *parser) parseApplyArguments() (shape string, args []*ApplyArgument) {
+	args = []*ApplyArgument{}
 	p.SkipNewlines()
 
 	n0 := p.PeekToken()
@@ -371,7 +371,7 @@ func (p *parser) parseApplArguments() (shape string, args []*ApplArgument) {
 			if expr == nil {
 				p.Error(p.PeekToken().Loc, "unexpected token", "expected value expression")
 			}
-			args = append(args, &ApplArgument{
+			args = append(args, &ApplyArgument{
 				Token: name,
 				Name:  name.Literal,
 				Value: expr,
@@ -391,7 +391,7 @@ func (p *parser) parseApplArguments() (shape string, args []*ApplArgument) {
 			if expr == nil {
 				break
 			}
-			args = append(args, &ApplArgument{
+			args = append(args, &ApplyArgument{
 				Token: first,
 				Value: expr,
 			})
@@ -405,26 +405,4 @@ func (p *parser) parseApplArguments() (shape string, args []*ApplArgument) {
 
 	p.SkipNewlines()
 	return shape, args
-}
-
-// Parse any sequence of expression without parenthesis. Example `2, 3“
-func (p *parser) parseExpressionList() []*Node {
-	p.SkipNewlines()
-
-	expressions := []*Node{}
-	for {
-		expr := p.parseValueExpression()
-		if expr == nil {
-			break
-		}
-		expressions = append(expressions, expr)
-
-		if !p.IsNextTokens(TComma, TNewline) {
-			break
-		}
-
-		p.SkipSeparator(TComma)
-	}
-
-	return expressions
 }

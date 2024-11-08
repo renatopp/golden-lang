@@ -12,8 +12,8 @@ type AstDataDecl struct {
 	Constructors []*DataConstructor
 }
 
-func (a *AstDataDecl) Kind() string { return "type" }
-
+func (a *AstDataDecl) Kind() string  { return "type" }
+func (a *AstDataDecl) Label() string { return f("data-decl %s", a.Name) }
 func (a *AstDataDecl) String() string {
 	r := f("data %s = ", a.Name)
 	constr := []string{}
@@ -25,6 +25,15 @@ func (a *AstDataDecl) String() string {
 		constr = append(constr, f("%s(%s)", c.Name, strings.Join(fields, ", ")))
 	}
 	return r + strings.Join(constr, " | ")
+}
+func (a *AstDataDecl) Children() []*Node {
+	children := []*Node{}
+	for _, c := range a.Constructors {
+		for _, f := range c.Fields {
+			children = append(children, f.Type)
+		}
+	}
+	return children
 }
 
 type DataConstructor struct {
@@ -45,8 +54,10 @@ type AstTypeIdent struct {
 	Name string
 }
 
-func (a *AstTypeIdent) Kind() string   { return "type" }
-func (a *AstTypeIdent) String() string { return f("%s", a.Name) }
+func (a *AstTypeIdent) Kind() string      { return "type" }
+func (a *AstTypeIdent) Label() string     { return f("type-ident %s", a.Name) }
+func (a *AstTypeIdent) String() string    { return f("%s", a.Name) }
+func (a *AstTypeIdent) Children() []*Node { return []*Node{} }
 
 // Function Type
 type AstFunctionType struct {
@@ -54,13 +65,22 @@ type AstFunctionType struct {
 	ReturnType *Node // Type Expression
 }
 
-func (a *AstFunctionType) Kind() string { return "type" }
+func (a *AstFunctionType) Kind() string  { return "type" }
+func (a *AstFunctionType) Label() string { return f("function-type") }
 func (a *AstFunctionType) String() string {
 	params := []string{}
 	for _, arg := range a.Params {
 		params = append(params, f("%s", ident(arg.Type.String(), 1)))
 	}
 	return f("Fn (%s) %s", strings.Join(params, ", "), ident(a.ReturnType.String(), 1))
+}
+func (a *AstFunctionType) Children() []*Node {
+	children := []*Node{}
+	for _, arg := range a.Params {
+		children = append(children, arg.Type)
+	}
+	children = append(children, a.ReturnType)
+	return children
 }
 
 type FunctionTypeParam struct {

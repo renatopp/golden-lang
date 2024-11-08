@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/renatopp/golden/internal"
 )
@@ -64,23 +64,22 @@ func (c *Debug) Run(args []string) error {
 	}
 
 	for _, decl := range module.Types {
-		println(decl.String())
+		println("#", decl.String())
+		decl.Traverse(printNode)
 	}
 	for _, decl := range module.Functions {
-		println(decl.String())
+		println("#", decl.String())
+		decl.Traverse(printNode)
 	}
 	for _, decl := range module.Variables {
-		println(decl.String())
+		println("#", decl.String())
+		decl.Traverse(printNode)
 	}
 
-	println(module.Temp.String())
+	println("#", module.Temp.String())
+	module.Temp.Traverse(printNode)
+
 	println("\n")
-
-	bytes, err := json.MarshalIndent(module, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshaling module:\n%v", err)
-	}
-	println(string(bytes))
 
 	println("## Analyzer Output:\n")
 
@@ -113,4 +112,8 @@ func (c *Debug) Run(args []string) error {
 	println(module.Scope.String())
 
 	return nil
+}
+
+func printNode(node *internal.Node, level int) {
+	println(strings.Repeat("  ", level) + node.Label())
 }

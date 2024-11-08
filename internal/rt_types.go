@@ -21,6 +21,11 @@ type baseType struct {
 	id uint64
 }
 
+func newBaseType() baseType {
+	_type_id++
+	return baseType{_type_id}
+}
+
 func (t baseType) Id() uint64 { return t.id }
 
 // Primitive Type
@@ -62,6 +67,14 @@ type FunctionType struct {
 	baseType
 	args []RtType
 	ret  RtType
+}
+
+func NewFunctionType(args []RtType, ret RtType) *FunctionType {
+	return &FunctionType{
+		baseType: newBaseType(),
+		args:     args,
+		ret:      ret,
+	}
 }
 
 func (t *FunctionType) Name() string {
@@ -112,3 +125,51 @@ func (t *FunctionType) Apply(args []RtType) (RtType, error) {
 	return t.ret, nil
 
 }
+
+// Module Type
+type ModuleType struct {
+	baseType
+	name string
+}
+
+func NewModuleType(name string) *ModuleType {
+	return &ModuleType{
+		baseType: newBaseType(),
+		name:     name,
+	}
+}
+
+func (t *ModuleType) Name() string              { return t.name }
+func (t *ModuleType) Accepts(other RtType) bool { return false }
+func (t *ModuleType) Default() AstData          { panic("Module does not have a default value") }
+
+// // Data Type
+// type DataType struct {
+// 	baseType
+// 	name string
+// }
+
+// func NewDataType(name string) *DataType {
+// 	return &DataType{
+// 		baseType: newBaseType(),
+// 		name:     name,
+// 	}
+// }
+
+// func (t *DataType) Name() string { return t.name }
+
+// func (t *DataType) Accepts(other RtType) bool {
+// 	if t == nil || other == nil {
+// 		return false
+// 	}
+// 	dt, ok := other.(*DataType)
+// 	if !ok {
+// 		return false
+// 	}
+
+// 	return t.id == dt.id
+// }
+
+// func (t *DataType) Default() AstData {
+// 	panic("Data does not have a default value")
+// }

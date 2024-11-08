@@ -4,7 +4,9 @@ import "github.com/renatopp/golden/lang"
 
 type AstData interface {
 	Kind() string // type or value
+	Label() string
 	String() string
+	Children() []*Node
 }
 
 type RtType interface {
@@ -52,6 +54,21 @@ func (n *Node) WithData(data AstData) *Node {
 func (n *Node) WithType(tp RtType) *Node {
 	n.Type = tp
 	return n
+}
+
+func (n *Node) Traverse(fn func(*Node, int)) {
+	n.traverse(fn, 0)
+}
+
+func (n *Node) traverse(fn func(*Node, int), depth int) {
+	fn(n, depth)
+	for _, child := range n.Data.Children() {
+		child.traverse(fn, depth+1)
+	}
+}
+
+func (n *Node) Label() string {
+	return f("[%s]", n.Data.Label())
 }
 
 func (n *Node) String() string {
