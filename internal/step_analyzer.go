@@ -23,12 +23,31 @@ func Analyze(module *Module, scope *Scope) error {
 	return nil
 }
 
+// func PreAnalyze(module *Module, scope *Scope) error {
+// 	analyzer := &analyzer{
+// 		ErrorData:   lang.NewErrorData(),
+// 		module:      module,
+// 		scope:       scope,
+// 		moduleScope: scope,
+// 		scopeStack:  []*Scope{scope},
+// 	}
+// 	analyzer.Analyze()
+// 	if analyzer.HasErrors() {
+// 		return lang.NewErrorList(analyzer.Errors())
+// 	}
+// 	return nil
+// }
+
 type analyzer struct {
 	*lang.ErrorData
 	module      *Module
 	scope       *Scope
 	moduleScope *Scope
 	scopeStack  []*Scope
+}
+
+func (a *analyzer) PreAnalyze() {
+
 }
 
 func (a *analyzer) Analyze() {

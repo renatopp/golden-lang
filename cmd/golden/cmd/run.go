@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/renatopp/golden/internal"
 	"github.com/renatopp/golden/internal/logger"
@@ -32,7 +33,7 @@ func (c *Run) Run(args []string) error {
 	err := builder.Build(internal.BuildOptions{
 		InputFilePath:  args[0],
 		OutputFilePath: "out",
-		NumWorkers:     4, //runtime.NumCPU(),
+		NumWorkers:     runtime.NumCPU(),
 	})
 
 	if err != nil {

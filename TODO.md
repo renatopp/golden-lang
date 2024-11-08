@@ -1,5 +1,10 @@
 # TODO
 
+# Build
+[x] Enqueue input file to process
+[x] Parse all files in package
+[ ] Enqueue imported files
+
 # Analyzer
 [x] Correct handle the scope switch
 [x] Remove data types for now

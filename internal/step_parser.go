@@ -100,6 +100,8 @@ func (p *parser) parseModule() *Module {
 			module.Variables = append(module.Variables, p.parseValueExpression())
 		case p.IsNextTokens(TLbrace):
 			module.Temp = p.parseValueExpression()
+		case p.IsNextTokens(TEof):
+			// EOF
 		default:
 			p.Error(
 				p.PeekToken().Loc,
