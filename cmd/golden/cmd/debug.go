@@ -79,36 +79,37 @@ func (c *Debug) Run(args []string) error {
 
 	println("\n")
 
-	println("## Analyzer Output:\n")
+	// println("## Analyzer Output:\n")
 
-	scope := internal.NewScope()
-	scope.SetType("Void", internal.Void)
-	scope.SetType("Bool", internal.Bool)
-	scope.SetType("Int", internal.Int)
-	scope.SetType("Float", internal.Float)
-	scope.SetType("String", internal.String)
+	// scope := internal.NewScope()
+	// scope.SetType("Void", internal.Void)
+	// scope.SetType("Bool", internal.Bool)
+	// scope.SetType("Int", internal.Int)
+	// scope.SetType("Float", internal.Float)
+	// scope.SetType("String", internal.String)
 
-	module := internal.NewModule()
-	module.Scope = scope
-	module.Ast = ast
-	module.Node = root
-	err = module.Analyzer.Analyze()
-	if err != nil {
-		return fmt.Errorf("analyzing module:\n%v", err)
-	}
+	// module := internal.NewModule()
+	// module.Scope = scope
+	// module.Ast = ast
+	// module.Node = root
+	// module.Analyzer = internal.NewAnalyzer(module)
+	// err = module.Analyzer.Analyze()
+	// if err != nil {
+	// 	return fmt.Errorf("analyzing module:\n%v", err)
+	// }
 
-	for _, decl := range ast.Types {
-		println(decl.String())
-	}
-	for _, decl := range ast.Functions {
-		println(decl.String())
-	}
-	for _, decl := range ast.Variables {
-		println(decl.String())
-	}
+	// for _, decl := range ast.Types {
+	// 	println(decl.String())
+	// }
+	// for _, decl := range ast.Functions {
+	// 	println(decl.String())
+	// }
+	// for _, decl := range ast.Variables {
+	// 	println(decl.String())
+	// }
 
-	println()
-	println(module.Scope.String())
+	// println()
+	// println(module.Scope.String())
 
 	return nil
 }
