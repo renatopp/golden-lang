@@ -92,7 +92,7 @@ func (c *Debug) Run(args []string) error {
 	module.Scope = scope
 	module.Ast = ast
 	module.Node = root
-	err = internal.Analyze(module)
+	err = module.Analyzer.Analyze()
 	if err != nil {
 		return fmt.Errorf("analyzing module:\n%v", err)
 	}

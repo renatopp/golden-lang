@@ -18,6 +18,7 @@ type Module struct {
 	Ast       *AstModule
 	Node      *Node
 	DependsOn *SyncMap[string, *Module]
+	Analyzer  *Analyzer
 }
 
 func NewModule() *Module {

@@ -7,39 +7,17 @@ import (
 )
 
 // Type check the module
-func Analyze(module *Module) error {
-	analyzer := &analyzer{
+func NewAnalyzer(module *Module) *Analyzer {
+	return &Analyzer{
 		ErrorData:   lang.NewErrorData(),
 		module:      module,
 		scope:       module.Scope,
 		moduleScope: module.Scope,
 		scopeStack:  []*Scope{module.Scope},
 	}
-	analyzer.Analyze()
-	if analyzer.HasErrors() {
-		return lang.NewErrorList(analyzer.Errors())
-	}
-	return nil
 }
 
-// Pre-analyze the module, adding types and function signatures to the module
-// scope, so they can be used later in the analysis
-func PreAnalyze(module *Module) error {
-	analyzer := &analyzer{
-		ErrorData:   lang.NewErrorData(),
-		module:      module,
-		scope:       module.Scope,
-		moduleScope: module.Scope,
-		scopeStack:  []*Scope{module.Scope},
-	}
-	analyzer.PreAnalyze()
-	if analyzer.HasErrors() {
-		return lang.NewErrorList(analyzer.Errors())
-	}
-	return nil
-}
-
-type analyzer struct {
+type Analyzer struct {
 	*lang.ErrorData
 	module      *Module
 	scope       *Scope
@@ -47,23 +25,40 @@ type analyzer struct {
 	scopeStack  []*Scope
 }
 
-func (a *analyzer) PreAnalyze() {
-	a.WithRecovery(func() {
-		a.preAnalyze()
-	})
+// Pre-analyze the module, adding types and function signatures to the module
+// scope, so they can be used later in the analysis
+func (a *Analyzer) PreAnalyzeTypes() error {
+	a.WithRecovery(a.preAnalyzeFunctions)
+
+	if a.HasErrors() {
+		return lang.NewErrorList(a.Errors())
+	}
+	return nil
 }
 
-func (a *analyzer) Analyze() {
-	a.WithRecovery(func() {
-		a.analyze()
-	})
+func (a *Analyzer) PreAnalyzeFunctions() error {
+	a.WithRecovery(a.preAnalyzeFunctions)
+
+	if a.HasErrors() {
+		return lang.NewErrorList(a.Errors())
+	}
+	return nil
 }
 
-func (a *analyzer) Error(loc lang.Loc, kind, msg string, args ...any) {
+func (a *Analyzer) Analyze() error {
+	a.WithRecovery(a.analyze)
+
+	if a.HasErrors() {
+		return lang.NewErrorList(a.Errors())
+	}
+	return nil
+}
+
+func (a *Analyzer) Error(loc lang.Loc, kind, msg string, args ...any) {
 	panic(lang.NewError(loc, kind, fmt.Sprintf(msg, args...)))
 }
 
-func (a *analyzer) GetValueOrError(name string) *Node {
+func (a *Analyzer) GetValueOrError(name string) *Node {
 	node := a.scope.GetValue(name)
 	if node == nil {
 		a.Error(lang.Loc{}, "undefined", "undefined identifier %s", name)
@@ -71,7 +66,7 @@ func (a *analyzer) GetValueOrError(name string) *Node {
 	return node
 }
 
-func (a *analyzer) GetTypeOrError(name string) RtType {
+func (a *Analyzer) GetTypeOrError(name string) RtType {
 	tp := a.scope.GetType(name)
 	if tp == nil {
 		a.Error(lang.Loc{}, "undefined", "undefined identifier %s", name)
@@ -79,7 +74,7 @@ func (a *analyzer) GetTypeOrError(name string) RtType {
 	return tp
 }
 
-func (a *analyzer) ExpectMatchingTypes(nodes ...*Node) {
+func (a *Analyzer) ExpectMatchingTypes(nodes ...*Node) {
 	if len(nodes) == 0 {
 		return
 	}
@@ -109,7 +104,7 @@ func (a *analyzer) ExpectMatchingTypes(nodes ...*Node) {
 	}
 }
 
-func (a *analyzer) ExpectTypeToBeAnyOf(base *Node, nodes ...RtType) {
+func (a *Analyzer) ExpectTypeToBeAnyOf(base *Node, nodes ...RtType) {
 	for _, node := range nodes {
 		if base.Type.Accepts(node) {
 			return
@@ -118,12 +113,12 @@ func (a *analyzer) ExpectTypeToBeAnyOf(base *Node, nodes ...RtType) {
 	a.Error(base.Token.Loc, "type", "expected types %s, got %s", nodes, base.Type)
 }
 
-func (a *analyzer) pushScope(scope *Scope) {
+func (a *Analyzer) pushScope(scope *Scope) {
 	a.scopeStack = append(a.scopeStack, a.scope)
 	a.scope = scope
 }
 
-func (a *analyzer) popScope() *Scope {
+func (a *Analyzer) popScope() *Scope {
 	if len(a.scopeStack) == 1 {
 		panic("no scope to pop")
 	}
@@ -132,7 +127,7 @@ func (a *analyzer) popScope() *Scope {
 	return a.scope
 }
 
-func (a *analyzer) preAnalyze() {
+func (a *Analyzer) preAnalyzeFunctions() {
 	for _, node := range a.module.Ast.Types {
 		a.preResolve(node)
 	}
@@ -141,7 +136,7 @@ func (a *analyzer) preAnalyze() {
 	}
 }
 
-func (a *analyzer) analyze() {
+func (a *Analyzer) analyze() {
 	for _, node := range a.module.Ast.Functions {
 		a.resolveValue(node)
 	}
@@ -153,7 +148,7 @@ func (a *analyzer) analyze() {
 
 // ---------------------------------------------------------------------
 
-func (a *analyzer) preResolve(node *Node) *Node {
+func (a *Analyzer) preResolve(node *Node) *Node {
 	switch ast := node.Data.(type) {
 	case *AstDataDecl:
 		//
@@ -180,7 +175,7 @@ func (a *analyzer) preResolve(node *Node) *Node {
 
 // ---------------------------------------------------------------------
 
-func (a *analyzer) resolveType(node *Node) *Node {
+func (a *Analyzer) resolveType(node *Node) *Node {
 	switch ast := node.Data.(type) {
 	case *AstTypeIdent:
 		a.resolveTypeIdentAsType(node, ast)
@@ -195,11 +190,11 @@ func (a *analyzer) resolveType(node *Node) *Node {
 	return node
 }
 
-func (a *analyzer) resolveTypeIdentAsType(node *Node, ast *AstTypeIdent) {
+func (a *Analyzer) resolveTypeIdentAsType(node *Node, ast *AstTypeIdent) {
 	node.WithType(a.GetTypeOrError(ast.Name))
 }
 
-func (a *analyzer) resolveFunctionType(node *Node, ast *AstFunctionType) {
+func (a *Analyzer) resolveFunctionType(node *Node, ast *AstFunctionType) {
 	params := []RtType{}
 	for _, param := range ast.Params {
 		params = append(params, a.resolveType(param.Type).Type)
@@ -214,7 +209,7 @@ func (a *analyzer) resolveFunctionType(node *Node, ast *AstFunctionType) {
 }
 
 // Anonymous types
-func (a *analyzer) resolveTypeDecl(node *Node, ast *AstDataDecl) {
+func (a *Analyzer) resolveTypeDecl(node *Node, ast *AstDataDecl) {
 	// for _, c := range ast.Constructors {
 	// 	for _, f := range c.Fields {
 	// 		a.resolveType(f.Type)
@@ -226,7 +221,7 @@ func (a *analyzer) resolveTypeDecl(node *Node, ast *AstDataDecl) {
 
 // ---------------------------------------------------------------------
 
-func (a *analyzer) resolveValue(node *Node) *Node {
+func (a *Analyzer) resolveValue(node *Node) *Node {
 	switch ast := node.Data.(type) {
 	case *AstBlock:
 		a.resolveBlock(node, ast)
@@ -274,7 +269,7 @@ func (a *analyzer) resolveValue(node *Node) *Node {
 	return node
 }
 
-func (a *analyzer) resolveBlock(node *Node, ast *AstBlock) {
+func (a *Analyzer) resolveBlock(node *Node, ast *AstBlock) {
 	node.WithType(Void)
 	for _, expr := range ast.Expressions {
 		a.resolveValue(expr)
@@ -282,23 +277,23 @@ func (a *analyzer) resolveBlock(node *Node, ast *AstBlock) {
 	}
 }
 
-func (a *analyzer) resolveBool(node *Node, ast *AstBool) {
+func (a *Analyzer) resolveBool(node *Node, ast *AstBool) {
 	node.WithType(Bool)
 }
 
-func (a *analyzer) resolveInt(node *Node, ast *AstInt) {
+func (a *Analyzer) resolveInt(node *Node, ast *AstInt) {
 	node.WithType(Int)
 }
 
-func (a *analyzer) resolveFloat(node *Node, ast *AstFloat) {
+func (a *Analyzer) resolveFloat(node *Node, ast *AstFloat) {
 	node.WithType(Float)
 }
 
-func (a *analyzer) resolveString(node *Node, ast *AstString) {
+func (a *Analyzer) resolveString(node *Node, ast *AstString) {
 	node.WithType(String)
 }
 
-func (a *analyzer) resolveUnaryOp(node *Node, ast *AstUnaryOp) {
+func (a *Analyzer) resolveUnaryOp(node *Node, ast *AstUnaryOp) {
 	a.resolveValue(ast.Right)
 
 	switch ast.Operator {
@@ -313,7 +308,7 @@ func (a *analyzer) resolveUnaryOp(node *Node, ast *AstUnaryOp) {
 	}
 }
 
-func (a *analyzer) resolveBinaryOp(node *Node, ast *AstBinaryOp) {
+func (a *Analyzer) resolveBinaryOp(node *Node, ast *AstBinaryOp) {
 	a.resolveValue(ast.Left)
 	a.resolveValue(ast.Right)
 
@@ -351,15 +346,15 @@ func (a *analyzer) resolveBinaryOp(node *Node, ast *AstBinaryOp) {
 	}
 }
 
-func (a *analyzer) resolveTypeIdentAsValue(node *Node, ast *AstTypeIdent) {
+func (a *Analyzer) resolveTypeIdentAsValue(node *Node, ast *AstTypeIdent) {
 	node.WithType(a.GetValueOrError(ast.Name).Type)
 }
 
-func (a *analyzer) resolveVarIdent(node *Node, ast *AstVarIdent) {
+func (a *Analyzer) resolveVarIdent(node *Node, ast *AstVarIdent) {
 	node.WithType(a.GetValueOrError(ast.Name).Type)
 }
 
-func (a *analyzer) resolveVariableDecl(node *Node, ast *AstVariableDecl) {
+func (a *Analyzer) resolveVariableDecl(node *Node, ast *AstVariableDecl) {
 	if ast.Type != nil {
 		a.resolveType(ast.Type)
 	}
@@ -377,7 +372,7 @@ func (a *analyzer) resolveVariableDecl(node *Node, ast *AstVariableDecl) {
 	a.scope.SetValue(ast.Name, ast.Value)
 }
 
-func (a *analyzer) resolveFunctionDecl(node *Node, ast *AstFunctionDecl) {
+func (a *Analyzer) resolveFunctionDecl(node *Node, ast *AstFunctionDecl) {
 	var tp *FunctionType
 	// If not already pre-analyzed
 	if node.Type != nil {
@@ -408,7 +403,7 @@ func (a *analyzer) resolveFunctionDecl(node *Node, ast *AstFunctionDecl) {
 	a.scope.SetValue(ast.Name, node)
 }
 
-func (a *analyzer) resolveApply(node *Node, ast *AstApply) {
+func (a *Analyzer) resolveApply(node *Node, ast *AstApply) {
 	if ast.Target == nil {
 		a.resolveAnonymousApply(node, ast)
 	} else {
@@ -416,11 +411,11 @@ func (a *analyzer) resolveApply(node *Node, ast *AstApply) {
 	}
 }
 
-func (a *analyzer) resolveAnonymousApply(node *Node, ast *AstApply) {
+func (a *Analyzer) resolveAnonymousApply(node *Node, ast *AstApply) {
 
 }
 
-func (a *analyzer) resolveTargetApply(node *Node, ast *AstApply) {
+func (a *Analyzer) resolveTargetApply(node *Node, ast *AstApply) {
 	a.resolveValue(ast.Target)
 
 	tp, ok := ast.Target.Type.(RtTypeApplicable)
@@ -442,7 +437,7 @@ func (a *analyzer) resolveTargetApply(node *Node, ast *AstApply) {
 	node.WithType(ret)
 }
 
-func (a *analyzer) resolveAccessValue(node *Node, ast *AstAccess) {
+func (a *Analyzer) resolveAccessValue(node *Node, ast *AstAccess) {
 	a.resolveValue(ast.Target)
 
 	tp, ok := ast.Target.Type.(RtTypeAccessible)
