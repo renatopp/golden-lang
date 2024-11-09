@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/renatopp/golden/lang"
 )
@@ -117,11 +118,16 @@ func (a *Analyzer) ExpectMatchingTypes(nodes ...*Node) {
 
 func (a *Analyzer) ExpectTypeToBeAnyOf(base *Node, nodes ...RtType) {
 	for _, node := range nodes {
-		if base.Type.Accepts(node) {
+		if node.Accepts(base.Type) {
 			return
 		}
 	}
-	a.Error(base.Token.Loc, "type", "expected types %s, got %s", nodes, base.Type)
+
+	names := []string{}
+	for _, node := range nodes {
+		names = append(names, node.Name())
+	}
+	a.Error(base.Token.Loc, "type", "expected types %s, got %s", strings.Join(names, ", "), base.Type.Name())
 }
 
 func (a *Analyzer) pushScope(scope *Scope) {

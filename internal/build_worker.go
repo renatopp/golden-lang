@@ -192,6 +192,8 @@ func (w *BuildWorker) analyze() {
 		//}
 	}
 
+	logger.Trace("[worker:analyze] checking main function")
+	w.checkMainFunction()
 	w.pipeline.done <- nil
 }
 
@@ -244,4 +246,26 @@ func (w *BuildWorker) checkDependencyGraphLoop(pkg *Package, visited, stack map[
 	}
 	stack[pkg.Path] = false
 	return append(order, pkg)
+}
+
+func (w *BuildWorker) checkMainFunction() {
+	main, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
+
+	mainFunc := main.Scope.GetValue("main")
+	if mainFunc == nil {
+		panic("function 'main' not found")
+	}
+
+	mainFuncType := mainFunc.Type.(*FunctionType)
+	if mainFuncType.ret != Void {
+		panic("function 'main' must not return any value")
+	}
+	if len(mainFuncType.args) > 0 {
+		panic("function 'main' must not have any parameter")
+	}
+}
+
+// Code Generation
+func (w *BuildWorker) codegen() {
+	// pass
 }

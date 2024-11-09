@@ -9,7 +9,7 @@ var _type_id = uint64(0)
 var Void, Bool, Int, Float, String RtType
 
 func init() {
-	Void = NewPrimitive("Void", func() AstData { panic("Void does not have a default value") })
+	Void = &VoidType{}
 	Bool = NewPrimitive("Bool", func() AstData { return &AstBool{Value: false} })
 	Int = NewPrimitive("Int", func() AstData { return &AstInt{Value: 0} })
 	Float = NewPrimitive("Float", func() AstData { return &AstFloat{Value: 0.0} })
@@ -27,6 +27,19 @@ func newBaseType() baseType {
 }
 
 func (t baseType) Id() uint64 { return t.id }
+
+type VoidType struct {
+	baseType
+}
+
+func (t *VoidType) Name() string { return "Void" }
+func (t *VoidType) Accepts(other RtType) bool {
+	if t == nil || other == nil {
+		return false
+	}
+	return true
+}
+func (t *VoidType) Default() AstData { panic("Void does not have a default value") }
 
 // Primitive Type
 type PrimitiveType struct {

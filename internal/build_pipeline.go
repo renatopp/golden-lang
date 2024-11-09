@@ -22,6 +22,10 @@ type BuildPipeline struct {
 func NewBuildPipeline() *BuildPipeline {
 	scope := NewScope()
 	scope.SetValue("$_scope", NewEmptyNode().WithType(String).WithData(&AstString{Value: "global"}))
+	scope.SetType("Int", Int)
+	scope.SetType("Float", Float)
+	scope.SetType("String", String)
+	scope.SetType("Bool", Bool)
 
 	return &BuildPipeline{
 		GlobalScope:        scope,
