@@ -2,4 +2,4 @@ fn main() {
   z.zeta()
 }
 
-let y = 2
+let y = z.x

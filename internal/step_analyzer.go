@@ -2,27 +2,29 @@ package internal
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/renatopp/golden/lang"
 )
 
-// Type check the module
-func NewAnalyzer(module *Module) *Analyzer {
-	return &Analyzer{
-		ErrorData:   lang.NewErrorData(),
-		module:      module,
-		scope:       module.Scope,
-		moduleScope: module.Scope,
-		scopeStack:  []*Scope{module.Scope},
-	}
-}
-
 type Analyzer struct {
 	*lang.ErrorData
-	module      *Module
-	scope       *Scope
-	moduleScope *Scope
-	scopeStack  []*Scope
+	module          *Module
+	scope           *Scope
+	moduleScope     *Scope
+	scopeStack      []*Scope
+	resolutionStack []*Node
+}
+
+func NewAnalyzer(module *Module) *Analyzer {
+	return &Analyzer{
+		ErrorData:       lang.NewErrorData(),
+		module:          module,
+		scope:           module.Scope,
+		moduleScope:     module.Scope,
+		scopeStack:      []*Scope{module.Scope},
+		resolutionStack: []*Node{},
+	}
 }
 
 // Pre-analyze the module, adding types and function signatures to the module
@@ -38,6 +40,15 @@ func (a *Analyzer) PreAnalyzeTypes() error {
 
 func (a *Analyzer) PreAnalyzeFunctions() error {
 	a.WithRecovery(a.preAnalyzeFunctions)
+
+	if a.HasErrors() {
+		return lang.NewErrorList(a.Errors())
+	}
+	return nil
+}
+
+func (a *Analyzer) PreAnalyzeVariables() error {
+	a.WithRecovery(a.preAnalyzeVariables)
 
 	if a.HasErrors() {
 		return lang.NewErrorList(a.Errors())
@@ -127,33 +138,16 @@ func (a *Analyzer) popScope() *Scope {
 	return a.scope
 }
 
+func (a *Analyzer) preAnalyzeTypes() {
+	//for _, node := range a.module.Ast.Types {
+	//a.preResolve(node)
+	//}
+}
+
 func (a *Analyzer) preAnalyzeFunctions() {
-	for _, node := range a.module.Ast.Types {
-		a.preResolve(node)
-	}
 	for _, node := range a.module.Ast.Functions {
-		a.preResolve(node)
-	}
-}
+		ast := node.Data.(*AstFunctionDecl)
 
-func (a *Analyzer) analyze() {
-	for _, node := range a.module.Ast.Functions {
-		a.resolveValue(node)
-	}
-
-	for _, node := range a.module.Ast.Variables {
-		a.resolveValue(node)
-	}
-}
-
-// ---------------------------------------------------------------------
-
-func (a *Analyzer) preResolve(node *Node) *Node {
-	switch ast := node.Data.(type) {
-	case *AstDataDecl:
-		//
-
-	case *AstFunctionDecl:
 		returnType := Void
 		if ast.ReturnType != nil {
 			returnType = a.resolveType(ast.ReturnType).Type
@@ -169,8 +163,24 @@ func (a *Analyzer) preResolve(node *Node) *Node {
 		node.WithType(tp)
 		a.scope.SetValue(ast.Name, node.WithType(tp))
 	}
+}
 
-	return node
+func (a *Analyzer) preAnalyzeVariables() {
+	for _, node := range a.module.Ast.Variables {
+		ast := node.Data.(*AstVariableDecl)
+
+		a.scope.SetValue(ast.Name, ast.Value)
+	}
+}
+
+func (a *Analyzer) analyze() {
+	for _, node := range a.module.Ast.Functions {
+		a.resolveValue(node)
+	}
+
+	for _, node := range a.module.Ast.Variables {
+		a.resolveValue(node)
+	}
 }
 
 // ---------------------------------------------------------------------
@@ -222,6 +232,14 @@ func (a *Analyzer) resolveTypeDecl(node *Node, ast *AstDataDecl) {
 // ---------------------------------------------------------------------
 
 func (a *Analyzer) resolveValue(node *Node) *Node {
+	if slices.Contains(a.resolutionStack, node) {
+		a.Error(node.Token.Loc, "circular", "circular reference detected")
+	}
+	a.resolutionStack = append(a.resolutionStack, node)
+	defer func() {
+		a.resolutionStack = a.resolutionStack[:len(a.resolutionStack)-1]
+	}()
+
 	switch ast := node.Data.(type) {
 	case *AstBlock:
 		a.resolveBlock(node, ast)
@@ -351,7 +369,13 @@ func (a *Analyzer) resolveTypeIdentAsValue(node *Node, ast *AstTypeIdent) {
 }
 
 func (a *Analyzer) resolveVarIdent(node *Node, ast *AstVarIdent) {
-	node.WithType(a.GetValueOrError(ast.Name).Type)
+	val := a.GetValueOrError(ast.Name)
+
+	if val.Type == nil {
+		a.resolveValue(val)
+	}
+
+	node.WithType(val.Type)
 }
 
 func (a *Analyzer) resolveVariableDecl(node *Node, ast *AstVariableDecl) {
@@ -412,7 +436,6 @@ func (a *Analyzer) resolveApply(node *Node, ast *AstApply) {
 }
 
 func (a *Analyzer) resolveAnonymousApply(node *Node, ast *AstApply) {
-
 }
 
 func (a *Analyzer) resolveTargetApply(node *Node, ast *AstApply) {
@@ -448,6 +471,10 @@ func (a *Analyzer) resolveAccessValue(node *Node, ast *AstAccess) {
 	val, err := tp.AccessValue(ast.Accessor)
 	if err != nil {
 		a.Error(node.Token.Loc, "type", err.Error())
+	}
+
+	if val.Type == nil {
+		a.resolveValue(val)
 	}
 
 	node.WithType(val.Type)

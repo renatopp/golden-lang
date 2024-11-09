@@ -2,4 +2,4 @@ fn zeta() {
   main.main()
 }
 
-let x = main.y
+let x = 4

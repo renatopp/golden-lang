@@ -1,7 +1,5 @@
 # TODO
 
-[ ] Split pre analyzis in serveral steps (data -> functions -> variables)
-[ ] Reuse analizer object
 [ ] Starting codegen?
 
 ## Pending
