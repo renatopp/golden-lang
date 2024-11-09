@@ -1,0 +1,5 @@
+import "@/.test/b/b"
+import "@/.test/c/c"
+
+fn a() {}
+let v_a = 1

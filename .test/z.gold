@@ -1,0 +1,5 @@
+fn zeta() {
+  main.main()
+}
+
+let x = main.y

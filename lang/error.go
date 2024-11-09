@@ -1,6 +1,7 @@
 package lang
 
 import (
+	"runtime/debug"
 	"strconv"
 	"strings"
 )
@@ -73,4 +74,18 @@ func (e *ErrorData) Errors() []error {
 
 func (e *ErrorData) RegisterError(err error) {
 	e.errors = append(e.errors, err)
+}
+
+func (e *ErrorData) WithRecovery(fn func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(Error); ok {
+				e.RegisterError(err)
+			} else {
+				e.RegisterError(NewError(Loc{}, "unknown error", r.(string)))
+				debug.PrintStack()
+			}
+		}
+	}()
+	fn()
 }

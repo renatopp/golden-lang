@@ -151,14 +151,6 @@ func (p *parser) parseFunctionDecl() *Node {
 		Body:       body,
 	})
 
-	if name != "" {
-		return NewNode(fn, &AstVariableDecl{
-			Name:  name,
-			Type:  nil,
-			Value: node,
-		})
-	}
-
 	return node
 }
 

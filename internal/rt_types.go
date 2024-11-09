@@ -129,19 +129,36 @@ func (t *FunctionType) Apply(args []RtType) (RtType, error) {
 // Module Type
 type ModuleType struct {
 	baseType
-	name string
+	name  string
+	scope *Scope
 }
 
-func NewModuleType(name string) *ModuleType {
+func NewModuleType(name string, scope *Scope) *ModuleType {
 	return &ModuleType{
 		baseType: newBaseType(),
 		name:     name,
+		scope:    scope,
 	}
 }
 
 func (t *ModuleType) Name() string              { return t.name }
 func (t *ModuleType) Accepts(other RtType) bool { return false }
 func (t *ModuleType) Default() AstData          { panic("Module does not have a default value") }
+
+func (t *ModuleType) AccessValue(name string) (*Node, error) {
+	val := t.scope.GetValue(name)
+	if val == nil {
+		return nil, fmt.Errorf("value %s not found", name)
+	}
+	return val, nil
+}
+func (t *ModuleType) AccessType(name string) (RtType, error) {
+	val := t.scope.GetType(name)
+	if val == nil {
+		return nil, fmt.Errorf("type %s not found", name)
+	}
+	return val, nil
+}
 
 // // Data Type
 // type DataType struct {

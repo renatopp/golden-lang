@@ -6,7 +6,7 @@ import (
 	"github.com/renatopp/golden/lang"
 )
 
-func Parse(tokens []*lang.Token) (*Module, error) {
+func Parse(tokens []*lang.Token) (*Node, error) {
 	scanner := lang.NewTokenScanner(tokens)
 	parser := &parser{
 		Parser:      lang.NewParser(scanner),
@@ -33,7 +33,7 @@ type parser struct {
 	TypeSolver  *lang.PrattSolver[*Node]
 }
 
-func (p *parser) Parse() *Module {
+func (p *parser) Parse() *Node {
 	defer func() {
 		r := recover()
 		if r == nil {
@@ -79,27 +79,24 @@ func (p *parser) SkipSeparator(kind ...string) {
 	p.SkipNewlines()
 }
 
-func (p *parser) parseModule() *Module {
-	module := &Module{
-		Imports:   []*Import{},
-		Types:     []*Node{},
-		Functions: []*Node{},
-		Variables: []*Node{},
-	}
+func (p *parser) parseModule() *Node {
+	imports := []*AstModuleImport{}
+	types := []*Node{}
+	functions := []*Node{}
+	variables := []*Node{}
 
+	first := p.PeekToken()
 	p.Skip(TNewline)
 	for {
 		switch {
 		case p.IsNextLiteralsOf(TKeyword, KImport):
-			module.Imports = append(module.Imports, p.parseImport())
+			imports = append(imports, p.parseImport())
 		case p.IsNextLiteralsOf(TKeyword, KData):
-			module.Types = append(module.Types, p.parseTypeExpression())
+			types = append(types, p.parseTypeExpression())
 		case p.IsNextLiteralsOf(TKeyword, KFn):
-			module.Functions = append(module.Functions, p.parseValueExpression())
+			functions = append(functions, p.parseValueExpression())
 		case p.IsNextLiteralsOf(TKeyword, KLet):
-			module.Variables = append(module.Variables, p.parseValueExpression())
-		case p.IsNextTokens(TLbrace):
-			module.Temp = p.parseValueExpression()
+			variables = append(variables, p.parseValueExpression())
 		case p.IsNextTokens(TEof):
 			// EOF
 		default:
@@ -118,10 +115,15 @@ func (p *parser) parseModule() *Module {
 		}
 	}
 
-	return module
+	return NewNode(first, &AstModule{
+		Imports:   imports,
+		Types:     types,
+		Functions: functions,
+		Variables: variables,
+	})
 }
 
-func (p *parser) parseImport() *Import {
+func (p *parser) parseImport() *AstModuleImport {
 	p.ExpectLiteralsOf(TKeyword, KImport)
 	p.EatToken()
 	path := p.EatToken().Literal
@@ -131,5 +133,5 @@ func (p *parser) parseImport() *Import {
 		p.ExpectTokens(TVarIdent)
 		alias = p.EatToken().Literal
 	}
-	return &Import{Path: path, Alias: alias}
+	return &AstModuleImport{Path: path, Alias: alias}
 }

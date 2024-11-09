@@ -1,1 +1,5 @@
-import "@/internal/other"
+fn main() {
+  z.zeta()
+}
+
+let y = 2

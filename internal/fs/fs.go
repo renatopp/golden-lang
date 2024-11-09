@@ -1,5 +1,6 @@
 // Given the module `@/foo/bar/hello.gold` at the absolute path `/d/project/foo/bar/hello.gold`:
 //
+// ImportName: 		 @/foo/bar/hello
 // ModuleName: 		 hello
 // ModuleFileName: hello.gold
 // ModulePath: 		 /d/project/foo/bar/hello.gold
@@ -11,6 +12,7 @@ package fs
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -36,7 +38,7 @@ func IsFileExtension(path, extension string, sensitive bool) bool {
 		return ext == extension
 	}
 
-	return strings.EqualFold(ext, extension)
+	return ext == extension
 }
 
 func CheckFilePermissions(path string) error {
@@ -50,6 +52,12 @@ func CheckFilePermissions(path string) error {
 	}
 
 	return nil
+}
+
+var validModuleName = regexp.MustCompile(`^[a-z_][a-z0-9_]*$`)
+
+func IsModuleNameValid(moduleName string) bool {
+	return validModuleName.MatchString(moduleName)
 }
 
 // General Utilities ----------------------------------------------------------
@@ -75,6 +83,10 @@ func ToLinuxSlash(path string) string {
 }
 
 // Conversions ---------------------------------------------------------------
+func ImportName_To_ModulePath(importName string) string {
+	path := PackageName_To_PackagePath(importName)
+	return path + ".gold"
+}
 
 func ModulePath_To_ModuleName(modulePath string) string {
 	extension := GetFileExtension(modulePath)

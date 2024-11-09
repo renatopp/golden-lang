@@ -19,6 +19,11 @@ type RtTypeApplicable interface {
 	Apply(args []RtType) (RtType, error)
 }
 
+type RtTypeAccessible interface {
+	AccessValue(name string) (*Node, error)
+	AccessType(name string) (RtType, error)
+}
+
 type Node struct {
 	Token *lang.Token
 	Data  AstData

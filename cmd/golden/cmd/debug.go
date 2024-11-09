@@ -50,12 +50,13 @@ func (c *Debug) Run(args []string) error {
 	println("\n")
 
 	println("## Parser Output:\n")
-	module, err := internal.Parse(tokens)
+	root, err := internal.Parse(tokens)
 	if err != nil {
 		return fmt.Errorf("parsing file:\n%v", err)
 	}
 
-	for _, imp := range module.Imports {
+	ast := root.Data.(*internal.AstModule)
+	for _, imp := range ast.Imports {
 		if imp.Alias != "" {
 			fmt.Printf("import %s as %s\n", imp.Path, imp.Alias)
 		} else {
@@ -63,21 +64,18 @@ func (c *Debug) Run(args []string) error {
 		}
 	}
 
-	for _, decl := range module.Types {
+	for _, decl := range ast.Types {
 		println("#", decl.String())
 		decl.Traverse(printNode)
 	}
-	for _, decl := range module.Functions {
+	for _, decl := range ast.Functions {
 		println("#", decl.String())
 		decl.Traverse(printNode)
 	}
-	for _, decl := range module.Variables {
+	for _, decl := range ast.Variables {
 		println("#", decl.String())
 		decl.Traverse(printNode)
 	}
-
-	println("#", module.Temp.String())
-	module.Temp.Traverse(printNode)
 
 	println("\n")
 
@@ -90,23 +88,24 @@ func (c *Debug) Run(args []string) error {
 	scope.SetType("Float", internal.Float)
 	scope.SetType("String", internal.String)
 
-	module.Scope = scope.New()
-	err = internal.Analyze(module, module.Scope)
+	module := internal.NewModule()
+	module.Scope = scope
+	module.Ast = ast
+	module.Node = root
+	err = internal.Analyze(module)
 	if err != nil {
 		return fmt.Errorf("analyzing module:\n%v", err)
 	}
 
-	for _, decl := range module.Types {
+	for _, decl := range ast.Types {
 		println(decl.String())
 	}
-	for _, decl := range module.Functions {
+	for _, decl := range ast.Functions {
 		println(decl.String())
 	}
-	for _, decl := range module.Variables {
+	for _, decl := range ast.Variables {
 		println(decl.String())
 	}
-
-	println(module.Temp.String())
 
 	println()
 	println(module.Scope.String())

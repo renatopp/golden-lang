@@ -2,19 +2,18 @@ package internal
 
 import (
 	"fmt"
-	"runtime/debug"
 
 	"github.com/renatopp/golden/lang"
 )
 
 // Type check the module
-func Analyze(module *Module, scope *Scope) error {
+func Analyze(module *Module) error {
 	analyzer := &analyzer{
 		ErrorData:   lang.NewErrorData(),
 		module:      module,
-		scope:       scope,
-		moduleScope: scope,
-		scopeStack:  []*Scope{scope},
+		scope:       module.Scope,
+		moduleScope: module.Scope,
+		scopeStack:  []*Scope{module.Scope},
 	}
 	analyzer.Analyze()
 	if analyzer.HasErrors() {
@@ -23,20 +22,22 @@ func Analyze(module *Module, scope *Scope) error {
 	return nil
 }
 
-// func PreAnalyze(module *Module, scope *Scope) error {
-// 	analyzer := &analyzer{
-// 		ErrorData:   lang.NewErrorData(),
-// 		module:      module,
-// 		scope:       scope,
-// 		moduleScope: scope,
-// 		scopeStack:  []*Scope{scope},
-// 	}
-// 	analyzer.Analyze()
-// 	if analyzer.HasErrors() {
-// 		return lang.NewErrorList(analyzer.Errors())
-// 	}
-// 	return nil
-// }
+// Pre-analyze the module, adding types and function signatures to the module
+// scope, so they can be used later in the analysis
+func PreAnalyze(module *Module) error {
+	analyzer := &analyzer{
+		ErrorData:   lang.NewErrorData(),
+		module:      module,
+		scope:       module.Scope,
+		moduleScope: module.Scope,
+		scopeStack:  []*Scope{module.Scope},
+	}
+	analyzer.PreAnalyze()
+	if analyzer.HasErrors() {
+		return lang.NewErrorList(analyzer.Errors())
+	}
+	return nil
+}
 
 type analyzer struct {
 	*lang.ErrorData
@@ -47,23 +48,15 @@ type analyzer struct {
 }
 
 func (a *analyzer) PreAnalyze() {
-
+	a.WithRecovery(func() {
+		a.preAnalyze()
+	})
 }
 
 func (a *analyzer) Analyze() {
-	defer func() {
-		r := recover()
-		if r == nil {
-			return
-		} else if err, ok := r.(lang.Error); ok {
-			a.RegisterError(err)
-		} else {
-			a.RegisterError(lang.NewError(lang.Loc{}, "unknown error", fmt.Sprintf("%v", r)))
-			debug.PrintStack()
-		}
-	}()
-
-	a.resolveValue(a.module.Temp)
+	a.WithRecovery(func() {
+		a.analyze()
+	})
 }
 
 func (a *analyzer) Error(loc lang.Loc, kind, msg string, args ...any) {
@@ -137,6 +130,52 @@ func (a *analyzer) popScope() *Scope {
 	a.scope = a.scopeStack[len(a.scopeStack)-1]
 	a.scopeStack = a.scopeStack[:len(a.scopeStack)-1]
 	return a.scope
+}
+
+func (a *analyzer) preAnalyze() {
+	for _, node := range a.module.Ast.Types {
+		a.preResolve(node)
+	}
+	for _, node := range a.module.Ast.Functions {
+		a.preResolve(node)
+	}
+}
+
+func (a *analyzer) analyze() {
+	for _, node := range a.module.Ast.Functions {
+		a.resolveValue(node)
+	}
+
+	for _, node := range a.module.Ast.Variables {
+		a.resolveValue(node)
+	}
+}
+
+// ---------------------------------------------------------------------
+
+func (a *analyzer) preResolve(node *Node) *Node {
+	switch ast := node.Data.(type) {
+	case *AstDataDecl:
+		//
+
+	case *AstFunctionDecl:
+		returnType := Void
+		if ast.ReturnType != nil {
+			returnType = a.resolveType(ast.ReturnType).Type
+		}
+
+		params := []RtType{}
+		for _, param := range ast.Params {
+			param.Type = a.resolveType(param.Type)
+			params = append(params, param.Type.Type)
+		}
+
+		tp := NewFunctionType(params, returnType)
+		node.WithType(tp)
+		a.scope.SetValue(ast.Name, node.WithType(tp))
+	}
+
+	return node
 }
 
 // ---------------------------------------------------------------------
@@ -224,6 +263,9 @@ func (a *analyzer) resolveValue(node *Node) *Node {
 
 	case *AstApply:
 		a.resolveApply(node, ast)
+
+	case *AstAccess:
+		a.resolveAccessValue(node, ast)
 
 	default:
 		a.Error(node.Token.Loc, "unknown", "unknown node %s", node)
@@ -331,20 +373,26 @@ func (a *analyzer) resolveVariableDecl(node *Node, ast *AstVariableDecl) {
 	if ast.Type != nil {
 		a.ExpectMatchingTypes(ast.Type, ast.Value)
 	}
-	node.WithType(Void)
+	node.WithType(ast.Value.Type)
 	a.scope.SetValue(ast.Name, ast.Value)
 }
 
 func (a *analyzer) resolveFunctionDecl(node *Node, ast *AstFunctionDecl) {
-	returnType := Void
-	if ast.ReturnType != nil {
-		returnType = a.resolveType(ast.ReturnType).Type
-	}
+	var tp *FunctionType
+	// If not already pre-analyzed
+	if node.Type != nil {
+		returnType := Void
+		if ast.ReturnType != nil {
+			returnType = a.resolveType(ast.ReturnType).Type
+		}
 
-	params := []RtType{}
-	for _, param := range ast.Params {
-		param.Type = a.resolveType(param.Type)
-		params = append(params, param.Type.Type)
+		params := []RtType{}
+		for _, param := range ast.Params {
+			param.Type = a.resolveType(param.Type)
+			params = append(params, param.Type.Type)
+		}
+
+		tp = NewFunctionType(params, returnType)
 	}
 
 	a.pushScope(a.scope.New())
@@ -353,12 +401,11 @@ func (a *analyzer) resolveFunctionDecl(node *Node, ast *AstFunctionDecl) {
 	}
 
 	a.resolveValue(ast.Body)
-	a.ExpectTypeToBeAnyOf(ast.Body, returnType)
+	a.ExpectTypeToBeAnyOf(ast.Body, tp.ret)
 	a.popScope()
 
-	tp := &FunctionType{args: params, ret: returnType}
-
 	node.WithType(tp)
+	a.scope.SetValue(ast.Name, node)
 }
 
 func (a *analyzer) resolveApply(node *Node, ast *AstApply) {
@@ -393,4 +440,20 @@ func (a *analyzer) resolveTargetApply(node *Node, ast *AstApply) {
 	}
 
 	node.WithType(ret)
+}
+
+func (a *analyzer) resolveAccessValue(node *Node, ast *AstAccess) {
+	a.resolveValue(ast.Target)
+
+	tp, ok := ast.Target.Type.(RtTypeAccessible)
+	if !ok {
+		a.Error(ast.Target.Token.Loc, "type", "expected type to be accessible, got %s", ast.Target.Type.Name())
+	}
+
+	val, err := tp.AccessValue(ast.Accessor)
+	if err != nil {
+		a.Error(node.Token.Loc, "type", err.Error())
+	}
+
+	node.WithType(val.Type)
 }

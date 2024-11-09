@@ -33,8 +33,7 @@ func (b *Builder) Build(opts BuildOptions) error {
 	b.startTime = time.Now()
 
 	logger.Trace("[builder] checking if input file exists")
-	err := fs.CheckFileExists(opts.InputFilePath)
-	if err != nil {
+	if err := fs.CheckFileExists(opts.InputFilePath); err != nil {
 		return fmt.Errorf("could not read the input file, reason: \n\n  %w", err)
 	}
 
@@ -44,8 +43,7 @@ func (b *Builder) Build(opts BuildOptions) error {
 	}
 
 	logger.Trace("[builder] checking if input file has the read permission")
-	err = fs.CheckFilePermissions(opts.InputFilePath)
-	if err != nil {
+	if err := fs.CheckFilePermissions(opts.InputFilePath); err != nil {
 		return fmt.Errorf("input file does not have the read permission, reason: \n\n  %w", err)
 	}
 
@@ -56,6 +54,11 @@ func (b *Builder) Build(opts BuildOptions) error {
 
 	logger.Trace("[builder] absolute path: %s", path)
 
+	logger.Trace("[builder] checking if input file has valid name")
+	if name := fs.ModulePath_To_ModuleName(path); !fs.IsModuleNameValid(name) {
+		return fmt.Errorf("invalid module name, expected a valid module name, but received '%s'", name)
+	}
+
 	logger.Trace("[builder] starting %d workers", opts.NumWorkers)
 	for i := 0; i < opts.NumWorkers; i++ {
 		worker := NewBuildWorker(i, b.pipeline)
@@ -63,31 +66,13 @@ func (b *Builder) Build(opts BuildOptions) error {
 	}
 
 	logger.Trace("[builder] scheduling discovery of file: %s", path)
-	b.pipeline.ToDiscover <- path
+	b.pipeline.EntryModulePath = path
+	b.pipeline.Discover(path)
 
-	// <-b.pipeline.Done
+	<-b.pipeline.done
 
-	time.Sleep(1 * time.Second)
 	logger.Trace("[builder] done!")
 	logger.Debug("[builder] building finished in %s", time.Since(b.startTime))
-
-	// Package discovery:
-	// - Discover package
-	// - Load all modules
-	// - Schedule each module
-
-	// Module processing:
-	// - Lex
-	// - Parse
-	// - Pre Analyze
-	// - Put in scope
-
-	// Analysis:
-	// - Analyze each module
-	// - Start codegen
-
-	// Codegen:
-	// - Generate code
 
 	return nil
 }

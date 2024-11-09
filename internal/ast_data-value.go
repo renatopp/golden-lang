@@ -6,6 +6,23 @@ import (
 	"github.com/renatopp/golden/lang"
 )
 
+type AstModule struct {
+	Imports   []*AstModuleImport
+	Types     []*Node
+	Functions []*Node
+	Variables []*Node
+}
+
+type AstModuleImport struct {
+	Path  string
+	Alias string
+}
+
+func (a *AstModule) Kind() string      { return "value" }
+func (a *AstModule) Label() string     { return f("module") }
+func (a *AstModule) String() string    { return f("module") }
+func (a *AstModule) Children() []*Node { return appendAll(a.Types, a.Functions, a.Variables) }
+
 // Variable Declaration
 type AstVariableDecl struct {
 	Name  string
