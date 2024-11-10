@@ -2,7 +2,6 @@
 
 This project aims to create a programming language that is simple but expressive, that is easy to learn and write but also easy to read and understand, that supports complex programs but encorages simple arquitectures. 
 
-
 The Golden Programming Language is a procedural, static and strong typed language based on Go and Gleam, borrowing some inspirations from other languages such as Rust, Austral and other functional languages.
 
 > This repository contains ongoing work and most of the content here is dynamic or temporary accordingly to the development phase.
@@ -12,28 +11,43 @@ The Golden Programming Language is a procedural, static and strong typed languag
 ```mermaid
 flowchart LR
 
-classDef uncertain fill:#F05D5E,color:black,stroke-width:0
-classDef fair fill:#F7D002,color:black,stroke-width:0
-classDef certain fill:#018E42,color:white,stroke-width:0
-build[Build]:::uncertain
-lexer[Lexer]:::certain
-parser[Parser]:::certain
-analyser[Analyser]:::fair
-backend[Backend]:::uncertain
+classDef notstarted fill:#F05D5E,color:black,stroke-width:0
+classDef temporary fill:#ffa700,color:black,stroke-width:0
+classDef experiment fill:#fff400,color:black,stroke-width:0
+classDef partial fill:#a3ff00,color:black,stroke-width:0
+classDef stable fill:#2cba00,color:white,stroke-width:0
+
+build[Build]:::partial
+lexer[Lexer]:::stable
+parser[Parser]:::stable
+semantic[Semantic]:::experiment
+ir[IR]:::notstarted
+opt[Optimizations]:::notstarted
+backend[Backend]:::notstarted
 
 build --> lexer
 lexer --> parser
-parser --> analyser
-analyser --> backend
+parser --> semantic
+semantic --> ir --> opt --> backend
 ```
 
-| Step     | Progress                                        | Description                                           |
-|----------|-------------------------------------------------|-------------------------------------------------------|
-| Build    | <span style="color:#F05D5E">uncertain</span>    | Package loading, module loading, caching, etc.        |
-| Lexer    | <span style="color:#018E42">certain</span>      | Lexer working as intended.                            |
-| Parser   | <span style="color:#018E42">certain</span>      | Parser working as intended.                           |
-| Analyser | <span style="color:#F7D002">fair certain</span> | Scope analysis, type checks and type inference.       |
-| Backend  | <span style="color:#F05D5E">uncertain</span>    | Unsure about which backend to use. Probabily using C. |
+Legend:
+
+- <span style="color:#F05D5E">Not Started</span>
+- <span style="color:#ffa700">Temporary</span>
+- <span style="color:#fff400">Experiment</span>
+- <span style="color:#a3ff00">Partially Stable</span>
+- <span style="color:#2cba00">Stable</span>
+
+| Step          | Description                                                  |
+|---------------|--------------------------------------------------------------|
+| Build         | Package loading, module loading, caching, etc.               |
+| Lexer         | Convertion of source code into tokens.                       |
+| Parser        | Convertion of the tokens into AST .                          |
+| Semantic      | Type check, inference, and other coding analysis and checks. |
+| IR            | Convertion of the AST into an intermediate representation.   |
+| Optimizations | Optimizations over the IR.                                   |
+| Backend       | Code Generation or interpretation.                           |
 
 ## The Language Foundation
 
