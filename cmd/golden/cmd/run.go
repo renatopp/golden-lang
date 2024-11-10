@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
 	"runtime"
 
 	"github.com/renatopp/golden/internal"
@@ -41,13 +40,13 @@ func (c *Run) Run(args []string) error {
 		println("Err!", err.Error())
 	}
 
-	cmd := exec.Command("./.tools/tcc/win/tcc.exe", "-run", ".out/main.c")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to execute command: %v, output: %s", err, string(output))
-	}
+	// cmd := exec.Command("./.tools/tcc/win/tcc.exe", "-run", ".out/main.c")
+	// output, err := cmd.CombinedOutput()
+	// if err != nil {
+	// 	return fmt.Errorf("failed to execute command: %v, output: %s", err, string(output))
+	// }
 
-	fmt.Println(string(output))
+	// fmt.Println(string(output))
 
 	return nil
 }
