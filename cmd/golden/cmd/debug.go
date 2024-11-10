@@ -5,8 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
-	"github.com/renatopp/golden/internal"
+	"github.com/renatopp/golden/internal/compiler/syntax"
+	"github.com/renatopp/golden/internal/compiler/syntax/ast"
+	"github.com/renatopp/golden/internal/core"
 )
 
 type Debug struct{}
@@ -39,7 +42,7 @@ func (c *Debug) Run(args []string) error {
 	}
 
 	println("## Lexer Output:\n")
-	tokens, err := internal.Lex(file)
+	tokens, err := syntax.Lex(file)
 	if err != nil {
 		return fmt.Errorf("lexing file:\n%v", err)
 	}
@@ -50,12 +53,12 @@ func (c *Debug) Run(args []string) error {
 	println("\n")
 
 	println("## Parser Output:\n")
-	root, err := internal.Parse(tokens)
+	root, err := syntax.Parse(tokens)
 	if err != nil {
 		return fmt.Errorf("parsing file:\n%v", err)
 	}
 
-	ast := root.Data.(*internal.AstModule)
+	ast := root.Data().(*ast.Module)
 	for _, imp := range ast.Imports {
 		if imp.Alias != "" {
 			fmt.Printf("import %s as %s\n", imp.Path, imp.Alias)
@@ -65,15 +68,12 @@ func (c *Debug) Run(args []string) error {
 	}
 
 	for _, decl := range ast.Types {
-		println("#", decl.String())
 		decl.Traverse(printNode)
 	}
 	for _, decl := range ast.Functions {
-		println("#", decl.String())
 		decl.Traverse(printNode)
 	}
 	for _, decl := range ast.Variables {
-		println("#", decl.String())
 		decl.Traverse(printNode)
 	}
 
@@ -114,6 +114,10 @@ func (c *Debug) Run(args []string) error {
 	return nil
 }
 
-func printNode(node *internal.Node, level int) {
-	println(strings.Repeat("  ", level) + node.Label())
+func printNode(node *core.AstNode, level int) {
+	ident := strings.Repeat("  ", level)
+	line := ident + node.Signature()
+	comment := " -- " + ident + node.Tag()
+
+	println(line, strings.Repeat(" ", 30-utf8.RuneCountInString(line)), comment)
 }

@@ -1,8 +1,10 @@
 # TODO
 
-[ ] organize lexer & parser into its own folder
-[ ] organize semantic analysis in its own folder
-  [ ] organize steps: type checking, inference, binding checks, cyclic reference check, argument validations, control flow checks, visibility checks, mutability, etc.
+[ ] re-structure
+  [ ] organize lexer & parser into its own folder
+  [ ] organize semantic analysis in its own folder
+
+[ ] organize steps: type checking, inference, binding checks, cyclic reference check, argument validations, control flow checks, visibility checks, mutability, etc.
   [ ] Treat panics during build
 [ ] create ir representation
   all calls will reside in the same "scope" for each package

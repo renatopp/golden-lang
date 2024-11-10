@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/renatopp/golden/internal/fs"
+	"github.com/renatopp/golden/internal/helpers/fs"
 	"github.com/stretchr/testify/assert"
 )
 

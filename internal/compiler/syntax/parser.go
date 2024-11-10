@@ -1,17 +1,19 @@
-package internal
+package syntax
 
 import (
 	"fmt"
 
+	"github.com/renatopp/golden/internal/compiler/syntax/ast"
+	"github.com/renatopp/golden/internal/core"
 	"github.com/renatopp/golden/lang"
 )
 
-func Parse(tokens []*lang.Token) (*Node, error) {
+func Parse(tokens []*lang.Token) (*core.AstNode, error) {
 	scanner := lang.NewTokenScanner(tokens)
-	parser := &parser{
+	parser := &Parser{
 		Parser:      lang.NewParser(scanner),
-		ValueSolver: lang.NewPrattSolver[*Node](),
-		TypeSolver:  lang.NewPrattSolver[*Node](),
+		ValueSolver: lang.NewPrattSolver[*core.AstNode](),
+		TypeSolver:  lang.NewPrattSolver[*core.AstNode](),
 	}
 
 	parser.ValueSolver.SetPrecedenceFn(parser.valuePrecedence)
@@ -27,13 +29,13 @@ func Parse(tokens []*lang.Token) (*Node, error) {
 	return module, nil
 }
 
-type parser struct {
+type Parser struct {
 	*lang.Parser
-	ValueSolver *lang.PrattSolver[*Node]
-	TypeSolver  *lang.PrattSolver[*Node]
+	ValueSolver *lang.PrattSolver[*core.AstNode]
+	TypeSolver  *lang.PrattSolver[*core.AstNode]
 }
 
-func (p *parser) Parse() *Node {
+func (p *Parser) Parse() *core.AstNode {
 	defer func() {
 		r := recover()
 		if r == nil {
@@ -48,56 +50,58 @@ func (p *parser) Parse() *Node {
 	return p.parseModule()
 }
 
-func (p *parser) ExpectTokens(kind ...string) {
+func (p *Parser) ExpectTokens(kind ...string) {
 	if !p.IsNextTokens(kind...) {
 		p.Error(p.PeekToken().Loc, "unexpected token", "expected %s, got %s", kind, p.PeekToken().Kind)
 	}
 }
 
-func (p *parser) ExpectLiterals(lit ...string) {
+func (p *Parser) ExpectLiterals(lit ...string) {
 	if !p.IsNextLiterals(lit...) {
 		p.Error(p.PeekToken().Loc, "unexpected literal", "expected %s, got %s", lit, p.PeekToken().Literal)
 	}
 }
 
-func (p *parser) ExpectLiteralsOf(kind string, lit ...string) {
+func (p *Parser) ExpectLiteralsOf(kind string, lit ...string) {
 	p.ExpectTokens(kind)
 	p.ExpectLiterals(lit...)
 }
 
-func (p *parser) Error(loc lang.Loc, kind, msg string, args ...any) {
+func (p *Parser) Error(loc lang.Loc, kind, msg string, args ...any) {
 	panic(lang.NewError(loc, kind, fmt.Sprintf(msg, args...)))
 }
 
-func (p *parser) SkipNewlines() {
-	p.Skip(TNewline)
+func (p *Parser) SkipNewlines() {
+	p.Skip(core.TNewline)
 }
 
-func (p *parser) SkipSeparator(kind ...string) {
+func (p *Parser) SkipSeparator(kind ...string) {
 	p.SkipNewlines()
 	p.SkipN(1, kind...)
 	p.SkipNewlines()
 }
 
-func (p *parser) parseModule() *Node {
-	imports := []*AstModuleImport{}
-	types := []*Node{}
-	functions := []*Node{}
-	variables := []*Node{}
+func (p *Parser) parseModule() *core.AstNode {
+	imports := []*ast.ModuleImport{}
+	types := []*core.AstNode{}
+	functions := []*core.AstNode{}
+	variables := []*core.AstNode{}
 
 	first := p.PeekToken()
-	p.Skip(TNewline)
+	p.Skip(core.TNewline)
 	for {
 		switch {
-		case p.IsNextLiteralsOf(TKeyword, KImport):
+		case p.IsNextLiteralsOf(core.TKeyword, core.KImport):
 			imports = append(imports, p.parseImport())
-		case p.IsNextLiteralsOf(TKeyword, KData):
+		case p.IsNextLiteralsOf(core.TKeyword, core.KData):
 			types = append(types, p.parseTypeExpression())
-		case p.IsNextLiteralsOf(TKeyword, KFn):
+		case p.IsNextLiteralsOf(core.TKeyword, core.KFn):
 			functions = append(functions, p.parseValueExpression())
-		case p.IsNextLiteralsOf(TKeyword, KLet):
+		case p.IsNextLiteralsOf(core.TKeyword, core.KLet):
 			variables = append(variables, p.parseValueExpression())
-		case p.IsNextTokens(TEof):
+		case p.IsNextTokens(core.TComment):
+			p.EatToken()
+		case p.IsNextTokens(core.TEof):
 			// EOF
 		default:
 			p.Error(
@@ -109,13 +113,13 @@ func (p *parser) parseModule() *Node {
 			)
 		}
 
-		p.Skip(TNewline)
-		if p.IsNextTokens(TEof) {
+		p.Skip(core.TNewline)
+		if p.IsNextTokens(core.TEof) {
 			break
 		}
 	}
 
-	return NewNode(first, &AstModule{
+	return core.NewNode(first, &ast.Module{
 		Imports:   imports,
 		Types:     types,
 		Functions: functions,
@@ -123,15 +127,15 @@ func (p *parser) parseModule() *Node {
 	})
 }
 
-func (p *parser) parseImport() *AstModuleImport {
-	p.ExpectLiteralsOf(TKeyword, KImport)
+func (p *Parser) parseImport() *ast.ModuleImport {
+	p.ExpectLiteralsOf(core.TKeyword, core.KImport)
 	p.EatToken()
 	path := p.EatToken().Literal
 	alias := ""
-	if p.IsNextLiteralsOf(TKeyword, KAs) {
+	if p.IsNextLiteralsOf(core.TKeyword, core.KAs) {
 		p.EatToken()
-		p.ExpectTokens(TVarIdent)
+		p.ExpectTokens(core.TVarIdent)
 		alias = p.EatToken().Literal
 	}
-	return &AstModuleImport{Path: path, Alias: alias}
+	return &ast.ModuleImport{Path: path, Alias: alias}
 }

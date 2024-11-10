@@ -1,1 +1,5 @@
-fn main() { 'renato' }
+
+-- Sample
+fn main() {
+  'renato'
+}

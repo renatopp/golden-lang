@@ -1,21 +1,21 @@
-package internal
+package builder
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/renatopp/golden/internal/fs"
-	"github.com/renatopp/golden/internal/logger"
+	"github.com/renatopp/golden/internal/helpers/fs"
+	"github.com/renatopp/golden/internal/helpers/logger"
 )
 
 type Builder struct {
 	startTime time.Time
-	pipeline  *BuildPipeline
+	pipeline  *Pipeline
 }
 
 func NewBuilder() *Builder {
 	return &Builder{
-		pipeline: NewBuildPipeline(),
+		pipeline: NewPipeline(),
 	}
 }
 

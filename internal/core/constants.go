@@ -1,4 +1,4 @@
-package internal
+package core
 
 const (
 	TUnknown   = "unknown"
@@ -26,7 +26,6 @@ const (
 	TComma     = "comma"     // ,
 	TPipe      = "pipe"      // |
 	TDot       = "dot"       // .
-
 	TPlus      = "plus"      // +
 	TMinus     = "minus"     // -
 	TStar      = "star"      // *
@@ -79,13 +78,6 @@ var DoubleCharTokens = map[string]string{
 	"!=": TNequal,
 	"<=": TLte,
 	">=": TGte,
-	// "..": TSpread,
-	// "->": TArrow,
-	// "+=": TAssign,
-	// "-=": TAssigncomp,
-	// "*=": TAssigncomp,
-	// "/=": TAssigncomp,
-	// "%=": TAssigncomp,
 }
 
 var SingleCharTokens = map[string]string{
@@ -97,8 +89,6 @@ var SingleCharTokens = map[string]string{
 	"<": TLt,
 	">": TGt,
 	"!": TBang,
-	// "?": TQuestion,
-	// ":": TColon,
 	".": TDot,
 	",": TComma,
 	"=": TAssign,
@@ -110,5 +100,4 @@ var SingleCharTokens = map[string]string{
 	"}": TRbrace,
 	"[": TLbracket,
 	"]": TRbracket,
-	// "~": t_tilde,
 }

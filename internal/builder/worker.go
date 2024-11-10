@@ -1,19 +1,23 @@
-package internal
+package builder
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/renatopp/golden/internal/fs"
-	"github.com/renatopp/golden/internal/logger"
+	"github.com/renatopp/golden/internal/compiler/semantic"
+	"github.com/renatopp/golden/internal/compiler/syntax"
+	"github.com/renatopp/golden/internal/compiler/syntax/ast"
+	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/helpers/fs"
+	"github.com/renatopp/golden/internal/helpers/logger"
 )
 
 type BuildWorker struct {
 	id       int
-	pipeline *BuildPipeline
+	pipeline *Pipeline
 }
 
-func NewBuildWorker(id int, pipeline *BuildPipeline) *BuildWorker {
+func NewBuildWorker(id int, pipeline *Pipeline) *BuildWorker {
 	return &BuildWorker{
 		id:       id,
 		pipeline: pipeline,
@@ -65,7 +69,7 @@ func (w *BuildWorker) prepare(modulePath string) {
 	}
 
 	logger.Trace("[worker:prepare] lexing: %s", modulePath)
-	tokens, err := Lex(bytes)
+	tokens, err := syntax.Lex(bytes)
 	if err != nil {
 		panic(err)
 	}
@@ -78,20 +82,20 @@ func (w *BuildWorker) prepare(modulePath string) {
 	}
 
 	logger.Trace("[worker:prepare] parsing: %s", modulePath)
-	root, err := Parse(tokens)
+	root, err := syntax.Parse(tokens)
 	if err != nil {
 		panic(err)
 	}
 
 	// Annotate the module with the package and file information
-	module := NewModule()
+	module := core.NewModule()
 	module.Node = root
-	module.Ast = root.Data.(*AstModule)
+	// module.Ast = root.Data.(*AstModule)
 	module.Path = modulePath
 	module.Name = fs.ModulePath_To_ModuleName(modulePath)
 	module.FileName = fs.ModulePath_To_ModuleFileName(modulePath)
-	for _, imp := range module.Ast.Imports {
-		module.Imports = append(module.Imports, &Import{
+	for _, imp := range module.Node.Data().(*ast.Module).Imports {
+		module.Imports = append(module.Imports, &core.ModuleImport{
 			Name:  imp.Path,
 			Alias: imp.Alias,
 		})
@@ -102,7 +106,7 @@ func (w *BuildWorker) prepare(modulePath string) {
 	packagePath := fs.ModulePath_To_PackagePath(modulePath)
 	pkg := w.pipeline.CreateOrGetPackage(packageName, packagePath)
 	module.Package = pkg
-	pkg.Modules.Append(module)
+	pkg.Modules.Add(module)
 	w.pipeline.RegisterModule(module)
 
 	// Schedule imports for discovery
@@ -144,8 +148,8 @@ func (w *BuildWorker) analyze() {
 		mods := pkg.Modules.Values()
 		for _, module := range mods {
 			module.Scope = w.pipeline.GlobalScope.New()
-			module.Analyzer = NewAnalyzer(module)
-			module.Node.WithType(NewModuleType(module.Name, module))
+			module.Analyzer = semantic.NewAnalyzer(module)
+			module.Node.WithType(semantic.NewModuleType(module.Name, module))
 		}
 
 		for _, module := range mods {
@@ -180,17 +184,18 @@ func (w *BuildWorker) analyze() {
 		//	println(module.Scope.String())
 		//	println()
 		//}
+
 		for _, module := range mods {
 			if err := module.Analyzer.Analyze(); err != nil {
 				panic(err)
 			}
 		}
 
-		//for _, module := range mods {
-		//	println("# SCOPE OF", module.Path)
-		//	println(module.Scope.String())
-		//	println()
-		//}
+		for _, module := range mods {
+			println("# SCOPE OF", module.Package.Name+"/"+module.Name)
+			println(module.Scope.String())
+			println()
+		}
 	}
 
 	logger.Trace("[worker:analyze] checking main function")
@@ -198,7 +203,7 @@ func (w *BuildWorker) analyze() {
 	w.pipeline.done <- nil
 }
 
-func (w *BuildWorker) buildDependencyGraph(module *Module) {
+func (w *BuildWorker) buildDependencyGraph(module *core.Module) {
 	if module.DependsOn.Len() > 0 {
 		return
 	}
@@ -227,14 +232,14 @@ func (w *BuildWorker) buildDependencyGraph(module *Module) {
 	}
 }
 
-func (w *BuildWorker) checkDependencyGraph(pkg *Package) []*Package {
+func (w *BuildWorker) checkDependencyGraph(pkg *core.Package) []*core.Package {
 	visited := map[string]bool{}
 	stack := map[string]bool{}
-	order := []*Package{}
+	order := []*core.Package{}
 	return w.checkDependencyGraphLoop(pkg, visited, stack, order)
 }
 
-func (w *BuildWorker) checkDependencyGraphLoop(pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
+func (w *BuildWorker) checkDependencyGraphLoop(pkg *core.Package, visited, stack map[string]bool, order []*core.Package) []*core.Package {
 	visited[pkg.Path] = true
 	stack[pkg.Path] = true
 	for _, dep := range pkg.DependsOn.Values() {
@@ -257,11 +262,11 @@ func (w *BuildWorker) checkMainFunction() {
 		panic("function 'main' not found")
 	}
 
-	mainFuncType := mainFunc.Type.(*FunctionType)
-	if mainFuncType.ret != Void {
+	mainFuncType := mainFunc.Type().(*semantic.FunctionType)
+	if mainFuncType.Ret != semantic.Void {
 		panic("function 'main' must not return any value")
 	}
-	if len(mainFuncType.args) > 0 {
+	if len(mainFuncType.Args) > 0 {
 		panic("function 'main' must not have any parameter")
 	}
 }

@@ -1,20 +1,20 @@
-package internal
+package core
 
 import "strings"
 
 type Scope struct {
 	Depth  int
 	Parent *Scope
-	Values map[string]*Node
-	Types  map[string]RtType
+	Values map[string]*AstNode
+	Types  map[string]TypeData
 }
 
 func NewScope() *Scope {
 	return &Scope{
 		Depth:  0,
 		Parent: nil,
-		Values: map[string]*Node{},
-		Types:  map[string]RtType{},
+		Values: map[string]*AstNode{},
+		Types:  map[string]TypeData{},
 	}
 }
 
@@ -22,28 +22,28 @@ func (s *Scope) New() *Scope {
 	return &Scope{
 		Depth:  s.Depth + 1,
 		Parent: s,
-		Values: map[string]*Node{},
-		Types:  map[string]RtType{},
+		Values: map[string]*AstNode{},
+		Types:  map[string]TypeData{},
 	}
 }
 
-func (s *Scope) SetValue(key string, value *Node) {
+func (s *Scope) SetValue(key string, value *AstNode) {
 	s.Values[key] = value
 }
 
-func (s *Scope) SetType(key string, value RtType) {
+func (s *Scope) SetType(key string, value TypeData) {
 	s.Types[key] = value
 }
 
-func (s *Scope) GetValueLocal(key string) *Node {
+func (s *Scope) GetValueLocal(key string) *AstNode {
 	return s.Values[key]
 }
 
-func (s *Scope) GetTypeLocal(key string) RtType {
+func (s *Scope) GetTypeLocal(key string) TypeData {
 	return s.Types[key]
 }
 
-func (s *Scope) GetValue(key string) *Node {
+func (s *Scope) GetValue(key string) *AstNode {
 	if value, ok := s.Values[key]; ok {
 		return value
 	}
@@ -53,7 +53,7 @@ func (s *Scope) GetValue(key string) *Node {
 	return nil
 }
 
-func (s *Scope) GetType(key string) RtType {
+func (s *Scope) GetType(key string) TypeData {
 	if tp, ok := s.Types[key]; ok {
 		return tp
 	}
@@ -72,10 +72,10 @@ func (s *Scope) String() string {
 	ident := strings.Repeat("| ", s.Depth+1)
 	r += strings.Repeat("\n| ", s.Depth) + "[scope]\n"
 	for k, v := range s.Types {
-		r += ident + "T: " + k + " \u2192 " + v.Name() + "\n"
+		r += ident + "T: " + k + " = " + v.Tag() + "\n"
 	}
 	for k, v := range s.Values {
-		r += ident + "V: " + k + " \u2192 " + oneline(v.String()) + "\n"
+		r += ident + "V: " + k + " = " + strings.ReplaceAll(v.Tag(), "\n", "") + "\n"
 	}
 	return r
 }

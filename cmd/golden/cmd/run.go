@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/renatopp/golden/internal"
-	"github.com/renatopp/golden/internal/logger"
+	"github.com/renatopp/golden/internal/builder"
+	"github.com/renatopp/golden/internal/helpers/logger"
 )
 
 type Run struct{}
@@ -29,8 +29,8 @@ func (c *Run) Run(args []string) error {
 
 	logger.SetLevel(logger.ErrorLevel)
 
-	builder := internal.NewBuilder()
-	err := builder.Build(internal.BuildOptions{
+	b := builder.NewBuilder()
+	err := b.Build(builder.BuildOptions{
 		InputFilePath:  args[0],
 		OutputFilePath: "out",
 		NumWorkers:     runtime.NumCPU(),
