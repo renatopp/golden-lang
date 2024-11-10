@@ -116,7 +116,7 @@ func (l *lexer) Next() *lang.Token {
 			}
 
 		// Strings
-		case c0.Is('"'):
+		case c0.Is('\''):
 			return eaters.EatString(l.scanner).WithType(TString)
 
 		case c0.Is('`'):

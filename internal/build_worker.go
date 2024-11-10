@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/renatopp/golden/internal/fs"
 	"github.com/renatopp/golden/internal/logger"
@@ -35,6 +36,7 @@ func (w *BuildWorker) Start() {
 		}
 
 		w.analyze()
+		w.codegen()
 	}
 }
 
@@ -267,5 +269,15 @@ func (w *BuildWorker) checkMainFunction() {
 
 // Code Generation
 func (w *BuildWorker) codegen() {
-	// pass
+	pkgs := w.pipeline.Packages.Values()
+	for _, pkg := range pkgs {
+		code, err := CodeGen_C(pkg)
+		if err != nil {
+			panic(err)
+		}
+
+		name := strings.ReplaceAll(pkg.Name, "/", "_")
+		name = strings.ReplaceAll(name, "@", "main")
+		os.WriteFile(".out/"+name+".c", []byte(code), 0644)
+	}
 }
