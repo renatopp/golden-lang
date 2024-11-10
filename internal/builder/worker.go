@@ -113,6 +113,8 @@ func (w *BuildWorker) prepare(modulePath string) {
 	for _, imp := range module.Imports {
 		modulePath := fs.ImportName_To_ModulePath(imp.Name)
 
+		// TODO: check if module is private
+
 		if err := fs.CheckFileExists(modulePath); err != nil {
 			panic(fmt.Sprintf("file '%s' does not exist. Remember that module names must be lower snake case, including the extension.", modulePath))
 		}

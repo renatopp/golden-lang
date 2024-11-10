@@ -1,3 +1,4 @@
+// type checking, inference, binding checks, cyclic reference check, argument validations, control flow checks, visibility checks, mutability, etc.
 package semantic
 
 import (
@@ -291,7 +292,7 @@ func (a *Analyzer) resolveValue(node *core.AstNode) *core.AstNode {
 		a.resolveAccessValue(node, ast)
 
 	default:
-		a.Error(node.Token().Loc, "unknown", "unknown node %s", node)
+		a.Error(node.Token().Loc, "unknown", "unknown node %v", node)
 	}
 
 	return node
@@ -381,7 +382,7 @@ func (a *Analyzer) resolveTypeIdentAsValue(node *core.AstNode, ast *ast.TypeIden
 func (a *Analyzer) resolveVarIdent(node *core.AstNode, ast *ast.VarIdent) {
 	val := a.GetValueOrError(ast.Name)
 
-	if val.Type == nil {
+	if val.Type() == nil {
 		a.resolveValue(val)
 	}
 
@@ -409,7 +410,7 @@ func (a *Analyzer) resolveVariableDecl(node *core.AstNode, ast *ast.VariableDecl
 func (a *Analyzer) resolveFunctionDecl(node *core.AstNode, ast *ast.FunctionDecl) {
 	var tp *FunctionType
 	// If not already pre-analyzed
-	if node.Type != nil {
+	if node.Type() != nil {
 		returnType := Void
 		if ast.ReturnType != nil {
 			returnType = a.resolveType(ast.ReturnType).Type()
@@ -483,7 +484,7 @@ func (a *Analyzer) resolveAccessValue(node *core.AstNode, ast *ast.Access) {
 		a.Error(node.Token().Loc, "type", err.Error())
 	}
 
-	if val.Type == nil {
+	if val.Type() == nil {
 		a.resolveValue(val)
 	}
 

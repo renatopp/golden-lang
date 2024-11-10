@@ -1,6 +1,6 @@
 package core
 
-import "github.com/renatopp/golden/internal/helpers/sync"
+import "github.com/renatopp/golden/internal/helpers/syncds"
 
 type AnalyzerTemp interface {
 	PreAnalyzeFunctions() error
@@ -12,13 +12,13 @@ type AnalyzerTemp interface {
 
 // Represents a module (file)
 type Module struct {
-	Name      string                         // eg: `hello`
-	Path      string                         // eg: `/d/project/foo/bar/hello.gold`
-	FileName  string                         // eg: `hello.gold`
-	Node      *AstNode                       // the ast node attached to this module
-	Package   *Package                       // the package this module is attached
-	Imports   []*ModuleImport                // all import statements in this module
-	DependsOn *sync.SyncMap[string, *Module] // all modules imported in this one, including implicit modules
+	Name      string                           // eg: `hello`
+	Path      string                           // eg: `/d/project/foo/bar/hello.gold`
+	FileName  string                           // eg: `hello.gold`
+	Node      *AstNode                         // the ast node attached to this module
+	Package   *Package                         // the package this module is attached
+	Imports   []*ModuleImport                  // all import statements in this module
+	DependsOn *syncds.SyncMap[string, *Module] // all modules imported in this one, including implicit modules
 
 	Scope    *Scope
 	Analyzer AnalyzerTemp
@@ -27,7 +27,7 @@ type Module struct {
 func NewModule() *Module {
 	return &Module{
 		Imports:   []*ModuleImport{},
-		DependsOn: sync.NewSyncMap[string, *Module](),
+		DependsOn: syncds.NewSyncMap[string, *Module](),
 	}
 }
 
@@ -42,15 +42,15 @@ type ModuleImport struct {
 
 // Represents a package (folder)
 type Package struct {
-	Name      string                          // eg: `@/foo/bar`
-	Path      string                          // eg: `/d/project/foo/bar`
-	Modules   *sync.SyncList[*Module]         // the modules attached in this package
-	DependsOn *sync.SyncMap[string, *Package] // all packages that modules depends, including implicit ones
+	Name      string                            // eg: `@/foo/bar`
+	Path      string                            // eg: `/d/project/foo/bar`
+	Modules   *syncds.SyncList[*Module]         // the modules attached in this package
+	DependsOn *syncds.SyncMap[string, *Package] // all packages that modules depends, including implicit ones
 }
 
 func NewPackage() *Package {
 	return &Package{
-		Modules:   sync.NewSyncList[*Module](),
-		DependsOn: sync.NewSyncMap[string, *Package](),
+		Modules:   syncds.NewSyncList[*Module](),
+		DependsOn: syncds.NewSyncMap[string, *Package](),
 	}
 }

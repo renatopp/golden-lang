@@ -1,24 +1,24 @@
 package builder
 
 import (
-	gosync "sync"
+	"sync"
 	"sync/atomic"
 
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
-	"github.com/renatopp/golden/internal/helpers/sync"
+	"github.com/renatopp/golden/internal/helpers/syncds"
 )
 
 // Pipeline is the structure that holds the global state of the build pipeline
 type Pipeline struct {
 	GlobalScope        *core.Scope
 	EntryModulePath    string
-	Packages           *sync.SyncMap[string, *core.Package]
-	Modules            *sync.SyncMap[string, *core.Module]
+	Packages           *syncds.SyncMap[string, *core.Package]
+	Modules            *syncds.SyncMap[string, *core.Module]
 	PendingModuleCount atomic.Int64
 
-	mtx        gosync.Mutex
+	mtx        sync.Mutex
 	toDiscover chan string
 	toPrepare  chan string
 	done       chan any
@@ -34,11 +34,11 @@ func NewPipeline() *Pipeline {
 
 	return &Pipeline{
 		GlobalScope:        scope,
-		Packages:           sync.NewSyncMap[string, *core.Package](),
-		Modules:            sync.NewSyncMap[string, *core.Module](),
+		Packages:           syncds.NewSyncMap[string, *core.Package](),
+		Modules:            syncds.NewSyncMap[string, *core.Module](),
 		PendingModuleCount: atomic.Int64{},
 
-		mtx:        gosync.Mutex{},
+		mtx:        sync.Mutex{},
 		toDiscover: make(chan string),
 		toPrepare:  make(chan string),
 		done:       make(chan any),
