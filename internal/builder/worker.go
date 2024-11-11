@@ -151,7 +151,7 @@ func (w *BuildWorker) analyze() {
 		mods := pkg.Modules.Values()
 		for _, module := range mods {
 			module.Scope = w.pipeline.GlobalScope.New()
-			module.Analyzer = semantic.NewAnalyzer(module)
+			module.Resolver = semantic.NewAnalyzer(module)
 			module.Node.WithType(types.NewModule(module.Name, module))
 		}
 
@@ -165,19 +165,19 @@ func (w *BuildWorker) analyze() {
 		}
 
 		for _, module := range mods {
-			if err := module.Analyzer.PreAnalyzeTypes(); err != nil {
+			if err := module.Resolver.PreResolveTypes(); err != nil {
 				panic(err)
 			}
 		}
 
 		for _, module := range mods {
-			if err := module.Analyzer.PreAnalyzeFunctions(); err != nil {
+			if err := module.Resolver.PreResolveFunctions(); err != nil {
 				panic(err)
 			}
 		}
 
 		for _, module := range mods {
-			if err := module.Analyzer.PreAnalyzeVariables(); err != nil {
+			if err := module.Resolver.PreResolveVariables(); err != nil {
 				panic(err)
 			}
 		}
@@ -189,7 +189,7 @@ func (w *BuildWorker) analyze() {
 		//}
 
 		for _, module := range mods {
-			if err := module.Analyzer.Analyze(); err != nil {
+			if err := module.Resolver.Resolve(); err != nil {
 				panic(err)
 			}
 		}

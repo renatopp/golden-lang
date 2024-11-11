@@ -8,15 +8,13 @@
 [ ] organize semantic step
   [x] move types to own package
   [ ] try to split type checking from other checks
-  [ ] allow raw expression like: 1 + 1.0
   [ ] shouldn't scope be improved?
-  [ ] should module have a dependence on the scope? -- yes to use it in the next phase
+  
+  [ ] allow raw expression like: 1 + 1.0
   [ ] visibility check (access `_`)
   [ ] improve panic usage in the analyser - remove it?
-  [ ] fix dependency from module -> analyzer -> module type
-  [ ] remove Package references from places other than module
-  [ ] improve access format (should it hit scope?)
 [ ] organize build step
+  [ ] remove Package references from places other than module
   [ ] split worker into worker and /manager/
   [ ] improve panic usage (at least catch before returning to command)
   [ ] add pretty error messages

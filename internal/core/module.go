@@ -2,12 +2,13 @@ package core
 
 import "github.com/renatopp/golden/internal/helpers/syncds"
 
-type AnalyzerTemp interface {
-	PreAnalyzeFunctions() error
-	PreAnalyzeTypes() error
-	PreAnalyzeVariables() error
-	Analyze() error
+type Resolver interface {
+	PreResolveFunctions() error
+	PreResolveTypes() error
+	PreResolveVariables() error
+	Resolve() error
 	ResolveValue(*AstNode) *AstNode
+	ResolveType(*AstNode) *AstNode
 }
 
 // Represents a module (file)
@@ -21,7 +22,7 @@ type Module struct {
 	DependsOn *syncds.SyncMap[string, *Module] // all modules imported in this one, including implicit modules
 
 	Scope    *Scope
-	Analyzer AnalyzerTemp
+	Resolver Resolver
 }
 
 func NewModule() *Module {

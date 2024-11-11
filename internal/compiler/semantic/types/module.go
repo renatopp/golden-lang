@@ -42,7 +42,7 @@ func (t *Module) AccessValue(name string) (*core.AstNode, error) {
 		return nil, fmt.Errorf("value %s not found", name)
 	}
 	if val.Type() == nil {
-		t.Module.Analyzer.ResolveValue(val)
+		t.Module.Resolver.ResolveValue(val)
 	}
 	return val, nil
 }

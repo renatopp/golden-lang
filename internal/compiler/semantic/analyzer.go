@@ -44,7 +44,7 @@ func NewAnalyzer(module *core.Module) *Analyzer {
 
 // Pre-analyze the module, adding types and function signatures to the module
 // scope, so they can be used later in the analysis
-func (a *Analyzer) PreAnalyzeTypes() error {
+func (a *Analyzer) PreResolveTypes() error {
 	a.WithRecovery(a.preAnalyzeFunctions)
 
 	if a.HasErrors() {
@@ -53,7 +53,7 @@ func (a *Analyzer) PreAnalyzeTypes() error {
 	return nil
 }
 
-func (a *Analyzer) PreAnalyzeFunctions() error {
+func (a *Analyzer) PreResolveFunctions() error {
 	a.WithRecovery(a.preAnalyzeFunctions)
 
 	if a.HasErrors() {
@@ -62,7 +62,7 @@ func (a *Analyzer) PreAnalyzeFunctions() error {
 	return nil
 }
 
-func (a *Analyzer) PreAnalyzeVariables() error {
+func (a *Analyzer) PreResolveVariables() error {
 	a.WithRecovery(a.preAnalyzeVariables)
 
 	if a.HasErrors() {
@@ -71,7 +71,7 @@ func (a *Analyzer) PreAnalyzeVariables() error {
 	return nil
 }
 
-func (a *Analyzer) Analyze() error {
+func (a *Analyzer) Resolve() error {
 	a.WithRecovery(a.analyze)
 
 	if a.HasErrors() {
@@ -173,12 +173,12 @@ func (a *Analyzer) preAnalyzeFunctions() {
 
 		returnType := Void
 		if ast.ReturnType != nil {
-			returnType = a.resolveType(ast.ReturnType).Type()
+			returnType = a.ResolveType(ast.ReturnType).Type()
 		}
 
 		params := []core.TypeData{}
 		for _, param := range ast.Params {
-			param.Type = a.resolveType(param.Type)
+			param.Type = a.ResolveType(param.Type)
 			params = append(params, param.Type.Type())
 		}
 
@@ -198,17 +198,17 @@ func (a *Analyzer) preAnalyzeVariables() {
 
 func (a *Analyzer) analyze() {
 	for _, node := range a.module.Node.Data().(*ast.Module).Functions {
-		a.resolveValue(node)
+		a.ResolveValue(node)
 	}
 
 	for _, node := range a.module.Node.Data().(*ast.Module).Variables {
-		a.resolveValue(node)
+		a.ResolveValue(node)
 	}
 }
 
 // ---------------------------------------------------------------------
 
-func (a *Analyzer) resolveType(node *core.AstNode) *core.AstNode {
+func (a *Analyzer) ResolveType(node *core.AstNode) *core.AstNode {
 	switch ast := node.Data().(type) {
 	case *ast.TypeIdent:
 		a.resolveTypeIdentAsType(node, ast)
@@ -230,12 +230,12 @@ func (a *Analyzer) resolveTypeIdentAsType(node *core.AstNode, ast *ast.TypeIdent
 func (a *Analyzer) resolveFunctionType(node *core.AstNode, ast *ast.FunctionType) {
 	params := []core.TypeData{}
 	for _, param := range ast.Params {
-		params = append(params, a.resolveType(param.Type).Type())
+		params = append(params, a.ResolveType(param.Type).Type())
 	}
 
 	ret := Void
 	if ast.ReturnType != nil {
-		ret = a.resolveType(ast.ReturnType).Type()
+		ret = a.ResolveType(ast.ReturnType).Type()
 	}
 
 	node.WithType(&types.Function{Parameters: params, Return: ret})
@@ -254,9 +254,7 @@ func (a *Analyzer) resolveTypeDecl(node *core.AstNode, ast *ast.DataDecl) {
 
 // ---------------------------------------------------------------------
 
-func (a *Analyzer) ResolveValue(node *core.AstNode) *core.AstNode { return a.resolveValue(node) } // TODO: remove
-
-func (a *Analyzer) resolveValue(node *core.AstNode) *core.AstNode {
+func (a *Analyzer) ResolveValue(node *core.AstNode) *core.AstNode {
 	if slices.Contains(a.resolutionStack, node) {
 		a.Error(node.Token().Loc, "circular", "circular reference detected")
 	}
@@ -315,7 +313,7 @@ func (a *Analyzer) resolveValue(node *core.AstNode) *core.AstNode {
 func (a *Analyzer) resolveBlock(node *core.AstNode, ast *ast.Block) {
 	node.WithType(Void)
 	for _, expr := range ast.Expressions {
-		a.resolveValue(expr)
+		a.ResolveValue(expr)
 		node.WithType(expr.Type())
 	}
 }
@@ -337,7 +335,7 @@ func (a *Analyzer) resolveString(node *core.AstNode, ast *ast.String) {
 }
 
 func (a *Analyzer) resolveUnaryOp(node *core.AstNode, ast *ast.UnaryOp) {
-	a.resolveValue(ast.Right)
+	a.ResolveValue(ast.Right)
 
 	switch ast.Operator {
 	case "-", "+":
@@ -352,8 +350,8 @@ func (a *Analyzer) resolveUnaryOp(node *core.AstNode, ast *ast.UnaryOp) {
 }
 
 func (a *Analyzer) resolveBinaryOp(node *core.AstNode, ast *ast.BinaryOp) {
-	a.resolveValue(ast.Left)
-	a.resolveValue(ast.Right)
+	a.ResolveValue(ast.Left)
+	a.ResolveValue(ast.Right)
 
 	switch ast.Operator {
 	case "+":
@@ -397,7 +395,7 @@ func (a *Analyzer) resolveVarIdent(node *core.AstNode, ast *ast.VarIdent) {
 	val := a.GetValueOrError(ast.Name)
 
 	if val.Type() == nil {
-		a.resolveValue(val)
+		a.ResolveValue(val)
 	}
 
 	node.WithType(val.Type())
@@ -405,7 +403,7 @@ func (a *Analyzer) resolveVarIdent(node *core.AstNode, ast *ast.VarIdent) {
 
 func (a *Analyzer) resolveVariableDecl(node *core.AstNode, ast *ast.VariableDecl) {
 	if ast.Type != nil {
-		a.resolveType(ast.Type)
+		a.ResolveType(ast.Type)
 	}
 
 	if ast.Value == nil {
@@ -416,7 +414,7 @@ func (a *Analyzer) resolveVariableDecl(node *core.AstNode, ast *ast.VariableDecl
 		ast.Value = node.Copy().WithData(def)
 	}
 
-	a.resolveValue(ast.Value)
+	a.ResolveValue(ast.Value)
 
 	if ast.Type != nil {
 		a.ExpectMatchingTypes(ast.Type, ast.Value)
@@ -431,12 +429,12 @@ func (a *Analyzer) resolveFunctionDecl(node *core.AstNode, ast *ast.FunctionDecl
 	if node.Type() == nil {
 		returnType := Void
 		if ast.ReturnType != nil {
-			returnType = a.resolveType(ast.ReturnType).Type()
+			returnType = a.ResolveType(ast.ReturnType).Type()
 		}
 
 		params := []core.TypeData{}
 		for _, param := range ast.Params {
-			param.Type = a.resolveType(param.Type)
+			param.Type = a.ResolveType(param.Type)
 			params = append(params, param.Type.Type())
 		}
 
@@ -450,7 +448,7 @@ func (a *Analyzer) resolveFunctionDecl(node *core.AstNode, ast *ast.FunctionDecl
 		a.scope.SetValue(param.Name, param.Type)
 	}
 
-	a.resolveValue(ast.Body)
+	a.ResolveValue(ast.Body)
 	a.ExpectTypeToBeAnyOf(ast.Body, tp.Return)
 	a.popScope()
 
@@ -470,7 +468,7 @@ func (a *Analyzer) resolveAnonymousApply(node *core.AstNode, ast *ast.Apply) {
 }
 
 func (a *Analyzer) resolveTargetApply(node *core.AstNode, ast *ast.Apply) {
-	a.resolveValue(ast.Target)
+	a.ResolveValue(ast.Target)
 
 	tp, ok := ast.Target.Type().(core.ApplicableTypeData)
 	if !ok {
@@ -479,7 +477,7 @@ func (a *Analyzer) resolveTargetApply(node *core.AstNode, ast *ast.Apply) {
 
 	args := []core.TypeData{}
 	for _, arg := range ast.Args {
-		a.resolveValue(arg.Value)
+		a.ResolveValue(arg.Value)
 		args = append(args, arg.Value.Type())
 	}
 
@@ -492,7 +490,7 @@ func (a *Analyzer) resolveTargetApply(node *core.AstNode, ast *ast.Apply) {
 }
 
 func (a *Analyzer) resolveAccessValue(node *core.AstNode, ast *ast.Access) {
-	a.resolveValue(ast.Target)
+	a.ResolveValue(ast.Target)
 
 	tp, ok := ast.Target.Type().(core.AccessibleTypeData)
 	if !ok {
@@ -505,7 +503,7 @@ func (a *Analyzer) resolveAccessValue(node *core.AstNode, ast *ast.Access) {
 	}
 
 	if val.Type() == nil {
-		a.resolveValue(val)
+		a.ResolveValue(val)
 	}
 
 	node.WithType(val.Type())
