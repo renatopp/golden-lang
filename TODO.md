@@ -1,23 +1,26 @@
 # TODOr
 
 ## Refactor
-[ ] try to create a traverser (tick => check a node recursively)
-  [ ] hook every node on: open (before ticking children), close (after ticking children)
-  [ ] allow stopping ticking
-  [ ] allow manual tick continuation (eg: for just a child)
+[ ] errors
+  [ ] refactor errors on lexer
+  [ ] refactor errors on parser
+  [ ] refactor errors on builder
+  [ ] add pretty error messages
+  
 [ ] organize semantic step
   [x] move types to own package
-  [ ] try to split type checking from other checks
+  [x] improve panic usage in the analyser - remove it?
+  [ ] finish resolver refactor
+  [ ] pass resolve function to the module type
   [ ] shouldn't scope be improved?
   
   [ ] allow raw expression like: 1 + 1.0
   [ ] visibility check (access `_`)
-  [ ] improve panic usage in the analyser - remove it?
+
 [ ] organize build step
   [ ] remove Package references from places other than module
   [ ] split worker into worker and /manager/
   [ ] improve panic usage (at least catch before returning to command)
-  [ ] add pretty error messages
   [ ] visibility check for modules `_`
 
 ## IR
