@@ -23,6 +23,7 @@ type BuildOptions struct {
 	InputFilePath  string
 	OutputFilePath string
 	NumWorkers     int
+	Debug          bool
 }
 
 func (b *Builder) Build(opts BuildOptions) error {
@@ -61,7 +62,7 @@ func (b *Builder) Build(opts BuildOptions) error {
 
 	logger.Trace("[builder] starting %d workers", opts.NumWorkers)
 	for i := 0; i < opts.NumWorkers; i++ {
-		worker := NewBuildWorker(i, b.pipeline)
+		worker := NewBuildWorker(i, opts, b.pipeline)
 		go worker.Start()
 	}
 

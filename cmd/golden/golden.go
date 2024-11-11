@@ -11,25 +11,27 @@ type Command interface {
 	Name() string
 	Description() string
 	Help() string
-	Run(args []string) error
+	Run() error
 }
 
 var commands = []Command{
 	&cmd.Version{},
 	&cmd.Build{},
 	&cmd.Run{},
-	&cmd.Debug{},
+	// &cmd.Debug{},
 }
 
 func main() {
-	if len(os.Args) < 2 || os.Args[1] == "help" {
+	os.Args = os.Args[1:]
+
+	if len(os.Args) < 1 || os.Args[0] == "help" {
 		help()
 		os.Exit(0)
 	}
 
 	for _, cmd := range commands {
-		if cmd.Name() == os.Args[1] {
-			err := cmd.Run(os.Args[2:])
+		if cmd.Name() == os.Args[0] {
+			err := cmd.Run()
 			if err != nil {
 				fmt.Println("Error!", err)
 				fmt.Println()
@@ -39,7 +41,7 @@ func main() {
 		}
 	}
 
-	fmt.Println("Unknown command:", os.Args[1])
+	fmt.Println("Unknown command:", os.Args[0])
 	os.Exit(1)
 }
 
@@ -50,7 +52,7 @@ func help() {
 	}
 
 	for _, cmd := range commands {
-		if cmd.Name() == os.Args[2] {
+		if cmd.Name() == os.Args[0] {
 			fmt.Printf("Usage: golden %s [arguments]\n\n", cmd.Name())
 			fmt.Println(cmd.Help())
 			return

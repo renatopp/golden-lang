@@ -14,7 +14,7 @@ func (c *Version) Help() string {
 	return c.Description()
 }
 
-func (c *Version) Run(args []string) error {
+func (c *Version) Run() error {
 	println(golden.Version)
 	return nil
 }

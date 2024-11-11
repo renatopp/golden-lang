@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
 	"runtime"
 
@@ -22,7 +23,11 @@ func (c *Run) Help() string {
 	return "Runs the project"
 }
 
-func (c *Run) Run(args []string) error {
+func (c *Run) Run() error {
+	flagDebug := flag.Bool("debug", false, "enable debug information")
+	flag.Parse()
+
+	args := flag.Args()
 	if len(args) == 0 {
 		return fmt.Errorf("no file specified")
 	}
@@ -34,6 +39,7 @@ func (c *Run) Run(args []string) error {
 		InputFilePath:  args[0],
 		OutputFilePath: "out",
 		NumWorkers:     runtime.NumCPU(),
+		Debug:          *flagDebug,
 	})
 
 	if err != nil {

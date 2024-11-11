@@ -3,6 +3,8 @@ package builder
 import (
 	"fmt"
 	"os"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/compiler/semantic/types"
@@ -16,12 +18,14 @@ import (
 type BuildWorker struct {
 	id       int
 	pipeline *Pipeline
+	opts     BuildOptions
 }
 
-func NewBuildWorker(id int, pipeline *Pipeline) *BuildWorker {
+func NewBuildWorker(id int, opts BuildOptions, pipeline *Pipeline) *BuildWorker {
 	return &BuildWorker{
 		id:       id,
 		pipeline: pipeline,
+		opts:     opts,
 	}
 }
 
@@ -63,7 +67,6 @@ func (w *BuildWorker) prepare(modulePath string) {
 	defer w.pipeline.AckModule()
 
 	logger.Debug("[worker:prepare] preparing file: %s", modulePath)
-
 	bytes, err := os.ReadFile(modulePath)
 	if err != nil {
 		panic(err)
@@ -73,6 +76,14 @@ func (w *BuildWorker) prepare(modulePath string) {
 	tokens, err := syntax.Lex(bytes)
 	if err != nil {
 		panic(err)
+	}
+
+	if w.opts.Debug && modulePath == w.pipeline.EntryModulePath {
+		fmt.Printf("[%s:tokens]\n", modulePath)
+		for _, t := range tokens {
+			fmt.Printf("    - %s: %q\n", t.Kind, t.Literal)
+		}
+		println("\n")
 	}
 
 	// Annotate the tokens with the file information
@@ -86,6 +97,23 @@ func (w *BuildWorker) prepare(modulePath string) {
 	root, err := syntax.Parse(tokens)
 	if err != nil {
 		panic(err)
+	}
+
+	if w.opts.Debug && modulePath == w.pipeline.EntryModulePath {
+		fmt.Printf("[%s:AST]\n", modulePath)
+		root.Traverse(func(node *core.AstNode, level int) {
+			ident := strings.Repeat("  ", level)
+			line := "    " + ident + node.Signature()
+			comment := " -- " + ident + node.Tag()
+
+			size := utf8.RuneCountInString(line)
+			if size < 50 {
+				println(line, strings.Repeat(" ", 50-utf8.RuneCountInString(line)), comment)
+			} else {
+				println(line, comment)
+			}
+		})
+		println()
 	}
 
 	// Annotate the module with the package and file information
@@ -206,29 +234,27 @@ func (w *BuildWorker) analyze() {
 				panic(err)
 			}
 		}
+	}
 
-		// for _, module := range mods {
-		// 	println("# SCOPE OF", module.Package.Name+"/"+module.Name)
-		// 	println(module.Scope.String())
+	if w.opts.Debug {
+		entry, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
 
-		// 	module.Node.Traverse(func(node *core.AstNode, level int) {
+		fmt.Printf("[%s:scope]\n", entry.Path)
+		println(strings.ReplaceAll(entry.Scope.String(), "\n", "\n    "))
 
-		// 		ident := strings.Repeat("  ", level)
-		// 		line := ident + node.Signature()
-		// 		comment := " -- " + ident + node.Tag()
+		entry.Node.Traverse(func(node *core.AstNode, level int) {
+			ident := "    " + strings.Repeat("  ", level)
+			line := ident + node.Signature()
+			comment := " -- " + ident + node.Tag()
 
-		// 		size := utf8.RuneCountInString(line)
-		// 		if size < 50 {
-		// 			println(line, strings.Repeat(" ", 50-utf8.RuneCountInString(line)), comment)
-		// 		} else {
-		// 			println(line, comment)
-		// 		}
-
-		// 	})
-
-		// 	println()
-		// }
-
+			size := utf8.RuneCountInString(line)
+			if size < 50 {
+				println(line, strings.Repeat(" ", 50-utf8.RuneCountInString(line)), comment)
+			} else {
+				println(line, comment)
+			}
+		})
+		println()
 	}
 
 	logger.Trace("[worker:analyze] checking main function")
