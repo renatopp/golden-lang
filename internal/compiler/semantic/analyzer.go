@@ -6,10 +6,21 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/renatopp/golden/internal/compiler/semantic/types"
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
 	"github.com/renatopp/golden/lang"
 )
+
+var Int, Float, String, Bool, Void core.TypeData
+
+func init() {
+	Int = types.NewPrimitive("Int", func() (core.AstData, error) { return &ast.Int{Value: 0}, nil })
+	Float = types.NewPrimitive("Float", func() (core.AstData, error) { return &ast.Float{Value: 0}, nil })
+	String = types.NewPrimitive("String", func() (core.AstData, error) { return &ast.String{Value: ""}, nil })
+	Bool = types.NewPrimitive("Bool", func() (core.AstData, error) { return &ast.Bool{Value: false}, nil })
+	Void = types.NewVoid()
+}
 
 type Analyzer struct {
 	*lang.ErrorData
@@ -84,7 +95,7 @@ func (a *Analyzer) GetValueOrError(name string) *core.AstNode {
 func (a *Analyzer) GetTypeOrError(name string) core.TypeData {
 	tp := a.scope.GetType(name)
 	if tp == nil {
-		a.Error(lang.Loc{}, "undefined", "undefined identifier %s", name)
+		a.Error(lang.Loc{}, "undefined", "undefined type identifier %s", name)
 	}
 	return tp
 }
@@ -130,6 +141,9 @@ func (a *Analyzer) ExpectTypeToBeAnyOf(base *core.AstNode, nodes ...core.TypeDat
 	for _, node := range nodes {
 		names = append(names, node.Signature())
 	}
+	if base.Type() == nil {
+		a.Error(base.Token().Loc, "type", "expected types %s, got Void", strings.Join(names, ", "))
+	}
 	a.Error(base.Token().Loc, "type", "expected types %s, got %s", strings.Join(names, ", "), base.Type().Signature())
 }
 
@@ -168,7 +182,7 @@ func (a *Analyzer) preAnalyzeFunctions() {
 			params = append(params, param.Type.Type())
 		}
 
-		tp := NewFunctionType(params, returnType)
+		tp := types.NewFunction(params, returnType)
 		node.WithType(tp)
 		a.scope.SetValue(ast.Name, node.WithType(tp))
 	}
@@ -203,7 +217,7 @@ func (a *Analyzer) resolveType(node *core.AstNode) *core.AstNode {
 		a.resolveFunctionType(node, ast)
 
 	default:
-		a.Error(node.Token().Loc, "unknown", "unknown node %s", node)
+		a.Error(node.Token().Loc, "unknown", "unknown node %v", node)
 	}
 
 	return node
@@ -224,7 +238,7 @@ func (a *Analyzer) resolveFunctionType(node *core.AstNode, ast *ast.FunctionType
 		ret = a.resolveType(ast.ReturnType).Type()
 	}
 
-	node.WithType(&FunctionType{Args: params, Ret: ret})
+	node.WithType(&types.Function{Parameters: params, Return: ret})
 }
 
 // Anonymous types
@@ -395,7 +409,11 @@ func (a *Analyzer) resolveVariableDecl(node *core.AstNode, ast *ast.VariableDecl
 	}
 
 	if ast.Value == nil {
-		ast.Value = node.Copy().WithData(ast.Type.Type().Default())
+		def, err := ast.Type.Type().Default()
+		if err != nil {
+			a.Error(node.Token().Loc, "type", err.Error())
+		}
+		ast.Value = node.Copy().WithData(def)
 	}
 
 	a.resolveValue(ast.Value)
@@ -408,9 +426,9 @@ func (a *Analyzer) resolveVariableDecl(node *core.AstNode, ast *ast.VariableDecl
 }
 
 func (a *Analyzer) resolveFunctionDecl(node *core.AstNode, ast *ast.FunctionDecl) {
-	var tp *FunctionType
+	var tp *types.Function
 	// If not already pre-analyzed
-	if node.Type() != nil {
+	if node.Type() == nil {
 		returnType := Void
 		if ast.ReturnType != nil {
 			returnType = a.resolveType(ast.ReturnType).Type()
@@ -422,7 +440,9 @@ func (a *Analyzer) resolveFunctionDecl(node *core.AstNode, ast *ast.FunctionDecl
 			params = append(params, param.Type.Type())
 		}
 
-		tp = NewFunctionType(params, returnType)
+		tp = types.NewFunction(params, returnType)
+	} else {
+		tp = node.Type().(*types.Function)
 	}
 
 	a.pushScope(a.scope.New())
@@ -431,7 +451,7 @@ func (a *Analyzer) resolveFunctionDecl(node *core.AstNode, ast *ast.FunctionDecl
 	}
 
 	a.resolveValue(ast.Body)
-	a.ExpectTypeToBeAnyOf(ast.Body, tp.Ret)
+	a.ExpectTypeToBeAnyOf(ast.Body, tp.Return)
 	a.popScope()
 
 	node.WithType(tp)

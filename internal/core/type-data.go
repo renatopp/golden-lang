@@ -6,7 +6,7 @@ type TypeData interface {
 	Tag() string                 // Used as a short name identifier of ths type for debugging
 	Signature() string           // Used as a code representation for errors and type identification for the user
 	Accepts(other TypeData) bool // Checks if the other type can be assignable into this type
-	Default() AstData            // Returns the default initialization value of the type
+	Default() (AstData, error)   // Returns the default initialization value of the type
 }
 
 // Represents a TypeData that can be applicable (e.g. `x()`)

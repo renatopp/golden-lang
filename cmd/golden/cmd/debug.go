@@ -119,5 +119,10 @@ func printNode(node *core.AstNode, level int) {
 	line := ident + node.Signature()
 	comment := " -- " + ident + node.Tag()
 
-	println(line, strings.Repeat(" ", 30-utf8.RuneCountInString(line)), comment)
+	size := utf8.RuneCountInString(line)
+	if size < 30 {
+		println(line, strings.Repeat(" ", 30-utf8.RuneCountInString(line)), comment)
+	} else {
+		println(line, comment)
+	}
 }

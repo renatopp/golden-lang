@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/renatopp/golden/internal/compiler/semantic"
+	"github.com/renatopp/golden/internal/compiler/semantic/types"
 	"github.com/renatopp/golden/internal/compiler/syntax"
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
@@ -151,7 +152,7 @@ func (w *BuildWorker) analyze() {
 		for _, module := range mods {
 			module.Scope = w.pipeline.GlobalScope.New()
 			module.Analyzer = semantic.NewAnalyzer(module)
-			module.Node.WithType(semantic.NewModuleType(module.Name, module))
+			module.Node.WithType(types.NewModule(module.Name, module))
 		}
 
 		for _, module := range mods {
@@ -264,11 +265,11 @@ func (w *BuildWorker) checkMainFunction() {
 		panic("function 'main' not found")
 	}
 
-	mainFuncType := mainFunc.Type().(*semantic.FunctionType)
-	if mainFuncType.Ret != semantic.Void {
+	mainFuncType := mainFunc.Type().(*types.Function)
+	if mainFuncType.Return != semantic.Void {
 		panic("function 'main' must not return any value")
 	}
-	if len(mainFuncType.Args) > 0 {
+	if len(mainFuncType.Parameters) > 0 {
 		panic("function 'main' must not have any parameter")
 	}
 }

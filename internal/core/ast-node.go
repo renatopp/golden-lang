@@ -97,7 +97,7 @@ func (n *AstNode) Signature() string {
 	}
 	tp := ""
 	if n.type_ != nil {
-		tp = " \u2192 " + n.type_.Signature()
+		tp = "::" + n.type_.Signature()
 	}
 	return fmt.Sprintf("%s%s", dt, tp)
 }

@@ -72,10 +72,10 @@ func (s *Scope) String() string {
 	ident := strings.Repeat("| ", s.Depth+1)
 	r += strings.Repeat("\n| ", s.Depth) + "[scope]\n"
 	for k, v := range s.Types {
-		r += ident + "T: " + k + " = " + v.Tag() + "\n"
+		r += ident + "T: " + k + " = " + v.Signature() + "\n"
 	}
 	for k, v := range s.Values {
-		r += ident + "V: " + k + " = " + strings.ReplaceAll(v.Tag(), "\n", "") + "\n"
+		r += ident + "V: " + k + " = " + v.Signature() + "\n"
 	}
 	return r
 }

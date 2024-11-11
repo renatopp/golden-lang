@@ -6,7 +6,7 @@
   [ ] allow stopping ticking
   [ ] allow manual tick continuation (eg: for just a child)
 [ ] organize semantic step
-  [ ] move types to own package
+  [x] move types to own package
   [ ] try to split type checking from other checks
   [ ] allow raw expression like: 1 + 1.0
   [ ] shouldn't scope be improved?
