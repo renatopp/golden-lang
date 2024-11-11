@@ -11,6 +11,7 @@ type Function struct {
 	baseType
 	Parameters []core.TypeData
 	Return     core.TypeData
+	Scope      *core.Scope
 }
 
 func NewFunction(params []core.TypeData, returnType core.TypeData) *Function {

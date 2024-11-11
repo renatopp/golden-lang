@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/renatopp/golden/lang"
 )
@@ -32,14 +31,8 @@ func (e *Error) Loc() *lang.Loc     { return e.loc }
 func (e *Error) Token() *lang.Token { return e.token }
 func (e *Error) Node() *AstNode     { return e.node }
 func (e *Error) Kind() ErrorKind    { return e.kind }
-func (e *Error) Msg() string        { return e.msg }
-func (e *Error) Error() string {
-	if e.loc != nil {
-		return e.msg + " at " + strconv.Itoa(e.loc.Start.Line) + ":" + strconv.Itoa(e.loc.Start.Column)
-	}
-
-	return e.msg
-}
+func (e *Error) Message() string    { return e.msg }
+func (e *Error) Error() string      { return e.msg }
 
 func (e *Error) WithLoc(loc *lang.Loc) *Error {
 	e.loc = loc
@@ -64,7 +57,7 @@ func (e *Error) WithKind(kind ErrorKind) *Error {
 	return e
 }
 
-func (e *Error) WithMsg(msg string, args ...any) *Error {
+func (e *Error) WithMessage(msg string, args ...any) *Error {
 	e.msg = fmt.Sprintf(msg, args...)
 	return e
 }

@@ -4,8 +4,8 @@ fn main() {
   'renato'
 }
 
-fn multi(x Int) Fn(Int, Int) Int {
-  fn(a Int, b Int) Int {
-    {a + b} * x
-  }
-}
+-- fn multi(x Int) Fn(Int, Int) Int {
+--   fn(a Int, b Int) Int {
+--     {a + b} * x
+--   }
+-- }

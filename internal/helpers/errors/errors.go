@@ -9,6 +9,11 @@ import (
 
 const (
 	InternalError core.ErrorKind = iota
+	UndefinedVariableError
+	UndefinedTypeError
+	CircularReferenceError
+	ExpressionError
+	TypeError
 )
 
 func WithRecovery(f func()) (err error) {
@@ -24,6 +29,13 @@ func WithRecovery(f func()) (err error) {
 	}()
 	f()
 	return
+}
+
+func RethrowWith(f func(), kind core.ErrorKind, msg string, args ...any) {
+	err := WithRecovery(f)
+	if err != nil {
+		panic(err.(*core.Error).WithKind(kind).WithMessage(msg, args...))
+	}
 }
 
 func ThrowAtLocation(loc lang.Loc, kind core.ErrorKind, msg string, args ...any) {

@@ -3,12 +3,8 @@ package core
 import "github.com/renatopp/golden/internal/helpers/syncds"
 
 type Resolver interface {
-	PreResolveFunctions() error
-	PreResolveTypes() error
-	PreResolveVariables() error
-	Resolve() error
-	ResolveValue(*AstNode) *AstNode
-	ResolveType(*AstNode) *AstNode
+	PreResolve(*AstNode) error
+	Resolve(*AstNode) error
 }
 
 // Represents a module (file)

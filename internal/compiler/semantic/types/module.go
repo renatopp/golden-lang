@@ -21,11 +21,11 @@ func NewModule(name string, module *core.Module) *Module {
 }
 
 func (t *Module) Tag() string {
-	return t.Name
+	return "Module(" + t.Name + ")"
 }
 
 func (t *Module) Signature() string {
-	return ""
+	return "Module"
 }
 
 func (t *Module) Accepts(other core.TypeData) bool {
@@ -42,7 +42,7 @@ func (t *Module) AccessValue(name string) (*core.AstNode, error) {
 		return nil, fmt.Errorf("value %s not found", name)
 	}
 	if val.Type() == nil {
-		t.Module.Resolver.ResolveValue(val)
+		return val, t.Module.Resolver.Resolve(val)
 	}
 	return val, nil
 }
