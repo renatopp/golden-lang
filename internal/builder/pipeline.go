@@ -31,6 +31,7 @@ func NewPipeline() *Pipeline {
 	scope.SetType("Float", semantic.Float)
 	scope.SetType("String", semantic.String)
 	scope.SetType("Bool", semantic.Bool)
+	println("NewPipeline", semantic.Int)
 
 	return &Pipeline{
 		GlobalScope:        scope,

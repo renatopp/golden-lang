@@ -1,346 +1,297 @@
 package builder
 
-import (
-	"fmt"
-	"os"
-	"strings"
-	"unicode/utf8"
+// func (w *BuildWorker) discover(modulePath string) {
+// 	defer w.pipeline.AckModule()
 
-	"github.com/renatopp/golden/internal/compiler/semantic"
-	"github.com/renatopp/golden/internal/compiler/semantic/types"
-	"github.com/renatopp/golden/internal/compiler/syntax"
-	"github.com/renatopp/golden/internal/compiler/syntax/ast"
-	"github.com/renatopp/golden/internal/core"
-	"github.com/renatopp/golden/internal/helpers/fs"
-	"github.com/renatopp/golden/internal/helpers/logger"
-)
+// 	logger.Debug("[worker:discover] discovering package of: %s", modulePath)
+// 	files := fs.DiscoverModules(modulePath)
+// 	for _, file := range files {
+// 		if !w.pipeline.PreRegisterModule(file) {
+// 			continue
+// 		}
+// 		w.pipeline.Prepare(file)
+// 	}
+// }
 
-type BuildWorker struct {
-	id       int
-	pipeline *Pipeline
-	opts     BuildOptions
-}
+// // For a given module path, prepare (lex, parse, pre-analyze) the file for the analysis
+// func (w *BuildWorker) prepare(modulePath string) {
+// 	defer w.pipeline.AckModule()
 
-func NewBuildWorker(id int, opts BuildOptions, pipeline *Pipeline) *BuildWorker {
-	return &BuildWorker{
-		id:       id,
-		pipeline: pipeline,
-		opts:     opts,
-	}
-}
+// 	logger.Debug("[worker:prepare] preparing file: %s", modulePath)
+// 	bytes, err := os.ReadFile(modulePath)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-func (w *BuildWorker) Start() {
-	for {
-		select {
-		case path := <-w.pipeline.toDiscover:
-			w.discover(path)
+// 	logger.Trace("[worker:prepare] lexing: %s", modulePath)
+// 	tokens, err := syntax.Lex(bytes)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-		case path := <-w.pipeline.toPrepare:
-			w.prepare(path)
-		}
+// 	if w.opts.Debug && modulePath == w.pipeline.EntryModulePath {
+// 		fmt.Printf("[%s:tokens]\n", modulePath)
+// 		for _, t := range tokens {
+// 			fmt.Printf("    - %s: %q\n", t.Kind, t.Literal)
+// 		}
+// 		println("\n")
+// 	}
 
-		if w.pipeline.PendingModuleCount.Load() > 0 {
-			continue
-		}
+// 	// Annotate the tokens with the file information
+// 	for _, token := range tokens {
+// 		loc := token.Loc
+// 		loc.Filename = modulePath
+// 		token.Loc = loc
+// 	}
 
-		w.analyze()
-		w.codegen()
-	}
-}
+// 	logger.Trace("[worker:prepare] parsing: %s", modulePath)
+// 	root, err := syntax.Parse(tokens)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-// From a given module path, discover all the modules in the same package
-func (w *BuildWorker) discover(modulePath string) {
-	defer w.pipeline.AckModule()
+// 	if w.opts.Debug && modulePath == w.pipeline.EntryModulePath {
+// 		fmt.Printf("[%s:AST]\n", modulePath)
+// 		root.Traverse(func(node *core.AstNode, level int) {
+// 			ident := strings.Repeat("  ", level)
+// 			line := "    " + ident + node.Signature()
+// 			comment := " -- " + ident + node.Tag()
 
-	logger.Debug("[worker:discover] discovering package of: %s", modulePath)
-	files := fs.DiscoverModules(modulePath)
-	for _, file := range files {
-		if !w.pipeline.PreRegisterModule(file) {
-			continue
-		}
-		w.pipeline.Prepare(file)
-	}
-}
+// 			size := utf8.RuneCountInString(line)
+// 			if size < 50 {
+// 				println(line, strings.Repeat(" ", 50-utf8.RuneCountInString(line)), comment)
+// 			} else {
+// 				println(line, comment)
+// 			}
+// 		})
+// 		println()
+// 	}
 
-// For a given module path, prepare (lex, parse, pre-analyze) the file for the analysis
-func (w *BuildWorker) prepare(modulePath string) {
-	defer w.pipeline.AckModule()
+// 	// Annotate the module with the package and file information
+// 	module := core.NewModule()
+// 	module.Node = root
+// 	// module.Ast = root.Data.(*AstModule)
+// 	module.Path = modulePath
+// 	module.Name = fs.ModulePath_To_ModuleName(modulePath)
+// 	module.FileName = fs.ModulePath_To_ModuleFileName(modulePath)
+// 	for _, imp := range module.Node.Data().(*ast.Module).Imports {
+// 		module.Imports = append(module.Imports, &core.ModuleImport{
+// 			Name:  imp.Path,
+// 			Alias: imp.Alias,
+// 		})
+// 	}
 
-	logger.Debug("[worker:prepare] preparing file: %s", modulePath)
-	bytes, err := os.ReadFile(modulePath)
-	if err != nil {
-		panic(err)
-	}
+// 	// Create the package reference
+// 	packageName := fs.ModulePath_To_PackageName(modulePath)
+// 	packagePath := fs.ModulePath_To_PackagePath(modulePath)
+// 	pkg := w.pipeline.CreateOrGetPackage(packageName, packagePath)
+// 	module.Package = pkg
+// 	pkg.Modules.Add(module)
+// 	w.pipeline.RegisterModule(module)
 
-	logger.Trace("[worker:prepare] lexing: %s", modulePath)
-	tokens, err := syntax.Lex(bytes)
-	if err != nil {
-		panic(err)
-	}
+// 	// Schedule imports for discovery
+// 	for _, imp := range module.Imports {
+// 		modulePath := fs.ImportName_To_ModulePath(imp.Name)
 
-	if w.opts.Debug && modulePath == w.pipeline.EntryModulePath {
-		fmt.Printf("[%s:tokens]\n", modulePath)
-		for _, t := range tokens {
-			fmt.Printf("    - %s: %q\n", t.Kind, t.Literal)
-		}
-		println("\n")
-	}
+// 		// TODO: check if module is private
 
-	// Annotate the tokens with the file information
-	for _, token := range tokens {
-		loc := token.Loc
-		loc.Filename = modulePath
-		token.Loc = loc
-	}
+// 		if err := fs.CheckFileExists(modulePath); err != nil {
+// 			panic(fmt.Sprintf("file '%s' does not exist. Remember that module names must be lower snake case, including the extension.", modulePath))
+// 		}
 
-	logger.Trace("[worker:prepare] parsing: %s", modulePath)
-	root, err := syntax.Parse(tokens)
-	if err != nil {
-		panic(err)
-	}
+// 		moduleName := fs.ModulePath_To_ModuleName(imp.Name)
+// 		if !fs.IsModuleNameValid(moduleName) {
+// 			panic(fmt.Sprintf("invalid module name '%s'. Remember that module names must be lower snake case.", moduleName))
+// 		}
 
-	if w.opts.Debug && modulePath == w.pipeline.EntryModulePath {
-		fmt.Printf("[%s:AST]\n", modulePath)
-		root.Traverse(func(node *core.AstNode, level int) {
-			ident := strings.Repeat("  ", level)
-			line := "    " + ident + node.Signature()
-			comment := " -- " + ident + node.Tag()
+// 		imp.Path = modulePath
+// 		w.pipeline.Discover(modulePath)
+// 		// TODO: check if import is a project package or a core package
+// 		// if package starts with @, it is a project package
+// 		// if package matches the core packages (from a map?), it is a core package
+// 		// otherwise, search package in the GOLDENPATH
+// 		// if package is not found, error
+// 	}
+// }
 
-			size := utf8.RuneCountInString(line)
-			if size < 50 {
-				println(line, strings.Repeat(" ", 50-utf8.RuneCountInString(line)), comment)
-			} else {
-				println(line, comment)
-			}
-		})
-		println()
-	}
+// // Analyze all the modules in the pipeline
+// func (w *BuildWorker) analyze() {
+// 	logger.Debug("[worker:analyze] analyzing modules")
 
-	// Annotate the module with the package and file information
-	module := core.NewModule()
-	module.Node = root
-	// module.Ast = root.Data.(*AstModule)
-	module.Path = modulePath
-	module.Name = fs.ModulePath_To_ModuleName(modulePath)
-	module.FileName = fs.ModulePath_To_ModuleFileName(modulePath)
-	for _, imp := range module.Node.Data().(*ast.Module).Imports {
-		module.Imports = append(module.Imports, &core.ModuleImport{
-			Name:  imp.Path,
-			Alias: imp.Alias,
-		})
-	}
+// 	logger.Trace("[worker:analyze] building dependency graph")
+// 	entryModule, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
+// 	w.buildDependencyGraph(entryModule)
 
-	// Create the package reference
-	packageName := fs.ModulePath_To_PackageName(modulePath)
-	packagePath := fs.ModulePath_To_PackagePath(modulePath)
-	pkg := w.pipeline.CreateOrGetPackage(packageName, packagePath)
-	module.Package = pkg
-	pkg.Modules.Add(module)
-	w.pipeline.RegisterModule(module)
+// 	logger.Trace("[worker:analyze] analyzing dependency cycles")
+// 	orderedPackages := w.checkDependencyGraph(entryModule.Package)
 
-	// Schedule imports for discovery
-	for _, imp := range module.Imports {
-		modulePath := fs.ImportName_To_ModulePath(imp.Name)
+// 	for _, pkg := range orderedPackages {
+// 		logger.Debug("[worker:analyze] analyzing package: %s", pkg.Path)
+// 		mods := pkg.Modules.Values()
 
-		// TODO: check if module is private
+// 		// Create module scopes
+// 		for _, module := range mods {
+// 			module.Scope = w.pipeline.GlobalScope.New()
+// 			module.Resolver = semantic.NewResolver(module)
+// 			module.Node.WithType(types.NewModule(module.Name, module))
+// 		}
 
-		if err := fs.CheckFileExists(modulePath); err != nil {
-			panic(fmt.Sprintf("file '%s' does not exist. Remember that module names must be lower snake case, including the extension.", modulePath))
-		}
+// 		// Attach scopes to each module
+// 		for _, module := range mods {
+// 			for _, other := range mods {
+// 				if module == other {
+// 					continue
+// 				}
+// 				module.Scope.SetValue(other.Name, other.Node)
+// 			}
+// 		}
 
-		moduleName := fs.ModulePath_To_ModuleName(imp.Name)
-		if !fs.IsModuleNameValid(moduleName) {
-			panic(fmt.Sprintf("invalid module name '%s'. Remember that module names must be lower snake case.", moduleName))
-		}
+// 		// Pre-resolve types
+// 		for _, module := range mods {
+// 			for _, tp := range module.Node.Data().(*ast.Module).Types {
+// 				if err := module.Resolver.PreResolve(tp); err != nil {
+// 					panic(err)
+// 				}
+// 			}
+// 		}
 
-		imp.Path = modulePath
-		w.pipeline.Discover(modulePath)
-		// TODO: check if import is a project package or a core package
-		// if package starts with @, it is a project package
-		// if package matches the core packages (from a map?), it is a core package
-		// otherwise, search package in the GOLDENPATH
-		// if package is not found, error
-	}
-}
+// 		// Pre-resolve functions
+// 		for _, module := range mods {
+// 			for _, tp := range module.Node.Data().(*ast.Module).Functions {
+// 				if err := module.Resolver.PreResolve(tp); err != nil {
+// 					panic(err)
+// 				}
+// 			}
+// 		}
 
-// Analyze all the modules in the pipeline
-func (w *BuildWorker) analyze() {
-	logger.Debug("[worker:analyze] analyzing modules")
+// 		// Pre-resolve variables
+// 		for _, module := range mods {
+// 			for _, tp := range module.Node.Data().(*ast.Module).Variables {
+// 				if err := module.Resolver.PreResolve(tp); err != nil {
+// 					panic(err)
+// 				}
+// 			}
+// 		}
 
-	logger.Trace("[worker:analyze] building dependency graph")
-	entryModule, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
-	w.buildDependencyGraph(entryModule)
+// 		// for _, module := range mods {
+// 		// 	println("# SCOPE OF", module.Path)
+// 		// 	println(module.Scope.String())
+// 		// 	println()
+// 		// }
 
-	logger.Trace("[worker:analyze] analyzing dependency cycles")
-	orderedPackages := w.checkDependencyGraph(entryModule.Package)
+// 		// Resolve everything
+// 		for _, module := range mods {
+// 			if err := module.Resolver.Resolve(module.Node); err != nil {
+// 				panic(err)
+// 			}
+// 		}
+// 	}
 
-	for _, pkg := range orderedPackages {
-		logger.Debug("[worker:analyze] analyzing package: %s", pkg.Path)
-		mods := pkg.Modules.Values()
+// 	if w.opts.Debug {
+// 		entry, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
 
-		// Create module scopes
-		for _, module := range mods {
-			module.Scope = w.pipeline.GlobalScope.New()
-			module.Resolver = semantic.NewResolver(module)
-			module.Node.WithType(types.NewModule(module.Name, module))
-		}
+// 		fmt.Printf("[%s:scope]\n", entry.Path)
+// 		println(strings.ReplaceAll(entry.Scope.String(), "\n", "\n    "))
 
-		// Attach scopes to each module
-		for _, module := range mods {
-			for _, other := range mods {
-				if module == other {
-					continue
-				}
-				module.Scope.SetValue(other.Name, other.Node)
-			}
-		}
+// 		entry.Node.Traverse(func(node *core.AstNode, level int) {
+// 			ident := "    " + strings.Repeat("  ", level)
+// 			line := ident + node.Signature()
+// 			comment := " -- " + ident + node.Tag()
 
-		// Pre-resolve types
-		for _, module := range mods {
-			for _, tp := range module.Node.Data().(*ast.Module).Types {
-				if err := module.Resolver.PreResolve(tp); err != nil {
-					panic(err)
-				}
-			}
-		}
+// 			size := utf8.RuneCountInString(line)
+// 			if size < 50 {
+// 				println(line, strings.Repeat(" ", 50-utf8.RuneCountInString(line)), comment)
+// 			} else {
+// 				println(line, comment)
+// 			}
+// 		})
+// 		println()
+// 	}
 
-		// Pre-resolve functions
-		for _, module := range mods {
-			for _, tp := range module.Node.Data().(*ast.Module).Functions {
-				if err := module.Resolver.PreResolve(tp); err != nil {
-					panic(err)
-				}
-			}
-		}
+// 	logger.Trace("[worker:analyze] checking main function")
+// 	w.checkMainFunction()
+// 	w.pipeline.done <- nil
+// }
 
-		// Pre-resolve variables
-		for _, module := range mods {
-			for _, tp := range module.Node.Data().(*ast.Module).Variables {
-				if err := module.Resolver.PreResolve(tp); err != nil {
-					panic(err)
-				}
-			}
-		}
+// func (w *BuildWorker) buildDependencyGraph(module *core.Module) {
+// 	if module.DependsOn.Len() > 0 {
+// 		return
+// 	}
 
-		// for _, module := range mods {
-		// 	println("# SCOPE OF", module.Path)
-		// 	println(module.Scope.String())
-		// 	println()
-		// }
+// 	for _, mod := range module.Package.Modules.Values() {
+// 		if mod == module {
+// 			continue
+// 		}
+// 		module.DependsOn.Set(mod.Path, mod)
+// 	}
 
-		// Resolve everything
-		for _, module := range mods {
-			if err := module.Resolver.Resolve(module.Node); err != nil {
-				panic(err)
-			}
-		}
-	}
+// 	for _, imp := range module.Imports {
+// 		imp.Module, _ = w.pipeline.Modules.Get(imp.Path)
+// 		imp.Package = imp.Module.Package
 
-	if w.opts.Debug {
-		entry, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
+// 		if module == imp.Module {
+// 			panic(fmt.Sprintf("module '%s' cannot import itself", module.Path))
+// 		}
 
-		fmt.Printf("[%s:scope]\n", entry.Path)
-		println(strings.ReplaceAll(entry.Scope.String(), "\n", "\n    "))
+// 		module.DependsOn.Set(imp.Module.Path, imp.Module)
+// 		if module.Package != imp.Package {
+// 			module.Package.DependsOn.Set(imp.Package.Path, imp.Package)
+// 		}
 
-		entry.Node.Traverse(func(node *core.AstNode, level int) {
-			ident := "    " + strings.Repeat("  ", level)
-			line := ident + node.Signature()
-			comment := " -- " + ident + node.Tag()
+// 		w.buildDependencyGraph(imp.Module)
+// 	}
+// }
 
-			size := utf8.RuneCountInString(line)
-			if size < 50 {
-				println(line, strings.Repeat(" ", 50-utf8.RuneCountInString(line)), comment)
-			} else {
-				println(line, comment)
-			}
-		})
-		println()
-	}
+// func (w *BuildWorker) checkDependencyGraph(pkg *core.Package) []*core.Package {
+// 	visited := map[string]bool{}
+// 	stack := map[string]bool{}
+// 	order := []*core.Package{}
+// 	return w.checkDependencyGraphLoop(pkg, visited, stack, order)
+// }
 
-	logger.Trace("[worker:analyze] checking main function")
-	w.checkMainFunction()
-	w.pipeline.done <- nil
-}
+// func (w *BuildWorker) checkDependencyGraphLoop(pkg *core.Package, visited, stack map[string]bool, order []*core.Package) []*core.Package {
+// 	visited[pkg.Path] = true
+// 	stack[pkg.Path] = true
+// 	for _, dep := range pkg.DependsOn.Values() {
+// 		if !visited[dep.Path] {
+// 			order = w.checkDependencyGraphLoop(dep, visited, stack, order)
 
-func (w *BuildWorker) buildDependencyGraph(module *core.Module) {
-	if module.DependsOn.Len() > 0 {
-		return
-	}
+// 		} else if stack[dep.Path] {
+// 			panic(fmt.Sprintf("cyclic dependency detected: %s", dep.Path))
+// 		}
+// 	}
+// 	stack[pkg.Path] = false
+// 	return append(order, pkg)
+// }
 
-	for _, mod := range module.Package.Modules.Values() {
-		if mod == module {
-			continue
-		}
-		module.DependsOn.Set(mod.Path, mod)
-	}
+// func (w *BuildWorker) checkMainFunction() {
+// 	main, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
 
-	for _, imp := range module.Imports {
-		imp.Module, _ = w.pipeline.Modules.Get(imp.Path)
-		imp.Package = imp.Module.Package
+// 	mainFunc := main.Scope.GetValue("main")
+// 	if mainFunc == nil {
+// 		panic("function 'main' not found")
+// 	}
 
-		if module == imp.Module {
-			panic(fmt.Sprintf("module '%s' cannot import itself", module.Path))
-		}
+// 	mainFuncType := mainFunc.Type().(*types.Function)
+// 	if mainFuncType.Return != semantic.Void {
+// 		panic("function 'main' must not return any value")
+// 	}
+// 	if len(mainFuncType.Parameters) > 0 {
+// 		panic("function 'main' must not have any parameter")
+// 	}
+// }
 
-		module.DependsOn.Set(imp.Module.Path, imp.Module)
-		if module.Package != imp.Package {
-			module.Package.DependsOn.Set(imp.Package.Path, imp.Package)
-		}
+// // Code Generation
+// func (w *BuildWorker) codegen() {
+// 	// pkgs := w.pipeline.Packages.Values()
+// 	// for _, pkg := range pkgs {
+// 	// 	code, err := CodeGen_C(pkg)
+// 	// 	if err != nil {
+// 	// 		panic(err)
+// 	// 	}
 
-		w.buildDependencyGraph(imp.Module)
-	}
-}
-
-func (w *BuildWorker) checkDependencyGraph(pkg *core.Package) []*core.Package {
-	visited := map[string]bool{}
-	stack := map[string]bool{}
-	order := []*core.Package{}
-	return w.checkDependencyGraphLoop(pkg, visited, stack, order)
-}
-
-func (w *BuildWorker) checkDependencyGraphLoop(pkg *core.Package, visited, stack map[string]bool, order []*core.Package) []*core.Package {
-	visited[pkg.Path] = true
-	stack[pkg.Path] = true
-	for _, dep := range pkg.DependsOn.Values() {
-		if !visited[dep.Path] {
-			order = w.checkDependencyGraphLoop(dep, visited, stack, order)
-
-		} else if stack[dep.Path] {
-			panic(fmt.Sprintf("cyclic dependency detected: %s", dep.Path))
-		}
-	}
-	stack[pkg.Path] = false
-	return append(order, pkg)
-}
-
-func (w *BuildWorker) checkMainFunction() {
-	main, _ := w.pipeline.Modules.Get(w.pipeline.EntryModulePath)
-
-	mainFunc := main.Scope.GetValue("main")
-	if mainFunc == nil {
-		panic("function 'main' not found")
-	}
-
-	mainFuncType := mainFunc.Type().(*types.Function)
-	if mainFuncType.Return != semantic.Void {
-		panic("function 'main' must not return any value")
-	}
-	if len(mainFuncType.Parameters) > 0 {
-		panic("function 'main' must not have any parameter")
-	}
-}
-
-// Code Generation
-func (w *BuildWorker) codegen() {
-	// pkgs := w.pipeline.Packages.Values()
-	// for _, pkg := range pkgs {
-	// 	code, err := CodeGen_C(pkg)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	name := strings.ReplaceAll(pkg.Name, "/", "_")
-	// 	name = strings.ReplaceAll(name, "@", "main")
-	// 	os.WriteFile(".out/"+name+".c", []byte(code), 0644)
-	// }
-}
+// 	// 	name := strings.ReplaceAll(pkg.Name, "/", "_")
+// 	// 	name = strings.ReplaceAll(name, "@", "main")
+// 	// 	os.WriteFile(".out/"+name+".c", []byte(code), 0644)
+// 	// }
+// }

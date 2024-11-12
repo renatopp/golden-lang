@@ -9,6 +9,7 @@ import (
 
 const (
 	InternalError          core.ErrorKind = iota // For unexpected errors, which should never happen
+	InvalidFileError                             // For invalid file paths
 	UndefinedVariableError                       // For referencing variables identifiers that are not defined
 	UndefinedTypeError                           // For referencing types identifiers that are not defined
 	CircularReferenceError                       // For circular references in initialization
