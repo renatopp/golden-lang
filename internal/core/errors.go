@@ -14,6 +14,7 @@ type Error struct {
 	node  *AstNode
 	kind  ErrorKind
 	msg   string
+	stack string
 }
 
 func NewError(kind ErrorKind, msg string, args ...any) *Error {
@@ -32,6 +33,7 @@ func (e *Error) Token() *lang.Token { return e.token }
 func (e *Error) Node() *AstNode     { return e.node }
 func (e *Error) Kind() ErrorKind    { return e.kind }
 func (e *Error) Message() string    { return e.msg }
+func (e *Error) Stack() string      { return e.stack }
 func (e *Error) Error() string      { return e.msg }
 
 func (e *Error) WithLoc(loc *lang.Loc) *Error {
@@ -59,5 +61,10 @@ func (e *Error) WithKind(kind ErrorKind) *Error {
 
 func (e *Error) WithMessage(msg string, args ...any) *Error {
 	e.msg = fmt.Sprintf(msg, args...)
+	return e
+}
+
+func (e *Error) WithStack(stack string) *Error {
+	e.stack = stack
 	return e
 }

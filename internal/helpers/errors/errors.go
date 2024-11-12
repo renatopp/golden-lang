@@ -8,34 +8,37 @@ import (
 )
 
 const (
-	InternalError core.ErrorKind = iota
-	UndefinedVariableError
-	UndefinedTypeError
-	CircularReferenceError
-	ExpressionError
-	TypeError
+	InternalError          core.ErrorKind = iota // For unexpected errors, which should never happen
+	UndefinedVariableError                       // For referencing variables identifiers that are not defined
+	UndefinedTypeError                           // For referencing types identifiers that are not defined
+	CircularReferenceError                       // For circular references in initialization
+	ExpressionError                              // For wrong expression results
+	TypeError                                    // For type mismatch
 )
+
+func toGoldenError(e any) *core.Error {
+	if e, ok := e.(*core.Error); ok {
+		return e
+	}
+	return core.NewError(InternalError, "%v", e)
+}
 
 func WithRecovery(f func()) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			if e, ok := r.(*core.Error); ok {
-				err = e
-			} else {
-				err = core.NewError(InternalError, "%v", r)
-				debug.PrintStack()
-			}
+			err = toGoldenError(r).WithStack(string(debug.Stack()))
 		}
 	}()
 	f()
 	return
 }
 
-func RethrowWith(f func(), kind core.ErrorKind, msg string, args ...any) {
-	err := WithRecovery(f)
-	if err != nil {
-		panic(err.(*core.Error).WithKind(kind).WithMessage(msg, args...))
-	}
+func RethrowWith(e error, kind core.ErrorKind, msg string, args ...any) {
+	panic(toGoldenError(e).WithKind(kind).WithMessage(msg, args...))
+}
+
+func Rethrow(e error) {
+	panic(e)
 }
 
 func ThrowAtLocation(loc lang.Loc, kind core.ErrorKind, msg string, args ...any) {

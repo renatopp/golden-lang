@@ -2,6 +2,19 @@ package core
 
 import "strings"
 
+type Binding struct {
+	// Kind string // type, value
+	// Capability string // immutable, mutable
+	Value *AstNode
+}
+
+type Scope2 struct {
+	Depth  int
+	Parent *Scope2
+	Values map[string]*AstNode
+	Types  map[string]TypeData
+}
+
 type Scope struct {
 	Depth  int
 	Parent *Scope

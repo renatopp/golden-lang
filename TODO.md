@@ -11,9 +11,9 @@
   [x] move types to own package
   [x] improve panic usage in the analyser - remove it?
   [x] finish resolver refactor
+
   [ ] pass resolve function to the module type
   [ ] shouldn't scope be improved?
-  
   [ ] allow raw expression like: 1 + 1.0
   [ ] visibility check (access `_`)
 
