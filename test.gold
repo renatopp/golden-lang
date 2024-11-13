@@ -5,7 +5,7 @@ fn main() {
 }
 
 fn add(a Int) Int {
-  a + 1
+  a + 1 -- help
 }
 
 -- fn multi(x Int) Fn(Int, Int) Int {

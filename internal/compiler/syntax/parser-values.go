@@ -45,7 +45,6 @@ func (p *Parser) registerValueExpressions() {
 	p.ValueSolver.RegisterInfixFn(core.TGte, p.parseBinaryOperator)
 	p.ValueSolver.RegisterInfixFn(core.TDot, p.parseAccess)
 	p.ValueSolver.RegisterInfixFn(core.TLparen, p.parseApply)
-
 }
 
 func (p *Parser) valuePrecedence(t *lang.Token) int {

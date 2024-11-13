@@ -513,7 +513,7 @@ func (r *Resolver) resolveAccessValue(node *core.AstNode, data *ast.Access) {
 
 	val, err := tp.AccessValue(data.Accessor)
 	if err != nil {
-		errors.ThrowAtNode(node, errors.TypeError, err.Error())
+		errors.ThrowAtNode(node, errors.TypeError, "%s", err.Error())
 	}
 
 	if val.Type() == nil {

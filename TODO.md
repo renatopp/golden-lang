@@ -13,16 +13,18 @@
   [x] finish resolver refactor
   [x] pass resolve function to the module type
 
+[x] organize build step
+  [x] improve panic usage (at least catch before returning to command)
+  [x] refactor steps for better readability
+  [x] visibility check for modules `_`
+
 [ ] improve semantic step
   [x] add binding to scope instead of value/type alone
+  [x] visibility check (access `_`)
   [ ] allow raw expression like: 1 + 1.0
-  [ ] visibility check (access `_`)
 
-[ ] organize build step
-  [x] improve panic usage (at least catch before returning to command)
-  [ ] remove Package references from places other than module
-  [x] refactor steps for better readability
-  [ ] visibility check for modules `_`
+[ ] others
+  [ ] parse comments inside the code
 
 ## IR
 [ ] create ir representation
