@@ -1,10 +1,8 @@
 package build
 
 import (
-	"fmt"
-
 	"github.com/renatopp/golden/internal/core"
-	"github.com/renatopp/golden/internal/helpers/logger"
+	"github.com/renatopp/golden/internal/helpers/errors"
 )
 
 type StepDependencyGraph struct {
@@ -16,23 +14,21 @@ func NewStepDependencyGraph(ctx *Context) *StepDependencyGraph {
 }
 
 func (s *StepDependencyGraph) Process() []*core.Package {
-	logger.Debug("step:dependency-graph] starting dependency graph")
-
-	logger.Trace("[step:dependency-graph] building dependency graph")
+	// Generate the dependency graph
 	entryModule, _ := s.ctx.Modules.Get(s.ctx.EntryModulePath)
 	s.buildDependencyGraph(entryModule)
 
-	logger.Trace("[step:dependency-graph] checking dependency graph")
-	orderedPackages := s.checkDependencyGraph(entryModule.Package)
-
-	return orderedPackages
+	// Check validity of graph and returns the packages ordered by last dependency
+	return s.checkDependencyGraph(entryModule.Package)
 }
 
 func (s *StepDependencyGraph) buildDependencyGraph(module *core.Module) {
+	// Skip if already processed
 	if module.DependsOn.Len() > 0 {
 		return
 	}
 
+	// Setup implicit dependencies for modules in the same package
 	for _, mod := range module.Package.Modules.Values() {
 		if mod == module {
 			continue
@@ -40,19 +36,23 @@ func (s *StepDependencyGraph) buildDependencyGraph(module *core.Module) {
 		module.DependsOn.Set(mod.Path, mod)
 	}
 
+	// Setup explicit dependencies
 	for _, imp := range module.Imports {
 		imp.Module, _ = s.ctx.Modules.Get(imp.Path)
 		imp.Package = imp.Module.Package
 
+		// Check for circular dependencies
 		if module == imp.Module {
-			panic(fmt.Sprintf("module '%s' cannot import itself", module.Path))
+			errors.ThrowAtNode(imp.Node, errors.CircularReferenceError, "module '%s' cannot import itself", module.Path)
 		}
 
+		// Add dependencies for both module and package
 		module.DependsOn.Set(imp.Module.Path, imp.Module)
 		if module.Package != imp.Package {
 			module.Package.DependsOn.Set(imp.Package.Path, imp.Package)
 		}
 
+		// Recursively build dependency graph
 		s.buildDependencyGraph(imp.Module)
 	}
 }
@@ -72,7 +72,7 @@ func (s *StepDependencyGraph) checkDependencyGraphLoop(pkg *core.Package, visite
 			order = s.checkDependencyGraphLoop(dep, visited, stack, order)
 
 		} else if stack[dep.Path] {
-			panic(fmt.Sprintf("cyclic dependency detected: %s", dep.Path))
+			errors.Throw(errors.CircularReferenceError, "cyclic dependency detected: %s", dep.Path)
 		}
 	}
 	stack[pkg.Path] = false

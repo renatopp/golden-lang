@@ -37,6 +37,7 @@ type ModuleImport struct {
 	Name    string // eg: `@/foo/bar/hello`
 	Alias   string // eg: `x` in `import '...' as x`
 	Path    string // eg: `/d/project/foo/bar/hello.gold`
+	Node    *AstNode
 	Module  *Module
 	Package *Package
 }

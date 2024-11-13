@@ -64,7 +64,7 @@ func (p *Parser) SkipSeparator(kind ...string) {
 }
 
 func (p *Parser) parseModule() *core.AstNode {
-	imports := []*ast.ModuleImport{}
+	imports := []*core.AstNode{}
 	types := []*core.AstNode{}
 	functions := []*core.AstNode{}
 	variables := []*core.AstNode{}
@@ -108,15 +108,18 @@ func (p *Parser) parseModule() *core.AstNode {
 	})
 }
 
-func (p *Parser) parseImport() *ast.ModuleImport {
+func (p *Parser) parseImport() *core.AstNode {
 	p.ExpectLiteralsOf(core.TKeyword, core.KImport)
 	p.EatToken()
-	path := p.EatToken().Literal
+	path := p.EatToken()
 	alias := ""
 	if p.IsNextLiteralsOf(core.TKeyword, core.KAs) {
 		p.EatToken()
 		p.ExpectTokens(core.TVarIdent)
 		alias = p.EatToken().Literal
 	}
-	return &ast.ModuleImport{Path: path, Alias: alias}
+	return core.NewNode(path, &ast.ModuleImport{
+		Path:  path.Literal,
+		Alias: alias,
+	})
 }

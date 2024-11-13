@@ -20,6 +20,7 @@ const (
 	ExpressionError                                // For wrong expression results
 	ParserError                                    // For type mismatch
 	TypeError                                      // For type mismatch
+	VisibilityError                                // For visibility (private access) errors
 )
 
 func toGoldenError(e any) *core.Error {

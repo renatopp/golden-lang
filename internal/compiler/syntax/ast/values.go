@@ -20,15 +20,10 @@ func appendAll[T any](arrays ...[]T) []T {
 
 // Module
 type Module struct {
-	Imports   []*ModuleImport
+	Imports   []*core.AstNode
 	Types     []*core.AstNode
 	Functions []*core.AstNode
 	Variables []*core.AstNode
-}
-
-type ModuleImport struct {
-	Path  string
-	Alias string
 }
 
 func (a *Module) ExpressionKind() core.ExpressionKind { return core.ValueExpression }
@@ -37,6 +32,24 @@ func (a *Module) Signature() string                   { return f("…") }
 func (a *Module) Children() []*core.AstNode           { return appendAll(a.Types, a.Functions, a.Variables) }
 
 var _ core.AstData = &Module{}
+
+// Module Import
+type ModuleImport struct {
+	Path  string
+	Alias string
+}
+
+func (a *ModuleImport) ExpressionKind() core.ExpressionKind { return core.ValueExpression }
+func (a *ModuleImport) Tag() string                         { return f("import:%s", a.Path) }
+func (a *ModuleImport) Signature() string {
+	if a.Alias != "" {
+		return f("import '%s' as %s", a.Path, a.Alias)
+	}
+	return f("import '%s'", a.Path)
+}
+func (a *ModuleImport) Children() []*core.AstNode { return []*core.AstNode{} }
+
+var _ core.AstData = &ModuleImport{}
 
 // Variable Declaration
 type VariableDecl struct {

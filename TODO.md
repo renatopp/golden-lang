@@ -21,7 +21,7 @@
 [ ] organize build step
   [x] improve panic usage (at least catch before returning to command)
   [ ] remove Package references from places other than module
-  [ ] refactor steps for better readability
+  [x] refactor steps for better readability
   [ ] visibility check for modules `_`
 
 ## IR
