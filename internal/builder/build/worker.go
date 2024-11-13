@@ -1,5 +1,7 @@
 package build
 
+import "github.com/renatopp/golden/internal/helpers/errors"
+
 type steps struct {
 	DiscoverPackage *StepDiscoverPackage
 	PrepareAst      *StepPrepareAst
@@ -19,18 +21,22 @@ func createSteps(ctx *Context) *steps {
 }
 
 func startWorker(steps *steps, ctx *Context) {
-	for {
-		select {
-		case modulePath := <-ctx.toDiscoverPackage:
-			steps.DiscoverPackage.Process(modulePath)
-		case modulePath := <-ctx.toPrepareAST:
-			steps.PrepareAst.Process(modulePath)
-		}
+	err := errors.WithRecovery(func() {
+		for {
+			select {
+			case modulePath := <-ctx.toDiscoverPackage:
+				steps.DiscoverPackage.Process(modulePath)
+			case modulePath := <-ctx.toPrepareAST:
+				steps.PrepareAst.Process(modulePath)
+			}
 
-		if ctx.CanProceedToDependencyGraph() {
-			packages := steps.DependencyGraph.Process()
-			steps.ResolveBindings.Process(packages)
-			steps.Finish.Process()
+			if ctx.CanProceedToDependencyGraph() {
+				packages := steps.DependencyGraph.Process()
+				steps.ResolveBindings.Process(packages)
+				steps.Finish.Process()
+			}
 		}
-	}
+	})
+
+	ctx.Done <- err
 }

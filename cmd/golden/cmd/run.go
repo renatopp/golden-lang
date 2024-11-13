@@ -3,9 +3,11 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"runtime"
 
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/builder/build"
+	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/logger"
 )
 
@@ -39,13 +41,12 @@ func (c *Run) Run() error {
 	err := b.Build(build.Options{
 		InputFilePath:  args[0],
 		OutputFilePath: "out",
-		// NumWorkers:     runtime.NumCPU(),
-		NumWorkers: 1,
-		Debug:      *flagDebug,
+		NumWorkers:     runtime.NumCPU(),
+		Debug:          *flagDebug,
 	})
 
 	if err != nil {
-		println("Err!", err.Error())
+		errors.PrettyPrint(err)
 	}
 
 	return nil

@@ -4,6 +4,10 @@ fn main() {
   'renato'
 }
 
+fn add(a Int) Int {
+  a + 1
+}
+
 -- fn multi(x Int) Fn(Int, Int) Int {
 --   fn(a Int, b Int) Int {
 --     {a + b} * x

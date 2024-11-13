@@ -19,12 +19,9 @@ type Context struct {
 
 	toDiscoverPackage  chan string
 	toPrepareAST       chan string
-	toDependencyGraph  chan string
-	toResolveBindings  chan string
-	toFinish           chan string
 	pendingModuleCount atomic.Int64
 
-	Done chan any
+	Done chan error
 
 	mtx sync.Mutex
 }
@@ -43,7 +40,7 @@ func NewContext() *Context {
 		Modules:           syncds.NewSyncMap[string, *core.Module](),
 		toDiscoverPackage: make(chan string, 100),
 		toPrepareAST:      make(chan string, 100),
-		Done:              make(chan any),
+		Done:              make(chan error),
 
 		mtx: sync.Mutex{},
 	}

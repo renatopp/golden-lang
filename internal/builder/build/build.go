@@ -54,5 +54,8 @@ func build(opts Options) {
 		go startWorker(steps, ctx)
 	}
 
-	<-ctx.Done
+	err = <-ctx.Done
+	if err != nil {
+		errors.Rethrow(err)
+	}
 }

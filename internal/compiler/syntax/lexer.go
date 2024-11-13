@@ -141,6 +141,7 @@ func (l *Lexer) Next() *lang.Token {
 
 			l.scanner.EatChar()
 			l.scanner.RegisterError(c0.AsError(eaters.ErrSyntax, fmt.Sprintf("unexpected character '%v'", s1)))
+			// core.NewError(errors.UnexpectedCharacterError, "unexpected character '%v'", s1).WithLoc(&lang.Loc{}).Throw()
 			return lang.NewToken(core.TInvalid, s1).WithChars(c0, c1)
 		}
 	}

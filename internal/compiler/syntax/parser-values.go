@@ -7,6 +7,7 @@ import (
 
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/lang"
 )
 
@@ -97,7 +98,7 @@ func (p *Parser) parseValueKeyword() *core.AstNode {
 		return p.parseVariableDecl()
 	}
 
-	p.Error(p.PeekToken().Loc, "unexpected token", "expected value expression keyword, got %s", p.PeekToken().Kind)
+	errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression keyword, got '%s' instead", p.PeekToken().Literal)
 	return nil
 }
 
@@ -115,7 +116,7 @@ func (p *Parser) parseVariableDecl() *core.AstNode {
 		p.EatToken()
 		value = p.parseValueExpression()
 		if value == nil {
-			p.Error(p.PeekToken().Loc, "unexpected token", "expected value expression")
+			errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression, but none was found")
 		}
 	}
 
@@ -168,7 +169,7 @@ func (p *Parser) parseFunctionParams() []*ast.FunctionDeclParam {
 		name := p.EatToken().Literal
 		tp := p.parseTypeExpression()
 		if tp == nil {
-			p.Error(p.PeekToken().Loc, "unexpected token", "expected type expression")
+			errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected type expression, but none was found")
 		}
 		params = append(params, &ast.FunctionDeclParam{
 			Name: name,
@@ -202,7 +203,7 @@ func (p *Parser) parseInteger() *core.AstNode {
 
 	value, err := strconv.ParseInt(token.Literal, base, 64)
 	if err != nil {
-		panic(lang.NewError(token.Loc, "invalid integer", token.Literal))
+		errors.ThrowAtToken(token, errors.ParserError, "invalid integer literal '%s'", token.Literal)
 	}
 
 	return core.NewNode(token, &ast.Int{Value: value})
@@ -214,7 +215,7 @@ func (p *Parser) parseFloat() *core.AstNode {
 	token := p.EatToken()
 	value, err := strconv.ParseFloat(token.Literal, 64)
 	if err != nil {
-		panic(lang.NewError(token.Loc, "invalid float", token.Literal))
+		errors.ThrowAtToken(token, errors.ParserError, "invalid float literal '%s'", token.Literal)
 	}
 	return core.NewNode(token, &ast.Float{Value: value})
 }
@@ -253,7 +254,7 @@ func (p *Parser) parseBlock() *core.AstNode {
 	for !p.IsNextTokens(core.TRbrace) {
 		node := p.parseValueExpression()
 		if node == nil {
-			p.Error(p.PeekToken().Loc, "unexpected token", "expected value expression")
+			errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression, but none was found")
 		}
 		nodes = append(nodes, node)
 
@@ -279,7 +280,7 @@ func (p *Parser) parseUnaryOperator() *core.AstNode {
 func (p *Parser) parseTypeExpressionAsValue() *core.AstNode {
 	tp := p.parseTypeExpression()
 	if tp == nil {
-		p.Error(p.PeekToken().Loc, "unexpected token", "expected type expression")
+		errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected type expression, but none was found")
 	}
 	return core.NewNode(tp.Token(), &ast.Apply{
 		Shape:  "unit",
@@ -294,7 +295,7 @@ func (p *Parser) parseBinaryOperator(left *core.AstNode) *core.AstNode {
 	right := p.parseValueExpression(p.valuePrecedence(op))
 
 	if right == nil {
-		panic(lang.NewError(op.Loc, "expecting expression", ""))
+		errors.ThrowAtToken(op, errors.ParserError, "expecting value expression after operator, but none was found")
 	}
 
 	return core.NewNode(op, &ast.BinaryOp{
@@ -363,7 +364,7 @@ func (p *Parser) parseApplyArguments() (shape string, args []*ast.ApplyArgument)
 			p.EatToken()
 			expr := p.parseValueExpression()
 			if expr == nil {
-				p.Error(p.PeekToken().Loc, "unexpected token", "expected value expression")
+				errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression, but none was found")
 			}
 			args = append(args, &ast.ApplyArgument{
 				Token: name,

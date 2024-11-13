@@ -1,10 +1,9 @@
 package syntax
 
 import (
-	"fmt"
-
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/lang"
 )
 
@@ -21,12 +20,7 @@ func Parse(tokens []*lang.Token) (*core.AstNode, error) {
 	parser.TypeSolver.SetPrecedenceFn(parser.typePrecedence)
 	parser.registerTypeExpressions()
 
-	module := parser.Parse()
-	if parser.Scanner.HasErrors() || parser.HasErrors() {
-		return nil, lang.NewErrorList(append(parser.Errors(), parser.Scanner.Errors()...))
-	}
-
-	return module, nil
+	return parser.Parse()
 }
 
 type Parser struct {
@@ -35,40 +29,28 @@ type Parser struct {
 	TypeSolver  *lang.PrattSolver[*core.AstNode]
 }
 
-func (p *Parser) Parse() *core.AstNode {
-	defer func() {
-		r := recover()
-		if r == nil {
-			return
-		} else if err, ok := r.(lang.Error); ok {
-			p.RegisterError(err)
-		} else {
-			p.RegisterError(lang.NewError(lang.Loc{}, "unknown error", fmt.Sprintf("%v", r)))
-		}
-	}()
-
-	return p.parseModule()
+func (p *Parser) Parse() (res *core.AstNode, err error) {
+	err = errors.WithRecovery(func() {
+		res = p.parseModule()
+	})
+	return res, err
 }
 
 func (p *Parser) ExpectTokens(kind ...string) {
 	if !p.IsNextTokens(kind...) {
-		p.Error(p.PeekToken().Loc, "unexpected token", "expected %s, got %s", kind, p.PeekToken().Kind)
+		errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected token '%s', got '%s'", kind, p.PeekToken().Kind)
 	}
 }
 
 func (p *Parser) ExpectLiterals(lit ...string) {
 	if !p.IsNextLiterals(lit...) {
-		p.Error(p.PeekToken().Loc, "unexpected literal", "expected %s, got %s", lit, p.PeekToken().Literal)
+		errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected literal '%s', got '%s'", lit, p.PeekToken().Literal)
 	}
 }
 
 func (p *Parser) ExpectLiteralsOf(kind string, lit ...string) {
 	p.ExpectTokens(kind)
 	p.ExpectLiterals(lit...)
-}
-
-func (p *Parser) Error(loc lang.Loc, kind, msg string, args ...any) {
-	panic(lang.NewError(loc, kind, fmt.Sprintf(msg, args...)))
 }
 
 func (p *Parser) SkipNewlines() {
@@ -104,11 +86,10 @@ func (p *Parser) parseModule() *core.AstNode {
 		case p.IsNextTokens(core.TEof):
 			// EOF
 		default:
-			p.Error(
-				p.PeekToken().Loc,
-				"unexpected token",
-				"expected import, let, data or fn, got %s:%s",
-				p.PeekToken().Kind,
+			errors.ThrowAtToken(
+				p.PeekToken(),
+				errors.ParserError,
+				"expected import, let, data or fn, got '%s' instead",
 				p.PeekToken().Literal,
 			)
 		}

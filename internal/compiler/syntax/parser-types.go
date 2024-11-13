@@ -4,6 +4,7 @@ package syntax
 import (
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/lang"
 )
 
@@ -35,7 +36,7 @@ func (p *Parser) parseTypeKeyword() *core.AstNode {
 		return p.parseFunctionType()
 	}
 
-	p.Error(p.PeekToken().Loc, "unexpected token", "expected type expression keyword, got %s", p.PeekToken().Kind)
+	errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected type expression keyword, got '%s'", p.PeekToken().Literal)
 	return nil
 }
 

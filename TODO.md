@@ -1,46 +1,28 @@
 # TODOr
 
 ## Refactor
-[ ] errors
-  [ ] refactor errors on lexer
-  [ ] refactor errors on parser
-  [ ] refactor errors on builder
-  [ ] add pretty error messages
+[x] errors
+  [x] refactor errors on lexer
+  [x] refactor errors on parser
+  [x] refactor errors on builder
+  [x] add pretty error messages
   
-[ ] organize semantic step
+[x] organize semantic step
   [x] move types to own package
   [x] improve panic usage in the analyser - remove it?
   [x] finish resolver refactor
+  [x] pass resolve function to the module type
 
-  [ ] pass resolve function to the module type
+[ ] improve semantic step
   [ ] shouldn't scope be improved?
   [ ] allow raw expression like: 1 + 1.0
   [ ] visibility check (access `_`)
 
 [ ] organize build step
-  [ ] remove Package references from places other than module
   [x] improve panic usage (at least catch before returning to command)
+  [ ] remove Package references from places other than module
+  [ ] refactor steps for better readability
   [ ] visibility check for modules `_`
-
-```
-
-toDiscoverPackage
-toPrepareAST
-toDependencyGraph
-toResolveBindings
-toCacheResults
-done
-
-steps:
-  - discover package given a module
-  - prepare package reading its source, generating the AST
-  - analyse dependecy graph and schedule resolves 
-  - resolve bindings and check validity
-  - cache everything
-  - check main function
-
-```
-
 
 ## IR
 [ ] create ir representation
