@@ -21,11 +21,12 @@ func (s *StepFinish) Process() {
 func (s *StepFinish) checkMainFunction() {
 	main, _ := s.ctx.Modules.Get(s.ctx.EntryModulePath)
 
-	mainFunc := main.Scope.GetValue("main")
-	if mainFunc == nil {
+	binding := main.Scope.Values.Get("main")
+	if binding == nil {
 		panic("function 'main' not found")
 	}
 
+	mainFunc := binding.Node
 	mainFuncType := mainFunc.Type().(*types.Function)
 	if mainFuncType.Return != semantic.Void {
 		panic("function 'main' must not return any value")

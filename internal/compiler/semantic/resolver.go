@@ -59,19 +59,19 @@ func (r *Resolver) popScope() *core.Scope {
 }
 
 func (r *Resolver) getValueFromScope(name string, source *core.AstNode) *core.AstNode {
-	node := r.scope.GetValue(name)
-	if node == nil {
+	binding := r.scope.Values.Get(name)
+	if binding == nil {
 		errors.ThrowAtNode(source, errors.UndefinedVariableError, "identifier '%s' not declared", name)
 	}
-	return node
+	return binding.Node
 }
 
 func (r *Resolver) getTypeFromScope(name string, source *core.AstNode) core.TypeData {
-	tp := r.scope.GetType(name)
-	if tp == nil {
+	binding := r.scope.Types.Get(name)
+	if binding == nil {
 		errors.ThrowAtNode(source, errors.UndefinedTypeError, "type '%s' not declared", name)
 	}
-	return tp
+	return binding.Type
 }
 
 func (r *Resolver) getDefaultValue(source *core.AstNode, tp core.TypeData) *core.AstNode {
@@ -183,7 +183,7 @@ func (r *Resolver) preResolve(node *core.AstNode) *core.AstNode {
 func (r *Resolver) preResolveFunctionDecl(node *core.AstNode, ast *ast.FunctionDecl) {
 	r.expectExpressionKind(node, core.ValueExpression)
 	r.resolveFunctionSignature(node, ast)
-	r.scope.SetValue(ast.Name, node)
+	r.scope.Values.Set(ast.Name, core.BindValue(node))
 }
 
 func (r *Resolver) preResolveVariableDecl(node *core.AstNode, data *ast.VariableDecl) {
@@ -195,7 +195,7 @@ func (r *Resolver) preResolveVariableDecl(node *core.AstNode, data *ast.Variable
 		r.preResolveFunctionDecl(data.Value, sub)
 	}
 
-	r.scope.SetValue(data.Name, data.Value)
+	r.scope.Values.Set(data.Name, core.BindValue(data.Value))
 }
 
 // RESOLVERS ------------------------------------------------------------------
@@ -424,7 +424,7 @@ func (r *Resolver) resolveVariableDecl(node *core.AstNode, data *ast.VariableDec
 	}
 
 	node.WithType(data.Value.Type())
-	r.scope.SetValue(data.Name, node)
+	r.scope.Values.Set(data.Name, core.BindValue(node))
 }
 
 func (r *Resolver) resolveFunctionDecl(node *core.AstNode, data *ast.FunctionDecl) {
@@ -439,14 +439,14 @@ func (r *Resolver) resolveFunctionDecl(node *core.AstNode, data *ast.FunctionDec
 	tp.Scope = r.scope.New()
 	r.pushScope(tp.Scope)
 	for _, param := range data.Params {
-		tp.Scope.SetValue(param.Name, param.Type)
+		tp.Scope.Values.Set(param.Name, core.BindValue(param.Type))
 	}
 	r.resolve(data.Body)
 	r.expectTypeToBeAnyOf(data.Body, tp.Return)
 	r.popScope()
 
 	node.WithType(tp)
-	r.scope.SetValue(data.Name, node)
+	r.scope.Values.Set(data.Name, core.BindValue(node))
 }
 
 func (r *Resolver) resolveFunctionSignature(node *core.AstNode, data *ast.FunctionDecl) {

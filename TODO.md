@@ -14,7 +14,7 @@
   [x] pass resolve function to the module type
 
 [ ] improve semantic step
-  [ ] shouldn't scope be improved?
+  [x] add binding to scope instead of value/type alone
   [ ] allow raw expression like: 1 + 1.0
   [ ] visibility check (access `_`)
 

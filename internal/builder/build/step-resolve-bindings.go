@@ -38,7 +38,7 @@ func (s *StepResolveBindings) Process(packages []*core.Package) {
 				if module == other {
 					continue
 				}
-				module.Scope.SetValue(other.Name, other.Node)
+				module.Scope.Values.Set(other.Name, core.BindValue(other.Node))
 			}
 		}
 

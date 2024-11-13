@@ -37,10 +37,11 @@ func (t *Module) Default() (core.AstData, error) {
 }
 
 func (t *Module) AccessValue(name string) (*core.AstNode, error) {
-	val := t.Module.Scope.GetValue(name)
-	if val == nil {
+	binding := t.Module.Scope.Values.Get(name)
+	if binding == nil {
 		return nil, fmt.Errorf("value %s not found", name)
 	}
+	val := binding.Node
 	if val.Type() == nil {
 		return val, t.Module.Resolver.Resolve(val)
 	}
@@ -48,9 +49,9 @@ func (t *Module) AccessValue(name string) (*core.AstNode, error) {
 }
 
 func (t *Module) AccessType(name string) (core.TypeData, error) {
-	val := t.Module.Scope.GetType(name)
-	if val == nil {
+	binding := t.Module.Scope.Types.Get(name)
+	if binding == nil {
 		return nil, fmt.Errorf("type %s not found", name)
 	}
-	return val, nil
+	return binding.Type, nil
 }

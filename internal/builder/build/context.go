@@ -5,7 +5,6 @@ import (
 	"sync/atomic"
 
 	"github.com/renatopp/golden/internal/compiler/semantic"
-	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
 	"github.com/renatopp/golden/internal/helpers/syncds"
 )
@@ -28,11 +27,10 @@ type Context struct {
 
 func NewContext() *Context {
 	scope := core.NewScope()
-	scope.SetValue("$_scope", core.NewEmptyNode().WithType(semantic.String).WithData(&ast.String{Value: "global"}))
-	scope.SetType("Int", semantic.Int)
-	scope.SetType("Float", semantic.Float)
-	scope.SetType("String", semantic.String)
-	scope.SetType("Bool", semantic.Bool)
+	scope.Types.Set("Int", core.BindType(nil, semantic.Int))
+	scope.Types.Set("Float", core.BindType(nil, semantic.Float))
+	scope.Types.Set("String", core.BindType(nil, semantic.String))
+	scope.Types.Set("Bool", core.BindType(nil, semantic.Bool))
 
 	return &Context{
 		GlobalScope:       scope,

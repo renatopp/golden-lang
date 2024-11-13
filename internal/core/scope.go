@@ -2,32 +2,85 @@ package core
 
 import "strings"
 
+// Represents a name bind, for both types and values
+//
+// If the expression kind is "type", then the node is the type declaration
+// while the type is the type itself. If the expression kind is "value", then
+// the node is the value declaration while the type is none.
 type Binding struct {
-	// Kind string // type, value
+	Kind ExpressionKind // type, value
 	// Capability string // immutable, mutable
-	Value *AstNode
+	Node *AstNode
+	Type TypeData
 }
 
-type Scope2 struct {
-	Depth  int
-	Parent *Scope2
-	Values map[string]*AstNode
-	Types  map[string]TypeData
+func BindValue(node *AstNode) *Binding {
+	return &Binding{
+		Kind: ValueExpression,
+		Node: node,
+		Type: nil,
+	}
 }
+
+func BindType(node *AstNode, t TypeData) *Binding {
+	return &Binding{
+		Kind: TypeExpression,
+		Node: node,
+		Type: t,
+	}
+}
+
+// ----------------------------------------------------------------------------
+
+type ScopeMap struct {
+	parent   *ScopeMap
+	bindings map[string]*Binding
+}
+
+func NewScopeMap(parent *ScopeMap) *ScopeMap {
+	return &ScopeMap{
+		parent:   parent,
+		bindings: map[string]*Binding{},
+	}
+}
+
+func (s *ScopeMap) Get(key string) *Binding {
+	if binding, ok := s.bindings[key]; ok {
+		return binding
+	}
+	if s.parent != nil {
+		return s.parent.Get(key)
+	}
+	return nil
+}
+
+func (s *ScopeMap) GetLocal(key string) *Binding {
+	return s.bindings[key]
+}
+
+func (s *ScopeMap) Set(key string, binding *Binding) {
+	s.bindings[key] = binding
+}
+
+func (s *ScopeMap) Clear() {
+	s.bindings = map[string]*Binding{}
+}
+
+// ----------------------------------------------------------------------------
 
 type Scope struct {
 	Depth  int
 	Parent *Scope
-	Values map[string]*AstNode
-	Types  map[string]TypeData
+	Values *ScopeMap
+	Types  *ScopeMap
 }
 
 func NewScope() *Scope {
 	return &Scope{
 		Depth:  0,
 		Parent: nil,
-		Values: map[string]*AstNode{},
-		Types:  map[string]TypeData{},
+		Values: NewScopeMap(nil),
+		Types:  NewScopeMap(nil),
 	}
 }
 
@@ -35,45 +88,9 @@ func (s *Scope) New() *Scope {
 	return &Scope{
 		Depth:  s.Depth + 1,
 		Parent: s,
-		Values: map[string]*AstNode{},
-		Types:  map[string]TypeData{},
+		Values: NewScopeMap(s.Values),
+		Types:  NewScopeMap(s.Types),
 	}
-}
-
-func (s *Scope) SetValue(key string, value *AstNode) {
-	s.Values[key] = value
-}
-
-func (s *Scope) SetType(key string, value TypeData) {
-	s.Types[key] = value
-}
-
-func (s *Scope) GetValueLocal(key string) *AstNode {
-	return s.Values[key]
-}
-
-func (s *Scope) GetTypeLocal(key string) TypeData {
-	return s.Types[key]
-}
-
-func (s *Scope) GetValue(key string) *AstNode {
-	if value, ok := s.Values[key]; ok {
-		return value
-	}
-	if s.Parent != nil {
-		return s.Parent.GetValue(key)
-	}
-	return nil
-}
-
-func (s *Scope) GetType(key string) TypeData {
-	if tp, ok := s.Types[key]; ok {
-		return tp
-	}
-	if s.Parent != nil {
-		return s.Parent.GetType(key)
-	}
-	return nil
 }
 
 func (s *Scope) String() string {
@@ -84,11 +101,11 @@ func (s *Scope) String() string {
 
 	ident := strings.Repeat("| ", s.Depth+1)
 	r += strings.Repeat("\n| ", s.Depth) + "[scope]\n"
-	for k, v := range s.Types {
-		r += ident + "T: " + k + " = " + v.Signature() + "\n"
+	for k, v := range s.Types.bindings {
+		r += ident + "T: " + k + " = " + v.Type.Signature() + "\n"
 	}
-	for k, v := range s.Values {
-		r += ident + "V: " + k + " = " + v.Signature() + "\n"
+	for k, v := range s.Values.bindings {
+		r += ident + "V: " + k + " = " + v.Node.Signature() + "\n"
 	}
 	return r
 }
