@@ -1,6 +1,10 @@
 package core
 
-import "github.com/renatopp/golden/internal/helpers/syncds"
+import (
+	"fmt"
+
+	"github.com/renatopp/golden/internal/helpers/syncds"
+)
 
 type Resolver interface {
 	PreResolve(*AstNode) error
@@ -43,6 +47,14 @@ type Package struct {
 	Path      string                            // eg: `/d/project/foo/bar`
 	Modules   *syncds.SyncList[*Module]         // the modules attached in this package
 	DependsOn *syncds.SyncMap[string, *Package] // all packages that modules depends, including implicit ones
+}
+
+func (p *Package) String() string {
+	s := fmt.Sprintf("Package: %s\n", p.Path)
+	for _, m := range p.Modules.Values() {
+		s += fmt.Sprintf("  Module: %s\n", m.Path)
+	}
+	return s
 }
 
 func NewPackage() *Package {

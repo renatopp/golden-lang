@@ -19,9 +19,28 @@
 
 [ ] organize build step
   [ ] remove Package references from places other than module
-  [ ] split worker into worker and /manager/
-  [ ] improve panic usage (at least catch before returning to command)
+  [x] improve panic usage (at least catch before returning to command)
   [ ] visibility check for modules `_`
+
+```
+
+toDiscoverPackage
+toPrepareAST
+toDependencyGraph
+toResolveBindings
+toCacheResults
+done
+
+steps:
+  - discover package given a module
+  - prepare package reading its source, generating the AST
+  - analyse dependecy graph and schedule resolves 
+  - resolve bindings and check validity
+  - cache everything
+  - check main function
+
+```
+
 
 ## IR
 [ ] create ir representation

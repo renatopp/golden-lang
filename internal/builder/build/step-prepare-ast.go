@@ -9,6 +9,7 @@ import (
 	"github.com/renatopp/golden/internal/compiler/syntax"
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
 	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
 	"github.com/renatopp/golden/internal/helpers/logger"
 )
@@ -22,6 +23,9 @@ func NewStepPrepareAst(ctx *Context) *StepPrepareAst {
 }
 
 func (s *StepPrepareAst) Process(modulePath string) {
+	logger.Trace("[worker:prepare] preparing: %s", modulePath)
+	defer s.ctx.AckModule()
+
 	bytes, err := os.ReadFile(modulePath)
 	if err != nil {
 		panic(err)
@@ -33,11 +37,11 @@ func (s *StepPrepareAst) Process(modulePath string) {
 	}
 
 	if s.ctx.Options.Debug && modulePath == s.ctx.EntryModulePath {
-		fmt.Printf("[%s:tokens]\n", modulePath)
+		fmt.Printf("[%s:TOKENS]\n", modulePath)
 		for _, t := range tokens {
 			fmt.Printf("    - %s: %q\n", t.Kind, t.Literal)
 		}
-		println("\n")
+		println()
 	}
 
 	// Annotate the tokens with the file information
@@ -47,10 +51,9 @@ func (s *StepPrepareAst) Process(modulePath string) {
 		token.Loc = loc
 	}
 
-	logger.Trace("[worker:prepare] parsing: %s", modulePath)
 	root, err := syntax.Parse(tokens)
 	if err != nil {
-		panic(err)
+		errors.Rethrow(err)
 	}
 
 	if s.ctx.Options.Debug && modulePath == s.ctx.EntryModulePath {
@@ -109,7 +112,8 @@ func (s *StepPrepareAst) Process(modulePath string) {
 
 		imp.Path = modulePath
 
-		s.ctx.ToDependencyGraph <- modulePath
+		logger.Info("[worker:prepare] scheduling import: %s", modulePath)
+		s.ctx.ScheduleDiscoverPackage(modulePath)
 		// TODO: check if import is a project package or a core package
 		// if package starts with @, it is a project package
 		// if package matches the core packages (from a map?), it is a core package

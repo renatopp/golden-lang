@@ -21,16 +21,16 @@ func createSteps(ctx *Context) *steps {
 func startWorker(steps *steps, ctx *Context) {
 	for {
 		select {
-		case modulePath := <-ctx.ToDiscoverPackage:
+		case modulePath := <-ctx.toDiscoverPackage:
 			steps.DiscoverPackage.Process(modulePath)
-		case modulePath := <-ctx.ToPrepareAST:
+		case modulePath := <-ctx.toPrepareAST:
 			steps.PrepareAst.Process(modulePath)
-		case modulePath := <-ctx.ToDependencyGraph:
-			steps.DependencyGraph.Process(modulePath)
-		case modulePath := <-ctx.ToResolveBindings:
-			steps.ResolveBindings.Process(modulePath)
-		case modulePath := <-ctx.ToFinish:
-			steps.Finish.Process(modulePath)
+		}
+
+		if ctx.CanProceedToDependencyGraph() {
+			packages := steps.DependencyGraph.Process()
+			steps.ResolveBindings.Process(packages)
+			steps.Finish.Process()
 		}
 	}
 }

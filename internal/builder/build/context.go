@@ -2,6 +2,7 @@ package build
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/compiler/syntax/ast"
@@ -10,17 +11,20 @@ import (
 )
 
 type Context struct {
-	Options           Options
-	GlobalScope       *core.Scope
-	EntryModulePath   string
-	Packages          *syncds.SyncMap[string, *core.Package]
-	Modules           *syncds.SyncMap[string, *core.Module]
-	ToDiscoverPackage chan string
-	ToPrepareAST      chan string
-	ToDependencyGraph chan string
-	ToResolveBindings chan string
-	ToFinish          chan string
-	Done              chan any
+	Options         Options
+	GlobalScope     *core.Scope
+	EntryModulePath string
+	Packages        *syncds.SyncMap[string, *core.Package]
+	Modules         *syncds.SyncMap[string, *core.Module]
+
+	toDiscoverPackage  chan string
+	toPrepareAST       chan string
+	toDependencyGraph  chan string
+	toResolveBindings  chan string
+	toFinish           chan string
+	pendingModuleCount atomic.Int64
+
+	Done chan any
 
 	mtx sync.Mutex
 }
@@ -37,42 +41,57 @@ func NewContext() *Context {
 		GlobalScope:       scope,
 		Packages:          syncds.NewSyncMap[string, *core.Package](),
 		Modules:           syncds.NewSyncMap[string, *core.Module](),
-		ToDiscoverPackage: make(chan string, 100),
-		ToPrepareAST:      make(chan string, 100),
-		ToDependencyGraph: make(chan string, 100),
-		ToResolveBindings: make(chan string, 100),
-		ToFinish:          make(chan string, 100),
+		toDiscoverPackage: make(chan string, 100),
+		toPrepareAST:      make(chan string, 100),
 		Done:              make(chan any),
 
 		mtx: sync.Mutex{},
 	}
 }
 
-func (this *Context) PreRegisterModule(modulePath string) bool {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
-	if this.Modules.Has(modulePath) {
+func (c *Context) ScheduleDiscoverPackage(modulePath string) {
+	c.pendingModuleCount.Add(1)
+	c.toDiscoverPackage <- modulePath
+}
+
+func (c *Context) SchedulePrepareAST(modulePath string) {
+	c.pendingModuleCount.Add(1)
+	c.toPrepareAST <- modulePath
+}
+
+func (c *Context) AckModule() {
+	c.pendingModuleCount.Add(-1)
+}
+
+func (c *Context) CanProceedToDependencyGraph() bool {
+	return c.pendingModuleCount.Load() == 0
+}
+
+func (c *Context) PreRegisterModule(modulePath string) bool {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	if c.Modules.Has(modulePath) {
 		return false
 	}
-	this.Modules.Set(modulePath, nil)
+	c.Modules.Set(modulePath, nil)
 	return true
 }
 
-func (this *Context) RegisterModule(module *core.Module) {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
-	this.Modules.Set(module.Path, module)
+func (c *Context) RegisterModule(module *core.Module) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.Modules.Set(module.Path, module)
 }
 
-func (this *Context) CreateOrGetPackage(packageName, packagePath string) *core.Package {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
-	if pkg, ok := this.Packages.Get(packageName); ok {
+func (c *Context) CreateOrGetPackage(packageName, packagePath string) *core.Package {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	if pkg, ok := c.Packages.Get(packagePath); ok {
 		return pkg
 	}
 	pkg := core.NewPackage()
 	pkg.Name = packageName
 	pkg.Path = packagePath
-	this.Packages.Set(packagePath, pkg)
+	c.Packages.Set(packagePath, pkg)
 	return pkg
 }

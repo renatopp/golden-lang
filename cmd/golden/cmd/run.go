@@ -3,7 +3,6 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"runtime"
 
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/builder/build"
@@ -26,6 +25,7 @@ func (c *Run) Help() string {
 
 func (c *Run) Run() error {
 	flagDebug := flag.Bool("debug", false, "enable debug information")
+	flagLevel := flag.String("log-level", "error", "log level")
 	flag.Parse()
 
 	args := flag.Args()
@@ -33,15 +33,15 @@ func (c *Run) Run() error {
 		return fmt.Errorf("no file specified")
 	}
 
-	logger.SetLevel(logger.ErrorLevel)
+	logger.SetLevel(logger.LevelFromString(*flagLevel))
 
 	b := builder.NewBuilder2()
 	err := b.Build(build.Options{
 		InputFilePath:  args[0],
 		OutputFilePath: "out",
-		NumWorkers:     runtime.NumCPU(),
-		Debug:          *flagDebug,
-		LogLevel:       logger.DebugLevel,
+		// NumWorkers:     runtime.NumCPU(),
+		NumWorkers: 1,
+		Debug:      *flagDebug,
 	})
 
 	if err != nil {

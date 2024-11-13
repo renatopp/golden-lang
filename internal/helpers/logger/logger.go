@@ -1,6 +1,9 @@
 package logger
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type LogLevel int
 
@@ -13,6 +16,19 @@ const (
 	DebugLevel
 	TraceLevel
 )
+
+var stringToLevel = map[string]LogLevel{
+	"EMERG":     EmergencyLevel,
+	"EMERGENCY": EmergencyLevel,
+	"CRIT":      CriticalLevel,
+	"CRITICAL":  CriticalLevel,
+	"ERROR":     ErrorLevel,
+	"WARN":      WarningLevel,
+	"WARNING":   WarningLevel,
+	"INFO":      InfoLevel,
+	"DEBUG":     DebugLevel,
+	"TRACE":     TraceLevel,
+}
 
 var levelToString = map[LogLevel]string{
 	EmergencyLevel: "EMERG",
@@ -35,6 +51,15 @@ var levelToColor = map[LogLevel]string{
 }
 
 var curLevel LogLevel
+
+func LevelFromString(level string) LogLevel {
+	for k, v := range stringToLevel {
+		if strings.EqualFold(k, level) {
+			return v
+		}
+	}
+	return ErrorLevel
+}
 
 func SetLevel(level LogLevel) {
 	curLevel = level

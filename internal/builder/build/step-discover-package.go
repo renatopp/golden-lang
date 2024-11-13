@@ -11,11 +11,13 @@ func NewStepDiscoverPackage(ctx *Context) *StepDiscoverPackage {
 }
 
 func (s *StepDiscoverPackage) Process(modulePath string) {
+	defer s.ctx.AckModule()
+
 	files := fs.DiscoverModules(modulePath)
 	for _, modulePath := range files {
 		if !s.ctx.PreRegisterModule(modulePath) {
 			continue
 		}
-		s.ctx.ToPrepareAST <- modulePath
+		s.ctx.SchedulePrepareAST(modulePath)
 	}
 }

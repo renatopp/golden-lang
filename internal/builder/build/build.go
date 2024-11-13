@@ -3,7 +3,6 @@ package build
 import (
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
-	"github.com/renatopp/golden/internal/helpers/logger"
 )
 
 type Options struct {
@@ -11,7 +10,6 @@ type Options struct {
 	OutputFilePath string
 	NumWorkers     int
 	Debug          bool
-	LogLevel       logger.LogLevel
 }
 
 func Build(opts Options) error {
@@ -49,7 +47,7 @@ func build(opts Options) {
 	ctx := NewContext()
 	ctx.Options = opts
 	ctx.EntryModulePath = path
-	ctx.ToDiscoverPackage <- path
+	ctx.ScheduleDiscoverPackage(path)
 
 	steps := createSteps(ctx)
 	for i := 0; i < opts.NumWorkers; i++ {
