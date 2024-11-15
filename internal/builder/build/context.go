@@ -4,6 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/renatopp/golden/internal/compiler/ir"
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/core"
 	"github.com/renatopp/golden/internal/helpers/syncds"
@@ -87,6 +88,7 @@ func (c *Context) CreateOrGetPackage(packageName, packagePath string) *core.Pack
 	pkg := core.NewPackage()
 	pkg.Name = packageName
 	pkg.Path = packagePath
+	pkg.Ir = ir.NewGirWriter(pkg)
 	c.Packages.Set(packagePath, pkg)
 	return pkg
 }

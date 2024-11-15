@@ -3,7 +3,7 @@ package core
 // Represents the type annotation in an AST node
 type TypeData interface {
 	Id() uint64                  // Unique identifier for the type instance
-	Tag() string                 // Used as a short name identifier of ths type for debugging
+	Tag() string                 // Used as a short name identifier of the type for debugging
 	Signature() string           // Used as a code representation for errors and type identification for the user
 	Accepts(other TypeData) bool // Checks if the other type can be assignable into this type
 	Default() (AstData, error)   // Returns the default initialization value of the type

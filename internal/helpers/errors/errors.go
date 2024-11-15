@@ -66,7 +66,7 @@ func Throw(kind core.ErrorKind, msg string, args ...any) {
 
 func PrettyPrint(e error) {
 	if e, ok := e.(*core.Error); ok {
-		if e.Loc == nil {
+		if e.Loc() == nil {
 			prettySimpleError(e)
 			return
 		}
@@ -78,7 +78,7 @@ func PrettyPrint(e error) {
 }
 
 func prettySimpleError(e error) {
-	println(e.Error())
+	fmt.Printf("Error: %s", e.Error())
 }
 
 func prettyGoldenError(e *core.Error) {

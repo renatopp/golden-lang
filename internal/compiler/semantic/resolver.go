@@ -36,12 +36,18 @@ func (r *Resolver) PreResolve(node *core.AstNode) error {
 }
 
 func (r *Resolver) Resolve(node *core.AstNode) error {
+	r.ir().EnterModule(r.module)
+	defer r.ir().ExitModule()
 	return errors.WithRecovery(func() {
 		r.resolve(node)
 	})
 }
 
 // INTERNAL HELPERS -----------------------------------------------------------
+
+func (r *Resolver) ir() core.IrWriter {
+	return r.module.Package.Ir
+}
 
 func (r *Resolver) pushScope(scope *core.Scope) {
 	r.scopeStack = append(r.scopeStack, scope)
@@ -334,9 +340,10 @@ func (r *Resolver) resolveBool(node *core.AstNode, _ *ast.Bool) {
 	node.WithType(Bool)
 }
 
-func (r *Resolver) resolveInt(node *core.AstNode, _ *ast.Int) {
+func (r *Resolver) resolveInt(node *core.AstNode, a *ast.Int) {
 	r.expectExpressionKind(node, core.ValueExpression)
 	node.WithType(Int)
+	r.ir().NewInt(a.Value, node)
 }
 
 func (r *Resolver) resolveFloat(node *core.AstNode, _ *ast.Float) {

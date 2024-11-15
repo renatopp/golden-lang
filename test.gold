@@ -1,15 +1,4 @@
-
--- Sample
-fn main() {
-  'renato'
-}
-
-fn add(a Int) Int {
-  a + 1 -- help
-}
-
--- fn multi(x Int) Fn(Int, Int) Int {
---   fn(a Int, b Int) Int {
---     {a + b} * x
---   }
--- }
+let int = 1
+let float = 1.0
+let bool = true
+let string = 'renato'
