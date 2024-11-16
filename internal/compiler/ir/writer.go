@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/renatopp/golden/internal/compiler/ir/comp"
@@ -62,21 +63,24 @@ func (w *GirWriter) ExitModule() {
 	}
 }
 
-func (w *GirWriter) Declare(identifier string, comp core.IrComp, node *core.AstNode) core.IrComp {
-	// Convert name into Ref(package, module, identifier)
-	// Register in scope
-	// Convert name to SSA
-
-	// ref := R(w.Package, w.module(), identifier)
-	// name := ref.Name()
-	// scope := w.scope()
-	// ssa := scope.Inc(name)
-	// w.scope().Set()
-
-	return nil
+func (w *GirWriter) Declare(identifier string, c core.IrComp, node *core.AstNode) core.IrComp {
+	ref := R(w.Package, w.module(), identifier)
+	key := ref.Name()
+	scope := w.scope()
+	ssa := scope.Incr(key)
+	name := fmt.Sprintf("%s%d", identifier, ssa)
+	scope.Set(name, c)
+	println("Declare", name)
+	return &comp.Declare{
+		Base:    *comp.NewBase(node),
+		NameRef: ref,
+		NameUid: name,
+		Value:   c,
+	}
 }
 
 func (w *GirWriter) NewInt(value int64, node *core.AstNode) core.IrComp {
+	println("Int", value)
 	return &comp.Int{
 		Base:  *comp.NewBase(node),
 		Value: value,
@@ -84,6 +88,7 @@ func (w *GirWriter) NewInt(value int64, node *core.AstNode) core.IrComp {
 }
 
 func (w *GirWriter) NewFloat(value float64, node *core.AstNode) core.IrComp {
+	println("Float", value)
 	return &comp.Float{
 		Base:  *comp.NewBase(node),
 		Value: value,
@@ -91,6 +96,7 @@ func (w *GirWriter) NewFloat(value float64, node *core.AstNode) core.IrComp {
 }
 
 func (w *GirWriter) NewBool(value bool, node *core.AstNode) core.IrComp {
+	println("Bool", value)
 	return &comp.Bool{
 		Base:  *comp.NewBase(node),
 		Value: value,
@@ -98,6 +104,7 @@ func (w *GirWriter) NewBool(value bool, node *core.AstNode) core.IrComp {
 }
 
 func (w *GirWriter) NewString(value string, node *core.AstNode) core.IrComp {
+	println("String", value)
 	return &comp.String{
 		Base:  *comp.NewBase(node),
 		Value: value,

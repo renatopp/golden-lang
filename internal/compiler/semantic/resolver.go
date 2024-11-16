@@ -335,25 +335,28 @@ func (r *Resolver) resolveBlock(node *core.AstNode, data *ast.Block) {
 	}
 }
 
-func (r *Resolver) resolveBool(node *core.AstNode, _ *ast.Bool) {
-	r.expectExpressionKind(node, core.ValueExpression)
-	node.WithType(Bool)
-}
-
 func (r *Resolver) resolveInt(node *core.AstNode, a *ast.Int) {
 	r.expectExpressionKind(node, core.ValueExpression)
 	node.WithType(Int)
 	r.ir().NewInt(a.Value, node)
 }
 
-func (r *Resolver) resolveFloat(node *core.AstNode, _ *ast.Float) {
+func (r *Resolver) resolveFloat(node *core.AstNode, a *ast.Float) {
 	r.expectExpressionKind(node, core.ValueExpression)
 	node.WithType(Float)
+	r.ir().NewFloat(a.Value, node)
 }
 
-func (r *Resolver) resolveString(node *core.AstNode, _ *ast.String) {
+func (r *Resolver) resolveBool(node *core.AstNode, a *ast.Bool) {
+	r.expectExpressionKind(node, core.ValueExpression)
+	node.WithType(Bool)
+	r.ir().NewBool(a.Value, node)
+}
+
+func (r *Resolver) resolveString(node *core.AstNode, a *ast.String) {
 	r.expectExpressionKind(node, core.ValueExpression)
 	node.WithType(String)
+	r.ir().NewString(a.Value, node)
 }
 
 func (r *Resolver) resolveUnaryOp(node *core.AstNode, data *ast.UnaryOp) {
@@ -432,6 +435,8 @@ func (r *Resolver) resolveVariableDecl(node *core.AstNode, data *ast.VariableDec
 
 	node.WithType(data.Value.Type())
 	r.scope.Values.Set(data.Name, core.BindValue(node))
+
+	// r.ir().Declare(data.Name, node)
 }
 
 func (r *Resolver) resolveFunctionDecl(node *core.AstNode, data *ast.FunctionDecl) {

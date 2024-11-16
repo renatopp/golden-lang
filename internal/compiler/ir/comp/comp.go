@@ -6,6 +6,10 @@ import (
 	"github.com/renatopp/golden/internal/core"
 )
 
+type ref interface {
+	Name() string
+}
+
 type Base struct {
 	node *core.AstNode
 }
@@ -54,3 +58,13 @@ type String struct {
 func (c *String) Tag() string { return fmt.Sprintf("string:%s", c.Value) }
 
 var _ core.IrComp = &String{}
+
+// Declare
+type Declare struct {
+	Base
+	NameRef ref
+	NameUid string
+	Value   core.IrComp
+}
+
+func (c *Declare) Tag() string { return fmt.Sprintf("declare:%s", c.NameUid) }

@@ -1,8 +1,6 @@
 package ir
 
 import (
-	"fmt"
-
 	"github.com/renatopp/golden/internal/core"
 )
 
@@ -22,5 +20,6 @@ func R(pkg *core.Package, mod *core.Module, ident string) *Ref {
 
 func (r *Ref) Name() string {
 	// TODO: improve naming
-	return fmt.Sprintf("%s_%s", r.Module.Name, r.Identifier)
+	// return fmt.Sprintf("%s_%s", r.Module.Name, r.Identifier)
+	return r.Identifier
 }
