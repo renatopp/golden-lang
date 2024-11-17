@@ -9,7 +9,6 @@
   [ ] review module-level variable resolution and pre-resolution
 
 ## IR
-[ ] Return comp recursively on resolvers
 [ ] Declare variable
 [ ] Integer
 [ ] Float

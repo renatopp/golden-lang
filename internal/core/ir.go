@@ -9,9 +9,9 @@ type IrWriter interface {
 	EnterModule(*Module)
 	ExitModule()
 
-	Declare(string, IrComp, *AstNode) IrComp
-	NewInt(int64, *AstNode) IrComp
-	NewFloat(float64, *AstNode) IrComp
-	NewBool(bool, *AstNode) IrComp
-	NewString(string, *AstNode) IrComp
+	// Declare(string, IrComp, *AstNode) IrComp
+	Int(int64, *AstNode)
+	Float(float64, *AstNode)
+	Bool(bool, *AstNode)
+	String(string, *AstNode)
 }

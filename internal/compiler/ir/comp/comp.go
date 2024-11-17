@@ -59,6 +59,14 @@ func (c *String) Tag() string { return fmt.Sprintf("string:%s", c.Value) }
 
 var _ core.IrComp = &String{}
 
+// Identifier
+// type Identifier struct {
+// 	*Base
+// 	RefName ref
+// }
+
+// func (c *Identifier) Tag() string { return fmt.Sprintf("identifier:%s", c.NameRef.Name()) }
+
 // Declare
 type Declare struct {
 	Base

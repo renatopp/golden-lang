@@ -10,6 +10,8 @@ import (
 	"github.com/renatopp/golden/internal/helpers/errors"
 )
 
+const anonymousDefinitionKey = "$"
+
 // Should be used per package
 type GirWriter struct {
 	Package     *core.Package
@@ -51,6 +53,11 @@ func (w *GirWriter) scope() *GirScope {
 	return top
 }
 
+func (w *GirWriter) nextName(key string) string {
+	ssa := w.scope().Incr(key)
+	return fmt.Sprintf("%s%d", key, ssa)
+}
+
 func (w *GirWriter) EnterModule(module *core.Module) {
 	w.ModuleStack.Push(module)
 	ident := strings.Repeat("  ", w.ModuleStack.Len())
@@ -63,52 +70,70 @@ func (w *GirWriter) ExitModule() {
 	}
 }
 
-func (w *GirWriter) Declare(identifier string, c core.IrComp, node *core.AstNode) core.IrComp {
-	ref := R(w.Package, w.module(), identifier)
-	key := ref.Name()
-	scope := w.scope()
-	ssa := scope.Incr(key)
-	name := fmt.Sprintf("%s%d", identifier, ssa)
-	scope.Set(name, c)
-	println("Declare", name)
-	return &comp.Declare{
-		Base:    *comp.NewBase(node),
-		NameRef: ref,
-		NameUid: name,
-		Value:   c,
+func (w *GirWriter) Declare(identifier string, node *core.AstNode) {
+	subVal := w.scope().Get(node.RefName())
+	if subVal == nil {
+		errors.Throw(errors.InternalError, "value not found for declaration identifier '%s'", identifier)
 	}
+
+	// val := &comp.Identifier{
+	// 	Base:    comp.NewBase(node),
+	// 	NameRef: node.RefName(),
+	// }
+
+	// ref := R(w.Package, w.module(), identifier)
+	// key := ref.Name()
+	// scope := w.scope()
+	// ssa := scope.Incr(key)
+	// name := fmt.Sprintf("%s%d", identifier, ssa)
+	// scope.Set(name, val)
+	// println("Declare", name)
+	// return &comp.Declare{
+	// 	Base:    *comp.NewBase(node),
+	// 	NameRef: ref,
+	// 	NameUid: name,
+	// 	Value:   c,
+	// }
 }
 
-func (w *GirWriter) NewInt(value int64, node *core.AstNode) core.IrComp {
-	println("Int", value)
-	return &comp.Int{
+func (w *GirWriter) Int(value int64, node *core.AstNode) {
+	val := &comp.Int{
 		Base:  *comp.NewBase(node),
 		Value: value,
 	}
+	name := w.nextName(anonymousDefinitionKey)
+	w.scope().Set(name, val)
+	fmt.Printf("let %s = %s\n", name, val.Tag())
 }
 
-func (w *GirWriter) NewFloat(value float64, node *core.AstNode) core.IrComp {
-	println("Float", value)
-	return &comp.Float{
+func (w *GirWriter) Float(value float64, node *core.AstNode) {
+	val := &comp.Float{
 		Base:  *comp.NewBase(node),
 		Value: value,
 	}
+	name := w.nextName(anonymousDefinitionKey)
+	w.scope().Set(name, val)
+	fmt.Printf("let %s = %s\n", name, val.Tag())
 }
 
-func (w *GirWriter) NewBool(value bool, node *core.AstNode) core.IrComp {
-	println("Bool", value)
-	return &comp.Bool{
+func (w *GirWriter) Bool(value bool, node *core.AstNode) {
+	val := &comp.Bool{
 		Base:  *comp.NewBase(node),
 		Value: value,
 	}
+	name := w.nextName(anonymousDefinitionKey)
+	w.scope().Set(name, val)
+	fmt.Printf("let %s = %s\n", name, val.Tag())
 }
 
-func (w *GirWriter) NewString(value string, node *core.AstNode) core.IrComp {
-	println("String", value)
-	return &comp.String{
+func (w *GirWriter) String(value string, node *core.AstNode) {
+	val := &comp.String{
 		Base:  *comp.NewBase(node),
 		Value: value,
 	}
+	name := w.nextName(anonymousDefinitionKey)
+	w.scope().Set(name, val)
+	fmt.Printf("let %s = %s\n", name, val.Tag())
 }
 
 // func (w *GirWriter) BeginFunction(name string, node *core.AstNode) *GirFunctionWriter { return nil }
