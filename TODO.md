@@ -1,23 +1,13 @@
-# TODOr
+# TODO
 
-## Refactor
-[ ] parser
-  [ ] parse comments inside the code
-[ ] semantic
-  [ ] allow raw expression like: 1 + 1.0
-  [ ] type > access should only return the scope to access instead of access directly
-  [ ] review module-level variable resolution and pre-resolution
-
-## IR
-[ ] Declare variable
-[ ] Integer
-[ ] Float
-[ ] String
-[ ] Bool
-[ ] Var ident
-[ ] Redeclare
-[ ] Bin Op
-[ ] Un Op
-[ ] Functions Definition
-[ ] Function Call
-[ ] Module Access
+[ ] Build Pipeline
+  [ ] Step 1:
+    [ ] Discover Package from file
+    [ ] Lex and Parse all modules in the package
+    [ ] Repeat for all imports
+  [ ] Step 2:
+    [ ] Construct dependency graph between imports
+  [ ] Step 3:
+    [ ] Semantic analysis all files given the dependency order
+  [ ] Step 4:
+    [ ] Generate IR for all packages
