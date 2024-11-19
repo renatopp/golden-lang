@@ -10,12 +10,12 @@ var _node_id = uint64(0)
 
 // Represents a generic node in the Abstract Syntax Tree (AST).
 type AstNode struct {
-	id      uint64
-	module  *Module     // Module that this node was defined.
-	token   *lang.Token // Tokens attached to the node
-	data    AstData     // Specific AST information for this node.
-	type_   TypeData    // Type annotation that represents the return type of this node.
-	refName string      // The node assignment name in the IR
+	id     uint64
+	module *Module     // Module that this node was defined.
+	token  *lang.Token // Tokens attached to the node
+	data   AstData     // Specific AST information for this node.
+	type_  TypeData    // Type annotation that represents the return type of this node.
+	ref    *Ref        // The node assignment reference name in the IR
 }
 
 func NewNode(token *lang.Token, data AstData) *AstNode {
@@ -40,7 +40,7 @@ func (n *AstNode) Module() *Module    { return n.module }
 func (n *AstNode) Token() *lang.Token { return n.token }
 func (n *AstNode) Data() AstData      { return n.data }
 func (n *AstNode) Type() TypeData     { return n.type_ }
-func (n *AstNode) RefName() string    { return n.refName }
+func (n *AstNode) Ref() *Ref          { return n.ref }
 
 func (n *AstNode) WithModule(module *Module) *AstNode {
 	n.module = module
@@ -62,8 +62,8 @@ func (n *AstNode) WithType(tp TypeData) *AstNode {
 	return n
 }
 
-func (n *AstNode) WithRefName(refName string) *AstNode {
-	n.refName = refName
+func (n *AstNode) WithRef(ref *Ref) *AstNode {
+	n.ref = ref
 	return n
 }
 
