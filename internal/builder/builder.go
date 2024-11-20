@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/renatopp/golden/internal/compiler/ast"
-	"github.com/renatopp/golden/internal/core"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -13,14 +12,14 @@ import (
 
 type BuildContext struct {
 	Options         *BuildOptions
-	PackageRegistry *ds.SyncMap[string, *core.Package]
-	ModuleRegistry  *ds.SyncMap[string, *core.Module]
+	PackageRegistry *ds.SyncMap[string, *Package]
+	ModuleRegistry  *ds.SyncMap[string, *Module]
 }
 
 type BuildOptions struct {
 	EntryFilePath string // Absolute path of the entry file containing main function
-	OnTokensReady func(module *core.Module, tokens []*lang.Token)
-	OnAstReady    func(module *core.Module, root *ast.Module)
+	OnTokensReady func(module *Module, tokens []*lang.Token)
+	OnAstReady    func(module *Module, root *ast.Module)
 }
 
 type BuildResult struct {
@@ -51,8 +50,8 @@ func (b *Builder) build() *BuildResult {
 	res := &BuildResult{}
 	ctx := &BuildContext{
 		Options:         b.Options,
-		PackageRegistry: ds.NewSyncMap[string, *core.Package](),
-		ModuleRegistry:  ds.NewSyncMap[string, *core.Module](),
+		PackageRegistry: ds.NewSyncMap[string, *Package](),
+		ModuleRegistry:  ds.NewSyncMap[string, *Module](),
 	}
 
 	b.validateEntry()

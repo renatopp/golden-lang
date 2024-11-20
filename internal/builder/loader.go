@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/renatopp/golden/internal/compiler/syntax"
-	"github.com/renatopp/golden/internal/core"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -44,10 +43,10 @@ func (l *loader) discover(modulePath string) {
 func (l *loader) loadPackage(packagePath string) {
 	defer l.pending.Done()
 
-	pkg := &core.Package{
+	pkg := &Package{
 		Name:    fs.PackagePath2PackageName(packagePath),
 		Path:    packagePath,
-		Modules: ds.NewSyncList[*core.Module](),
+		Modules: ds.NewSyncList[*Module](),
 	}
 	l.ctx.PackageRegistry.Set(packagePath, pkg)
 	files := fs.DiscoverModules(packagePath)
@@ -57,10 +56,10 @@ func (l *loader) loadPackage(packagePath string) {
 	}
 }
 
-func (l *loader) loadModule(pkg *core.Package, modulePath string) {
+func (l *loader) loadModule(pkg *Package, modulePath string) {
 	defer l.pending.Done()
 
-	module := &core.Module{
+	module := &Module{
 		Name:     fs.ModulePath2ModuleName(modulePath),
 		Path:     modulePath,
 		FileName: fs.ModulePath2ModuleFileName(modulePath),
@@ -86,7 +85,7 @@ func (l *loader) loadModule(pkg *core.Package, modulePath string) {
 		l.ctx.Options.OnTokensReady(module, tokens)
 	}
 
-	root, err := syntax.Parse(tokens, module)
+	root, err := syntax.Parse(tokens, modulePath)
 	if err != nil {
 		l.errors.Add(err)
 		return

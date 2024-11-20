@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/compiler/tokens"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/lang"
 	"github.com/renatopp/golden/lang/eaters"
@@ -16,21 +16,21 @@ var typeRegex = regexp.MustCompile(`^_*[A-Z][a-zA-Z0-9_]*$`)
 
 func Lex(input []byte, modulePath string) ([]*lang.Token, error) {
 	scanner := lang.NewByteScanner(input)
-	tokens := []*lang.Token{}
+	toks := []*lang.Token{}
 	for {
 		t := nextToken(scanner)
-		tokens = append(tokens, t.WithFile(modulePath))
-		if t.Kind == core.TEof {
+		toks = append(toks, t.WithFile(modulePath))
+		if t.Kind == tokens.TEof {
 			break
 		}
 	}
 
 	if scanner.HasErrors() {
 		err := lang.NewErrorList(scanner.Errors())
-		return tokens, errors.ToGoldenError(err)
+		return toks, errors.ToGoldenError(err)
 	}
 
-	return tokens, nil
+	return toks, nil
 }
 
 func nextToken(scanner *lang.ByteScanner) *lang.Token {
@@ -44,13 +44,13 @@ func nextToken(scanner *lang.ByteScanner) *lang.Token {
 		s3 := s2 + string(c2.Rune)
 
 		if scanner.TotalErrors() >= 10 {
-			return lang.NewToken(core.TEof, "").WithChars(c0, c1)
+			return lang.NewToken(tokens.TEof, "").WithChars(c0, c1)
 		}
 
 		switch {
 		// EOF
 		case c0.Is(0):
-			return lang.NewToken(core.TEof, "").WithChars(c0, c1)
+			return lang.NewToken(tokens.TEof, "").WithChars(c0, c1)
 
 		// Whitespaces
 		case c0.Is(' ', '\t', '\r'):
@@ -59,11 +59,11 @@ func nextToken(scanner *lang.ByteScanner) *lang.Token {
 
 			// Newlines
 		case c0.Is('\n'):
-			return eaters.EatNewlines(scanner).WithType(core.TNewline)
+			return eaters.EatNewlines(scanner).WithType(tokens.TNewline)
 
 			// Comments
 		case s2 == "--":
-			t := eaters.EatUntilEndOfLine(scanner).WithType(core.TComment)
+			t := eaters.EatUntilEndOfLine(scanner).WithType(tokens.TComment)
 			eaters.EatSpaces(scanner) // \r
 			scanner.EatChar()         // \n
 			return t
@@ -71,56 +71,56 @@ func nextToken(scanner *lang.ByteScanner) *lang.Token {
 		// // Literals, Identifiers and Keywords
 		case runes.IsAlpha(c0.Rune) || c0.Is('_'):
 			t := eaters.EatIdentifier(scanner)
-			tok := core.LiteralToToken(t.Literal)
-			if tok != core.TUnknown {
+			tok := tokens.LiteralToToken(t.Literal)
+			if tok != tokens.TUnknown {
 				return t.WithType(tok)
 			}
 			if typeRegex.MatchString(t.Literal) {
-				return t.WithType(core.TTypeIdent)
+				return t.WithType(tokens.TTypeIdent)
 			}
-			return t.WithType(core.TVarIdent)
+			return t.WithType(tokens.TVarIdent)
 
 		// Numbers
 		case runes.IsNumeric(c0.Rune):
 			switch {
 			case c1.Is('x', 'X'):
-				return eaters.EatHexadecimal(scanner).WithType(core.THex)
+				return eaters.EatHexadecimal(scanner).WithType(tokens.THex)
 			case c1.Is('o', 'O'):
-				return eaters.EatOctal(scanner).WithType(core.TOctal)
+				return eaters.EatOctal(scanner).WithType(tokens.TOctal)
 			case c1.Is('b', 'B'):
-				return eaters.EatBinary(scanner).WithType(core.TBinary)
+				return eaters.EatBinary(scanner).WithType(tokens.TBinary)
 			default:
 				num := eaters.EatNumber(scanner)
 				if strings.Contains(num.Literal, ".") || strings.Contains(num.Literal, "e") {
-					return num.WithType(core.TFloat)
+					return num.WithType(tokens.TFloat)
 				}
-				return num.WithType(core.TInteger)
+				return num.WithType(tokens.TInteger)
 			}
 
 		// Strings
 		case c0.Is('\''):
-			return eaters.EatString(scanner).WithType(core.TString)
+			return eaters.EatString(scanner).WithType(tokens.TString)
 
 		case c0.Is('`'):
-			return eaters.EatRawString(scanner).WithType(core.TString)
+			return eaters.EatRawString(scanner).WithType(tokens.TString)
 
 		default:
-			if tok := core.LiteralToToken(s3); tok != core.TUnknown {
+			if tok := tokens.LiteralToToken(s3); tok != tokens.TUnknown {
 				chars := scanner.EatChars(3)
 				return lang.NewToken(tok, s3).WithChars(chars[0], chars[2])
 			}
-			if tok := core.LiteralToToken(s2); tok != core.TUnknown {
+			if tok := tokens.LiteralToToken(s2); tok != tokens.TUnknown {
 				chars := scanner.EatChars(2)
 				return lang.NewToken(tok, s2).WithChars(chars[0], chars[1])
 			}
-			if tok := core.LiteralToToken(s1); tok != core.TUnknown {
+			if tok := tokens.LiteralToToken(s1); tok != tokens.TUnknown {
 				chars := scanner.EatChars(1)
 				return lang.NewToken(tok, s1).WithChars(chars[0], chars[0])
 			}
 
 			scanner.EatChar()
 			scanner.RegisterError(c0.AsError(eaters.ErrSyntax, fmt.Sprintf("unexpected character '%v'", s1)))
-			return lang.NewToken(core.TInvalid, s1).WithChars(c0, c1)
+			return lang.NewToken(tokens.TInvalid, s1).WithChars(c0, c1)
 		}
 	}
 }

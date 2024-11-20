@@ -3,11 +3,10 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"strings"
 
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/compiler/ast"
-	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/helpers/debug"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/logger"
 	"github.com/renatopp/golden/lang"
@@ -41,16 +40,14 @@ func (c *Run) Run() error {
 
 	b := builder.NewBuilder(&builder.BuildOptions{
 		EntryFilePath: args[0],
-		OnTokensReady: func(module *core.Module, tokens []*lang.Token) {
+		OnTokensReady: func(module *builder.Module, tokens []*lang.Token) {
 			if *flagDebug {
-				c.printTokens(module, tokens)
+				debug.PrettyPrintTokens(module, tokens)
 			}
 		},
-		OnAstReady: func(module *core.Module, root *ast.Module) {
+		OnAstReady: func(module *builder.Module, root *ast.Module) {
 			if *flagDebug {
-				fmt.Printf("AST for file %s:\n", module.Path)
-				fmt.Println(root.Id(), root.Token())
-				println()
+				debug.PrettyPrintAst(module, root)
 			}
 		},
 	})
@@ -63,12 +60,4 @@ func (c *Run) Run() error {
 
 	fmt.Println("Build completed in", res.Elapsed)
 	return nil
-}
-
-func (c *Run) printTokens(module *core.Module, tokens []*lang.Token) {
-	fmt.Printf("Tokens for file %s:\n", module.Path)
-	for _, t := range tokens {
-		fmt.Printf("- %s('%s')\n", t.Kind, strings.ReplaceAll(t.Literal, "\n", "\\n"))
-	}
-	println()
 }

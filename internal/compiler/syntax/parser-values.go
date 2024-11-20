@@ -2,80 +2,80 @@
 package syntax
 
 import (
-	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/compiler/tokens"
 	"github.com/renatopp/golden/lang"
 )
 
 func (p *parser) valuePrecedence(t *lang.Token) int {
 	switch {
-	case t.IsKind(core.TAssign):
+	case t.IsKind(tokens.TAssign):
 		return 10
-	case t.IsKind(core.TPipe):
+	case t.IsKind(tokens.TPipe):
 		return 20
-	case t.IsKind(core.TOr):
+	case t.IsKind(tokens.TOr):
 		return 40
-	case t.IsKind(core.TXor):
+	case t.IsKind(tokens.TXor):
 		return 45
-	case t.IsKind(core.TAnd):
+	case t.IsKind(tokens.TAnd):
 		return 50
-	case t.IsKind(core.TEqual, core.TNequal):
+	case t.IsKind(tokens.TEqual, tokens.TNequal):
 		return 70
-	case t.IsKind(core.TLt, core.TGt, core.TLte, core.TGte):
+	case t.IsKind(tokens.TLt, tokens.TGt, tokens.TLte, tokens.TGte):
 		return 80
-	case t.IsKind(core.TPlus, core.TMinus):
+	case t.IsKind(tokens.TPlus, tokens.TMinus):
 		return 90
-	case t.IsKind(core.TStar, core.TSlash):
+	case t.IsKind(tokens.TStar, tokens.TSlash):
 		return 100
-	case t.IsKind(core.TSpaceship):
+	case t.IsKind(tokens.TSpaceship):
 		return 110
-	case t.IsKind(core.TPercent):
+	case t.IsKind(tokens.TPercent):
 		return 120
-	case t.IsKind(core.TLparen):
+	case t.IsKind(tokens.TLparen):
 		return 130
-	case t.IsKind(core.TDot):
+	case t.IsKind(tokens.TDot):
 		return 140
 	}
 	return 0
 }
 
 func (p *parser) registerValueExpressions() {
-	// p.ValueSolver.RegisterPrefixFn(core.TKeyword, p.parseValueKeyword)
-	// p.ValueSolver.RegisterPrefixFn(core.TLbrace, p.parseBlock)
-	// p.ValueSolver.RegisterPrefixFn(core.TPlus, p.parseUnaryOperator)
-	// p.ValueSolver.RegisterPrefixFn(core.TMinus, p.parseUnaryOperator)
-	// p.ValueSolver.RegisterPrefixFn(core.TBang, p.parseUnaryOperator)
-	// p.ValueSolver.RegisterPrefixFn(core.TInteger, p.parseInteger)
-	// p.ValueSolver.RegisterPrefixFn(core.THex, p.parseInteger)
-	// p.ValueSolver.RegisterPrefixFn(core.TOctal, p.parseInteger)
-	// p.ValueSolver.RegisterPrefixFn(core.TBinary, p.parseInteger)
-	// p.ValueSolver.RegisterPrefixFn(core.TFloat, p.parseFloat)
-	// p.ValueSolver.RegisterPrefixFn(core.TBool, p.parseBool)
-	// p.ValueSolver.RegisterPrefixFn(core.TString, p.parseString)
-	// p.ValueSolver.RegisterPrefixFn(core.TVarIdent, p.parseVarIdent)
-	// p.ValueSolver.RegisterPrefixFn(core.TTypeIdent, p.parseTypeExpressionAsValue)
-	// p.ValueSolver.RegisterPrefixFn(core.TLparen, p.parseAnonymousDataApply)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TKeyword, p.parseValueKeyword)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TLbrace, p.parseBlock)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TPlus, p.parseUnaryOperator)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TMinus, p.parseUnaryOperator)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TBang, p.parseUnaryOperator)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TInteger, p.parseInteger)
+	// p.ValueSolver.RegisterPrefixFn(tokens.THex, p.parseInteger)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TOctal, p.parseInteger)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TBinary, p.parseInteger)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TFloat, p.parseFloat)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TBool, p.parseBool)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TString, p.parseString)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TVarIdent, p.parseVarIdent)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TTypeIdent, p.parseTypeExpressionAsValue)
+	// p.ValueSolver.RegisterPrefixFn(tokens.TLparen, p.parseAnonymousDataApply)
 
-	// p.ValueSolver.RegisterInfixFn(core.TPlus, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TMinus, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TStar, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TSlash, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TPercent, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TSpaceship, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TEqual, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TNequal, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TAnd, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TOr, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TXor, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TLt, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TLte, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TGt, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TGte, p.parseBinaryOperator)
-	// p.ValueSolver.RegisterInfixFn(core.TDot, p.parseAccess)
-	// p.ValueSolver.RegisterInfixFn(core.TLparen, p.parseApply)
+	// p.ValueSolver.RegisterInfixFn(tokens.TPlus, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TMinus, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TStar, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TSlash, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TPercent, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TSpaceship, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TEqual, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TNequal, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TAnd, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TOr, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TXor, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TLt, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TLte, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TGt, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TGte, p.parseBinaryOperator)
+	// p.ValueSolver.RegisterInfixFn(tokens.TDot, p.parseAccess)
+	// p.ValueSolver.RegisterInfixFn(tokens.TLparen, p.parseApply)
 }
 
 // // Nullable
-// func (p *Parser) parseValueExpression(precedence ...int) *core.AstNode {
+// func (p *Parser) parseValueExpression(precedence ...int) *tokens.AstNode {
 // 	pr := 0
 // 	if len(precedence) > 0 {
 // 		pr = precedence[0]
@@ -83,12 +83,12 @@ func (p *parser) registerValueExpressions() {
 // 	return p.ValueSolver.SolveExpression(p.Scanner, pr)
 // }
 
-// func (p *Parser) parseValueKeyword() *core.AstNode {
+// func (p *Parser) parseValueKeyword() *tokens.AstNode {
 // 	switch {
-// 	case p.IsNextLiteralsOf(core.TKeyword, core.KFn):
+// 	case p.IsNextLiteralsOf(tokens.TKeyword, tokens.KFn):
 // 		return p.parseFunctionDecl()
 
-// 	case p.IsNextLiteralsOf(core.TKeyword, core.KLet):
+// 	case p.IsNextLiteralsOf(tokens.TKeyword, tokens.KLet):
 // 		return p.parseVariableDecl()
 // 	}
 
@@ -96,17 +96,17 @@ func (p *parser) registerValueExpressions() {
 // 	return nil
 // }
 
-// func (p *Parser) parseVariableDecl() *core.AstNode {
-// 	p.ExpectLiteralsOf(core.TKeyword, core.KLet)
+// func (p *Parser) parseVariableDecl() *tokens.AstNode {
+// 	p.ExpectLiteralsOf(tokens.TKeyword, tokens.KLet)
 // 	let := p.EatToken()
 
-// 	p.ExpectTokens(core.TVarIdent)
+// 	p.ExpectTokens(tokens.TVarIdent)
 // 	ident := p.EatToken()
 
 // 	tp := p.parseTypeExpression()
 
-// 	var value *core.AstNode
-// 	if p.IsNextTokens(core.TAssign) {
+// 	var value *tokens.AstNode
+// 	if p.IsNextTokens(tokens.TAssign) {
 // 		p.EatToken()
 // 		value = p.parseValueExpression()
 // 		if value == nil {
@@ -114,34 +114,34 @@ func (p *parser) registerValueExpressions() {
 // 		}
 // 	}
 
-// 	return core.NewNode(let, &ast.VariableDecl{
+// 	return tokens.NewNode(let, &ast.VariableDecl{
 // 		Name:  ident.Literal,
 // 		Type:  tp,
 // 		Value: value,
 // 	})
 // }
 
-// func (p *Parser) parseFunctionDecl() *core.AstNode {
-// 	p.ExpectLiteralsOf(core.TKeyword, core.KFn)
+// func (p *Parser) parseFunctionDecl() *tokens.AstNode {
+// 	p.ExpectLiteralsOf(tokens.TKeyword, tokens.KFn)
 // 	fn := p.EatToken()
 
 // 	name := ""
-// 	if p.IsNextTokens(core.TVarIdent) {
+// 	if p.IsNextTokens(tokens.TVarIdent) {
 // 		name = p.EatToken().Literal
 // 	}
 
-// 	p.ExpectTokens(core.TLparen)
+// 	p.ExpectTokens(tokens.TLparen)
 // 	p.EatToken()
 // 	params := p.parseFunctionParams()
-// 	p.ExpectTokens(core.TRparen)
+// 	p.ExpectTokens(tokens.TRparen)
 // 	p.EatToken()
 
 // 	tp := p.parseTypeExpression()
 
-// 	p.ExpectTokens(core.TLbrace)
+// 	p.ExpectTokens(tokens.TLbrace)
 // 	body := p.parseBlock()
 
-// 	node := core.NewNode(fn, &ast.FunctionDecl{
+// 	node := tokens.NewNode(fn, &ast.FunctionDecl{
 // 		Name:       name,
 // 		Params:     params,
 // 		ReturnType: tp,
@@ -156,7 +156,7 @@ func (p *parser) registerValueExpressions() {
 
 // 	p.SkipNewlines()
 // 	for {
-// 		if !p.IsNextTokens(core.TVarIdent) {
+// 		if !p.IsNextTokens(tokens.TVarIdent) {
 // 			break
 // 		}
 
@@ -170,10 +170,10 @@ func (p *parser) registerValueExpressions() {
 // 			Type: tp,
 // 		})
 
-// 		if !p.IsNextTokens(core.TComma, core.TNewline) {
+// 		if !p.IsNextTokens(tokens.TComma, tokens.TNewline) {
 // 			break
 // 		}
-// 		p.SkipSeparator(core.TComma)
+// 		p.SkipSeparator(tokens.TComma)
 // 	}
 
 // 	p.SkipNewlines()
@@ -181,17 +181,17 @@ func (p *parser) registerValueExpressions() {
 // }
 
 // // Parse an integer literal with support for different bases.
-// func (p *Parser) parseInteger() *core.AstNode {
-// 	p.ExpectTokens(core.TInteger, core.THex, core.TOctal, core.TBinary)
+// func (p *Parser) parseInteger() *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TInteger, tokens.THex, tokens.TOctal, tokens.TBinary)
 
 // 	token := p.EatToken()
 // 	base := 10
 // 	switch token.Kind {
-// 	case core.THex:
+// 	case tokens.THex:
 // 		base = 16
-// 	case core.TOctal:
+// 	case tokens.TOctal:
 // 		base = 8
-// 	case core.TBinary:
+// 	case tokens.TBinary:
 // 		base = 2
 // 	}
 
@@ -200,83 +200,83 @@ func (p *parser) registerValueExpressions() {
 // 		errors.ThrowAtToken(token, errors.ParserError, "invalid integer literal '%s'", token.Literal)
 // 	}
 
-// 	return core.NewNode(token, &ast.Int{Value: value})
+// 	return tokens.NewNode(token, &ast.Int{Value: value})
 // }
 
 // // Parse a float literal.
-// func (p *Parser) parseFloat() *core.AstNode {
-// 	p.ExpectTokens(core.TFloat)
+// func (p *Parser) parseFloat() *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TFloat)
 // 	token := p.EatToken()
 // 	value, err := strconv.ParseFloat(token.Literal, 64)
 // 	if err != nil {
 // 		errors.ThrowAtToken(token, errors.ParserError, "invalid float literal '%s'", token.Literal)
 // 	}
-// 	return core.NewNode(token, &ast.Float{Value: value})
+// 	return tokens.NewNode(token, &ast.Float{Value: value})
 // }
 
 // // Parse a boolean literal.
-// func (p *Parser) parseBool() *core.AstNode {
-// 	p.ExpectTokens(core.TBool)
+// func (p *Parser) parseBool() *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TBool)
 // 	p.ExpectLiterals("true", "false")
 // 	token := p.EatToken()
 // 	value := token.Literal == "true"
-// 	return core.NewNode(token, &ast.Bool{Value: value})
+// 	return tokens.NewNode(token, &ast.Bool{Value: value})
 // }
 
 // // Parse a string literal.
-// func (p *Parser) parseString() *core.AstNode {
-// 	p.ExpectTokens(core.TString)
+// func (p *Parser) parseString() *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TString)
 // 	token := p.EatToken()
 // 	value := strings.ReplaceAll(token.Literal, "\r", "")
-// 	return core.NewNode(token, &ast.String{Value: value})
+// 	return tokens.NewNode(token, &ast.String{Value: value})
 // }
 
 // // Parse a variable identifier.
-// func (p *Parser) parseVarIdent() *core.AstNode {
-// 	p.ExpectTokens(core.TVarIdent)
+// func (p *Parser) parseVarIdent() *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TVarIdent)
 // 	token := p.EatToken()
-// 	return core.NewNode(token, &ast.VarIdent{Name: token.Literal})
+// 	return tokens.NewNode(token, &ast.VarIdent{Name: token.Literal})
 // }
 
 // // Parse a block expression. Example: `{ ... }`
-// func (p *Parser) parseBlock() *core.AstNode {
-// 	p.ExpectTokens(core.TLbrace)
+// func (p *Parser) parseBlock() *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TLbrace)
 // 	lbrace := p.EatToken()
 
-// 	nodes := []*core.AstNode{}
+// 	nodes := []*tokens.AstNode{}
 // 	p.SkipNewlines()
-// 	for !p.IsNextTokens(core.TRbrace) {
+// 	for !p.IsNextTokens(tokens.TRbrace) {
 // 		node := p.parseValueExpression()
 // 		if node == nil {
 // 			errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression, but none was found")
 // 		}
 // 		nodes = append(nodes, node)
 
-// 		p.SkipSeparator(core.TSemicolon)
+// 		p.SkipSeparator(tokens.TSemicolon)
 // 	}
 
-// 	p.ExpectTokens(core.TRbrace)
+// 	p.ExpectTokens(tokens.TRbrace)
 // 	p.EatToken()
 
-// 	return core.NewNode(lbrace, &ast.Block{Expressions: nodes})
+// 	return tokens.NewNode(lbrace, &ast.Block{Expressions: nodes})
 // }
 
 // // Parse a unary operator. Example: `+x`
-// func (p *Parser) parseUnaryOperator() *core.AstNode {
+// func (p *Parser) parseUnaryOperator() *tokens.AstNode {
 // 	op := p.EatToken()
 // 	right := p.parseValueExpression(p.valuePrecedence(op))
-// 	return core.NewNode(op, &ast.UnaryOp{
+// 	return tokens.NewNode(op, &ast.UnaryOp{
 // 		Operator: op.Literal,
 // 		Right:    right,
 // 	})
 // }
 
-// func (p *Parser) parseTypeExpressionAsValue() *core.AstNode {
+// func (p *Parser) parseTypeExpressionAsValue() *tokens.AstNode {
 // 	tp := p.parseTypeExpression()
 // 	if tp == nil {
 // 		errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected type expression, but none was found")
 // 	}
-// 	return core.NewNode(tp.Token(), &ast.Apply{
+// 	return tokens.NewNode(tp.Token(), &ast.Apply{
 // 		Shape:  "unit",
 // 		Args:   []*ast.ApplyArgument{},
 // 		Target: tp,
@@ -284,7 +284,7 @@ func (p *parser) registerValueExpressions() {
 // }
 
 // // Parse a binary operator expression. Example: `x + y`
-// func (p *Parser) parseBinaryOperator(left *core.AstNode) *core.AstNode {
+// func (p *Parser) parseBinaryOperator(left *tokens.AstNode) *tokens.AstNode {
 // 	op := p.EatToken()
 // 	right := p.parseValueExpression(p.valuePrecedence(op))
 
@@ -292,7 +292,7 @@ func (p *parser) registerValueExpressions() {
 // 		errors.ThrowAtToken(op, errors.ParserError, "expecting value expression after operator, but none was found")
 // 	}
 
-// 	return core.NewNode(op, &ast.BinaryOp{
+// 	return tokens.NewNode(op, &ast.BinaryOp{
 // 		Operator: op.Literal,
 // 		Left:     left,
 // 		Right:    right,
@@ -300,24 +300,24 @@ func (p *parser) registerValueExpressions() {
 // }
 
 // // Parse an assignment expression. Example: `x = y`
-// func (p *Parser) parseAccess(left *core.AstNode) *core.AstNode {
+// func (p *Parser) parseAccess(left *tokens.AstNode) *tokens.AstNode {
 // 	op := p.EatToken()
-// 	p.ExpectTokens(core.TVarIdent, core.TTypeIdent, core.TInteger)
+// 	p.ExpectTokens(tokens.TVarIdent, tokens.TTypeIdent, tokens.TInteger)
 // 	accessor := p.EatToken()
-// 	return core.NewNode(op, &ast.Access{
+// 	return tokens.NewNode(op, &ast.Access{
 // 		Target:   left,
 // 		Accessor: accessor.Literal,
 // 	})
 // }
 
 // // Parse an application. Example: `f(x, y)` or `F(x=2, y=3)`
-// func (p *Parser) parseApply(left *core.AstNode) *core.AstNode {
-// 	p.ExpectTokens(core.TLparen)
+// func (p *Parser) parseApply(left *tokens.AstNode) *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TLparen)
 // 	first := p.EatToken()
 // 	shape, args := p.parseApplyArguments()
-// 	p.ExpectTokens(core.TRparen)
+// 	p.ExpectTokens(tokens.TRparen)
 // 	p.EatToken()
-// 	return core.NewNode(first, &ast.Apply{
+// 	return tokens.NewNode(first, &ast.Apply{
 // 		Shape:  shape,
 // 		Target: left,
 // 		Args:   args,
@@ -325,14 +325,14 @@ func (p *parser) registerValueExpressions() {
 // }
 
 // // Parse an anonymous data application. Example: `(2, 4)`
-// func (p *Parser) parseAnonymousDataApply() *core.AstNode {
-// 	p.ExpectTokens(core.TLparen)
+// func (p *Parser) parseAnonymousDataApply() *tokens.AstNode {
+// 	p.ExpectTokens(tokens.TLparen)
 // 	lparen := p.EatToken()
 // 	shape, args := p.parseApplyArguments()
-// 	p.ExpectTokens(core.TRparen)
+// 	p.ExpectTokens(tokens.TRparen)
 // 	p.EatToken()
 
-// 	return core.NewNode(lparen, &ast.Apply{
+// 	return tokens.NewNode(lparen, &ast.Apply{
 // 		Shape: shape,
 // 		Args:  args,
 // 	})
@@ -346,15 +346,15 @@ func (p *parser) registerValueExpressions() {
 // 	n0 := p.PeekToken()
 // 	n1 := p.PeekTokenAt(1)
 // 	switch {
-// 	case n0.IsKind(core.TRparen):
+// 	case n0.IsKind(tokens.TRparen):
 // 		shape = "unit"
 
-// 	case n0.IsKind(core.TVarIdent) && n1.IsKind(core.TAssign):
+// 	case n0.IsKind(tokens.TVarIdent) && n1.IsKind(tokens.TAssign):
 // 		shape = "record"
 // 		for {
-// 			p.ExpectTokens(core.TVarIdent)
+// 			p.ExpectTokens(tokens.TVarIdent)
 // 			name := p.EatToken()
-// 			p.ExpectTokens(core.TAssign)
+// 			p.ExpectTokens(tokens.TAssign)
 // 			p.EatToken()
 // 			expr := p.parseValueExpression()
 // 			if expr == nil {
@@ -366,10 +366,10 @@ func (p *parser) registerValueExpressions() {
 // 				Value: expr,
 // 			})
 
-// 			if !p.IsNextTokens(core.TComma, core.TNewline) {
+// 			if !p.IsNextTokens(tokens.TComma, tokens.TNewline) {
 // 				break
 // 			}
-// 			p.SkipSeparator(core.TComma)
+// 			p.SkipSeparator(tokens.TComma)
 // 		}
 
 // 	default:
@@ -385,10 +385,10 @@ func (p *parser) registerValueExpressions() {
 // 				Value: expr,
 // 			})
 
-// 			if !p.IsNextTokens(core.TComma, core.TNewline) {
+// 			if !p.IsNextTokens(tokens.TComma, tokens.TNewline) {
 // 				break
 // 			}
-// 			p.SkipSeparator(core.TComma)
+// 			p.SkipSeparator(tokens.TComma)
 // 		}
 // 	}
 

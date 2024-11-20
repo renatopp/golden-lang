@@ -2,18 +2,18 @@ package syntax
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
-	"github.com/renatopp/golden/internal/core"
+	"github.com/renatopp/golden/internal/compiler/tokens"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/lang"
 )
 
-func Parse(tokens []*lang.Token, module *core.Module) (*ast.Module, error) {
+func Parse(tokens []*lang.Token, modulePath string) (*ast.Module, error) {
 	scanner := lang.NewTokenScanner(tokens)
 	parser := &parser{
-		Module:      module,
+		ModulePath:  modulePath,
 		Parser:      lang.NewParser(scanner),
-		ValueSolver: lang.NewPrattSolver[core.Node](),
-		TypeSolver:  lang.NewPrattSolver[core.Node](),
+		ValueSolver: lang.NewPrattSolver[ast.Node](),
+		TypeSolver:  lang.NewPrattSolver[ast.Node](),
 	}
 
 	parser.ValueSolver.SetPrecedenceFn(parser.valuePrecedence)
@@ -26,9 +26,9 @@ func Parse(tokens []*lang.Token, module *core.Module) (*ast.Module, error) {
 
 type parser struct {
 	*lang.Parser
-	Module      *core.Module
-	ValueSolver *lang.PrattSolver[core.Node]
-	TypeSolver  *lang.PrattSolver[core.Node]
+	ModulePath  string
+	ValueSolver *lang.PrattSolver[ast.Node]
+	TypeSolver  *lang.PrattSolver[ast.Node]
 }
 
 func (p *parser) Parse() (a *ast.Module, err error) {
@@ -45,7 +45,7 @@ func (p *parser) ExpectTokens(kinds ...string) {
 }
 
 func (p *parser) SkipNewlines() {
-	p.Skip(core.TNewline)
+	p.Skip(tokens.TNewline)
 }
 
 func (p *parser) SkipSeparator(kind ...string) {
