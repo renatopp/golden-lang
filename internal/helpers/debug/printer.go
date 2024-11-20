@@ -36,6 +36,9 @@ func (p *AstPrinter) VisitModule(node *ast.Module) {
 	for _, stmt := range node.Imports {
 		stmt.Accept(p)
 	}
+	for _, stmt := range node.Variables {
+		stmt.Accept(p)
+	}
 }
 
 func (p *AstPrinter) VisitImport(node *ast.Import) {
@@ -74,7 +77,7 @@ func (p *AstPrinter) VisitBool(node *ast.Bool) {
 	p.inc()
 	defer p.dec()
 
-	p.print("- [bool %b]", node.Literal)
+	p.print("- [bool %t]", node.Literal)
 }
 
 func (p *AstPrinter) VisitVarIdent(node *ast.VarIdent) {
@@ -88,9 +91,8 @@ func (p *AstPrinter) VisitVarDecl(node *ast.VarDecl) {
 	p.inc()
 	defer p.dec()
 
+	p.print("- [var-decl]")
 	node.Name.Accept(p)
-	p.print("- [var-decl %s]", node.Name.Literal)
-
 	node.TypeExpr.If(func(expr ast.Node) { expr.Accept(p) })
 	node.ValueExpr.If(func(expr ast.Node) { expr.Accept(p) })
 }

@@ -12,11 +12,14 @@ type VarDecl struct {
 	ValueExpr safe.Optional[Node]
 }
 
-func NewVarDecl(token *lang.Token, typeExpr, valueExpr safe.Optional[Node]) *VarDecl {
+func NewVarDecl(token *lang.Token, name *VarIdent, typeExpr, valueExpr safe.Optional[Node]) *VarDecl {
 	return &VarDecl{
 		BaseNode: NewBaseNode(
 			token,
 		),
+		Name:      name,
+		TypeExpr:  typeExpr,
+		ValueExpr: valueExpr,
 	}
 }
 

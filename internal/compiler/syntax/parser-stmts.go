@@ -1,8 +1,6 @@
 package syntax
 
 import (
-	"os"
-
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/tokens"
 	"github.com/renatopp/golden/internal/helpers/errors"
@@ -11,26 +9,28 @@ import (
 
 func (p *parser) parseModule() *ast.Module {
 	imports := []*ast.Import{}
+	// functions := []*ast.FunctionDecl{}
+	variables := []*ast.VarDecl{}
 
 	first := p.PeekToken()
 	p.Skip(tokens.TNewline)
 	for {
 		switch {
 		case p.IsNextTokens(tokens.TImport):
-			stmt := p.parserImport()
-			imports = append(imports, stmt)
+			imports = append(imports, p.parserImport())
 
-		case p.IsNextTokens(tokens.TData):
-			println("TODO: data")
-			os.Exit(0)
-		case p.IsNextTokens(tokens.TFn):
-			println("TODO: fn")
-			os.Exit(0)
+		// case p.IsNextTokens(tokens.TData):
+		// types = append(types, p.parseTypeExpression())
+
+		// case p.IsNextTokens(tokens.TFn):
+		// 	p.parseValueExpression()
+
 		case p.IsNextTokens(tokens.TLet):
-			println("TODO: let")
-			os.Exit(0)
+			variables = append(variables, p.parseValueExpression().(*ast.VarDecl))
+
 		case p.IsNextTokens(tokens.TComment):
 			p.EatToken()
+
 		case p.IsNextTokens(tokens.TEof):
 			// pass
 		default:
@@ -44,7 +44,7 @@ func (p *parser) parseModule() *ast.Module {
 		}
 	}
 
-	return ast.NewModule(first, p.ModulePath, imports)
+	return ast.NewModule(first, p.ModulePath, imports, variables)
 }
 
 func (p *parser) parserImport() *ast.Import {

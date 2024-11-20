@@ -2,6 +2,7 @@
 package syntax
 
 import (
+	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/lang"
 )
 
@@ -16,13 +17,14 @@ func (p *parser) registerTypeExpressions() {
 }
 
 // Nullable
-// func (p *parser) parseTypeExpression(precedence ...int) *core.AstNode {
-// 	pr := 0
-// 	if len(precedence) > 0 {
-// 		pr = precedence[0]
-// 	}
-// 	return p.TypeSolver.SolveExpression(p.Scanner, pr)
-// }
+func (p *parser) parseTypeExpression(precedence ...int) ast.Node {
+	// pr := 0
+	// if len(precedence) > 0 {
+	// 	pr = precedence[0]
+	// }
+	// return p.TypeSolver.SolveExpression(p.Scanner, pr)
+	return nil
+}
 
 // func (p *Parser) parseTypeKeyword() *core.AstNode {
 // 	switch {
