@@ -24,6 +24,11 @@ func loadPackages(ctx *BuildContext) {
 	}
 	l.discover(ctx.Options.EntryFilePath)
 	l.pending.Wait()
+
+	if l.errors.Len() > 0 {
+		e, _ := l.errors.Get(0)
+		errors.Rethrow(e)
+	}
 }
 
 func (l *loader) discover(modulePath string) {
@@ -43,11 +48,10 @@ func (l *loader) discover(modulePath string) {
 func (l *loader) loadPackage(packagePath string) {
 	defer l.pending.Done()
 
-	pkg := &Package{
-		Name:    fs.PackagePath2PackageName(packagePath),
-		Path:    packagePath,
-		Modules: ds.NewSyncList[*Module](),
-	}
+	pkg := NewPackage(
+		fs.PackagePath2PackageName(packagePath),
+		packagePath,
+	)
 	l.ctx.PackageRegistry.Set(packagePath, pkg)
 	files := fs.DiscoverModules(packagePath)
 	for _, modulePath := range files {
@@ -59,14 +63,15 @@ func (l *loader) loadPackage(packagePath string) {
 func (l *loader) loadModule(pkg *Package, modulePath string) {
 	defer l.pending.Done()
 
-	module := &Module{
-		Name:     fs.ModulePath2ModuleName(modulePath),
-		Path:     modulePath,
-		FileName: fs.ModulePath2ModuleFileName(modulePath),
-		Package:  pkg,
-		Root:     nil,
-	}
+	// Create the module
+	module := NewModule(
+		fs.ModulePath2ModuleName(modulePath),
+		modulePath,
+		fs.ModulePath2ModuleFileName(modulePath),
+		pkg,
+	)
 
+	// Read the bytes
 	bytes, err := os.ReadFile(modulePath)
 	if err != nil {
 		l.errors.Add(
@@ -75,6 +80,7 @@ func (l *loader) loadModule(pkg *Package, modulePath string) {
 		return
 	}
 
+	// Convert bytes to tokens
 	tokens, err := syntax.Lex(bytes, modulePath)
 	if err != nil {
 		l.errors.Add(err)
@@ -85,6 +91,7 @@ func (l *loader) loadModule(pkg *Package, modulePath string) {
 		l.ctx.Options.OnTokensReady(module, tokens)
 	}
 
+	// Convert tokens to AST
 	root, err := syntax.Parse(tokens, modulePath)
 	if err != nil {
 		l.errors.Add(err)
@@ -96,9 +103,11 @@ func (l *loader) loadModule(pkg *Package, modulePath string) {
 		l.ctx.Options.OnAstReady(module, root)
 	}
 
+	// Add the module to the package
 	pkg.Modules.Add(module)
 	l.ctx.ModuleRegistry.Set(modulePath, module)
 
+	// Discover imports
 	for _, a := range root.Imports {
 		path := fs.ImportName2ModulePath(a.Path.Literal)
 		alias := fs.ModulePath2ModuleName(path)

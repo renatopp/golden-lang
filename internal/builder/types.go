@@ -13,6 +13,15 @@ type Package struct {
 	Imports *ds.SyncList[string]  // Absolute paths of other packages that this package imports
 }
 
+func NewPackage(name, path string) *Package {
+	return &Package{
+		Name:    name,
+		Path:    path,
+		Modules: ds.NewSyncList[*Module](),
+		Imports: ds.NewSyncList[string](),
+	}
+}
+
 type Module struct {
 	Name     string          // Name of the module, ex: `hello`
 	Path     string          // Absolute path of the module in the file system, ex: `/d/project/foo/bar/hello.gold`
@@ -20,6 +29,17 @@ type Module struct {
 	Package  *Package        // Package that contains the module
 	Root     *ast.Module     // Root node of the module, type is `*ast.Module`
 	Imports  []*ModuleImport // Modules that this module imports
+}
+
+func NewModule(name, path, fileName string, pkg *Package) *Module {
+	return &Module{
+		Name:     name,
+		Path:     path,
+		FileName: fileName,
+		Package:  pkg,
+		Root:     nil,
+		Imports:  make([]*ModuleImport, 0),
+	}
 }
 
 type ModuleImport struct {

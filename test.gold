@@ -1,2 +1,2 @@
 import '@/sample'
-import '@/sample' as sample
+import '@/sample/bot' as sample

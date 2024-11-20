@@ -3,55 +3,55 @@ package ds
 import "sync"
 
 type SyncList[T comparable] struct {
-	l   []T
-	mtx sync.RWMutex
+	list []T
+	mtx  sync.RWMutex
 }
 
 func NewSyncList[T comparable]() *SyncList[T] {
-	return &SyncList[T]{l: make([]T, 0)}
+	return &SyncList[T]{list: make([]T, 0)}
 }
 
 func (l *SyncList[T]) Get(index int) (value T, ok bool) {
 	l.mtx.RLock()
 	defer l.mtx.RUnlock()
-	if index < 0 || index >= len(l.l) {
+	if index < 0 || index >= len(l.list) {
 		return
 	}
-	return l.l[index], true
+	return l.list[index], true
 }
 
 func (l *SyncList[T]) Add(value T) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	l.l = append(l.l, value)
+	l.list = append(l.list, value)
 }
 
 func (l *SyncList[T]) AddUnique(value T) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	for _, v := range l.l {
+	for _, v := range l.list {
 		if v == value {
 			return
 		}
 	}
-	l.l = append(l.l, value)
+	l.list = append(l.list, value)
 }
 
 func (l *SyncList[T]) Delete(index int) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	if index < 0 || index >= len(l.l) {
+	if index < 0 || index >= len(l.list) {
 		return
 	}
-	l.l = append(l.l[:index], l.l[index+1:]...)
+	l.list = append(l.list[:index], l.list[index+1:]...)
 }
 
 func (l *SyncList[T]) DeleteValue(value T) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	for i, v := range l.l {
+	for i, v := range l.list {
 		if v == value {
-			l.l = append(l.l[:i], l.l[i+1:]...)
+			l.list = append(l.list[:i], l.list[i+1:]...)
 			return
 		}
 	}
@@ -60,7 +60,7 @@ func (l *SyncList[T]) DeleteValue(value T) {
 func (l *SyncList[T]) IndexOf(value T) int {
 	l.mtx.RLock()
 	defer l.mtx.RUnlock()
-	for i, v := range l.l {
+	for i, v := range l.list {
 		if v == value {
 			return i
 		}
@@ -71,7 +71,7 @@ func (l *SyncList[T]) IndexOf(value T) int {
 func (l *SyncList[T]) Has(value T) bool {
 	l.mtx.RLock()
 	defer l.mtx.RUnlock()
-	for _, v := range l.l {
+	for _, v := range l.list {
 		if v == value {
 			return true
 		}
@@ -82,19 +82,19 @@ func (l *SyncList[T]) Has(value T) bool {
 func (l *SyncList[T]) Len() int {
 	l.mtx.RLock()
 	defer l.mtx.RUnlock()
-	return len(l.l)
+	return len(l.list)
 }
 
 func (l *SyncList[T]) Values() []T {
 	l.mtx.RLock()
 	defer l.mtx.RUnlock()
-	values := make([]T, len(l.l))
-	copy(values, l.l)
+	values := make([]T, len(l.list))
+	copy(values, l.list)
 	return values
 }
 
 func (l *SyncList[T]) Clear() {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	l.l = make([]T, 0)
+	l.list = make([]T, 0)
 }
