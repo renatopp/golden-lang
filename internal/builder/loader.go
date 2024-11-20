@@ -86,10 +86,7 @@ func (l *loader) loadModule(pkg *Package, modulePath string) {
 		l.errors.Add(err)
 		return
 	}
-
-	if l.ctx.Options.OnTokensReady != nil {
-		l.ctx.Options.OnTokensReady(module, tokens)
-	}
+	l.ctx.Options.OnTokensReady.Emit(module, tokens)
 
 	// Convert tokens to AST
 	root, err := syntax.Parse(tokens, modulePath)
@@ -98,10 +95,7 @@ func (l *loader) loadModule(pkg *Package, modulePath string) {
 		return
 	}
 	module.Root = root
-
-	if l.ctx.Options.OnAstReady != nil {
-		l.ctx.Options.OnAstReady(module, root)
-	}
+	l.ctx.Options.OnAstReady.Emit(module, root)
 
 	// Add the module to the package
 	pkg.Modules.Add(module)

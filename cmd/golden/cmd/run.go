@@ -5,11 +5,9 @@ import (
 	"fmt"
 
 	"github.com/renatopp/golden/internal/builder"
-	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/helpers/debug"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/logger"
-	"github.com/renatopp/golden/lang"
 )
 
 type Run struct{}
@@ -38,20 +36,13 @@ func (c *Run) Run() error {
 
 	logger.SetLevel(logger.LevelFromString(*flagLevel))
 
-	b := builder.NewBuilder(&builder.BuildOptions{
-		EntryFilePath: args[0],
-		OnTokensReady: func(module *builder.Module, tokens []*lang.Token) {
-			if *flagDebug {
-				debug.PrettyPrintTokens(module, tokens)
-			}
-		},
-		OnAstReady: func(module *builder.Module, root *ast.Module) {
-			if *flagDebug {
-				debug.PrettyPrintAst(module, root)
-			}
-		},
-	})
+	opts := builder.NewBuildOptions(args[0])
+	if *flagDebug {
+		opts.OnTokensReady.Subscribe(debug.PrettyPrintTokens)
+		opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
+	}
 
+	b := builder.NewBuilder(opts)
 	res, err := b.Build()
 	if err != nil {
 		errors.PrettyPrint(err)

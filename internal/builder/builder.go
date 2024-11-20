@@ -6,6 +6,7 @@ import (
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
+	"github.com/renatopp/golden/internal/helpers/events"
 	"github.com/renatopp/golden/internal/helpers/fs"
 	"github.com/renatopp/golden/lang"
 )
@@ -18,8 +19,16 @@ type BuildContext struct {
 
 type BuildOptions struct {
 	EntryFilePath string // Absolute path of the entry file containing main function
-	OnTokensReady func(module *Module, tokens []*lang.Token)
-	OnAstReady    func(module *Module, root *ast.Module)
+	OnTokensReady *events.Signal2[*Module, []*lang.Token]
+	OnAstReady    *events.Signal2[*Module, *ast.Module]
+}
+
+func NewBuildOptions(fileName string) *BuildOptions {
+	return &BuildOptions{
+		EntryFilePath: fileName,
+		OnTokensReady: events.NewSignal2[*Module, []*lang.Token](),
+		OnAstReady:    events.NewSignal2[*Module, *ast.Module](),
+	}
 }
 
 type BuildResult struct {
