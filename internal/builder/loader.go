@@ -99,5 +99,21 @@ func (l *loader) loadModule(pkg *Package, modulePath string) {
 	pkg.Modules.Add(module)
 	l.ctx.ModuleRegistry.Set(modulePath, module)
 
-	println("should parse here")
+	for _, a := range root.Imports {
+		path := fs.ImportName2ModulePath(a.Path.Literal)
+		alias := fs.ModulePath2ModuleName(path)
+		if a.Alias.Has() {
+			alias = a.Alias.Unwrap().Literal
+		}
+
+		module.Imports = append(module.Imports, &ModuleImport{
+			Path:  path,
+			Alias: alias,
+		})
+
+		packagePath := fs.ModulePath2PackagePath(path)
+		module.Package.Imports.AddUnique(packagePath)
+
+		l.discover(path)
+	}
 }

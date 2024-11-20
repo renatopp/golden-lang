@@ -26,6 +26,17 @@ func (l *SyncList[T]) Add(value T) {
 	l.l = append(l.l, value)
 }
 
+func (l *SyncList[T]) AddUnique(value T) {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+	for _, v := range l.l {
+		if v == value {
+			return
+		}
+	}
+	l.l = append(l.l, value)
+}
+
 func (l *SyncList[T]) Delete(index int) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
