@@ -17,13 +17,13 @@ var (
 // An error that occurred during lexing or parsing, including the source code
 // location.
 type Error struct {
-	Loc  Loc
+	Loc  *Loc
 	Kind string
 	Msg  string
 }
 
 // Creates a new error.
-func NewError(loc Loc, kind, msg string) Error {
+func NewError(loc *Loc, kind, msg string) Error {
 	return Error{loc, kind, msg}
 }
 
@@ -82,7 +82,7 @@ func (e *ErrorData) WithRecovery(fn func()) {
 			if err, ok := r.(Error); ok {
 				e.RegisterError(err)
 			} else {
-				e.RegisterError(NewError(Loc{}, "unknown error", r.(string)))
+				e.RegisterError(NewError(&Loc{}, "unknown error", r.(string)))
 				debug.PrintStack()
 			}
 		}

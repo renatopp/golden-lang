@@ -61,7 +61,7 @@ func (s *ByteScanner) PeekCharAt(offset int) Char {
 		char, err := s.next()
 		if err != nil {
 			s.RegisterError(NewError(
-				Loc{Start: char.Span, End: char.Span},
+				&Loc{Start: char.Span, End: char.Span},
 				ErrIO,
 				err.Error(),
 			))
