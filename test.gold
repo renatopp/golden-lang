@@ -1,4 +1,2 @@
-let int = 1
-let float = 1.0
-let bool = true
-let string = 'renato'
+import '@/sample'
+import '@/sample' as sample
