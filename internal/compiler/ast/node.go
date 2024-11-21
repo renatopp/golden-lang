@@ -4,6 +4,8 @@ import "github.com/renatopp/golden/lang"
 
 type Type interface {
 	Id() uint64
+	Definition() Node
+	Signature() string
 	Compatible(Type) bool
 	Default() (Node, error)
 }
@@ -24,6 +26,7 @@ var _baseNodeId uint64
 type BaseNode struct {
 	id    uint64
 	token *lang.Token
+	type_ Type
 }
 
 func NewBaseNode(token *lang.Token) *BaseNode {
@@ -31,6 +34,7 @@ func NewBaseNode(token *lang.Token) *BaseNode {
 	return &BaseNode{id: _baseNodeId, token: token}
 }
 
-func (n *BaseNode) Id() uint64         { return n.id }
-func (n *BaseNode) Token() *lang.Token { return n.token }
-func (n *BaseNode) Type() Type         { return nil }
+func (n *BaseNode) Id() uint64                { return n.id }
+func (n *BaseNode) Token() *lang.Token        { return n.token }
+func (n *BaseNode) Type() Type                { return n.type_ }
+func (n *BaseNode) WithType(t Type) *BaseNode { n.type_ = t; return n }

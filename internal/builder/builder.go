@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/env"
+	"github.com/renatopp/golden/internal/compiler/semantic"
+	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/events"
@@ -24,6 +27,7 @@ type BuildContext struct {
 	EntryPackage    *Package
 	EntryModule     *Module
 	DependencyOrder []*Package
+	GlobalScope     *env.Scope
 }
 
 //
@@ -95,6 +99,7 @@ func (b *Builder) build() *BuildResult {
 	loadPackages(ctx)
 	checkEntries(ctx)
 	buildDependencyGraph(ctx)
+	buildGlobalScope(ctx)
 	semanticAnalysis(ctx)
 
 	return res
@@ -187,10 +192,44 @@ func buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visite
 	return append(order, pkg)
 }
 
+func buildGlobalScope(ctx *BuildContext) {
+	ctx.GlobalScope = env.NewScope()
+}
+
 func semanticAnalysis(ctx *BuildContext) {
-	// for _, pkg := range ctx.DependencyOrder {
-	// 	for _, mod := range pkg.Modules.Values() {
-	// 		semanticAnalysisModule(ctx, mod)
-	// 	}
-	// }
+	checker := semantic.NewTypeChecker()
+
+	for _, pkg := range ctx.DependencyOrder {
+		mods := pkg.Modules.Values()
+
+		// create type instances for all modules
+		for _, mod := range mods {
+			scope := ctx.GlobalScope.New()
+			mod.Root.WithType(types.NewModule(mod.Root, mod.Path, scope))
+		}
+
+		// attach type instances to the module scopes
+		for _, mod := range mods {
+			modType := mod.Root.Type().(*types.Module)
+
+			for _, other := range mods {
+				if mod == other {
+					continue
+				}
+
+				alias := fs.ModulePath2ModuleName(other.Path)
+				modType.Scope.Values.Set(alias, env.B(other.Root.Type()))
+			}
+		}
+
+		// pre-resolve all types, functions and module variables
+		for _, mod := range mods {
+			checker.PreResolve(mod.Root)
+		}
+
+		// resolve everything
+		for _, mod := range mods {
+			checker.Resolve(mod.Root)
+		}
+	}
 }

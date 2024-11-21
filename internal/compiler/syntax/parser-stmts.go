@@ -23,7 +23,11 @@ func (p *parser) parseModule() *ast.Module {
 		// types = append(types, p.parseTypeExpression())
 
 		case p.IsNextTokens(tokens.TFn):
-			functions = append(functions, p.parseValueExpression().(*ast.FuncDecl))
+			fn := p.parseValueExpression().(*ast.FuncDecl)
+			if !fn.Name.Has() {
+				errors.ThrowAtToken(fn.Token(), errors.ParserError, "function declaration in module-level must have a name")
+			}
+			functions = append(functions, fn)
 
 		case p.IsNextTokens(tokens.TLet):
 			variables = append(variables, p.parseValueExpression().(*ast.VarDecl))

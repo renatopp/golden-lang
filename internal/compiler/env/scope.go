@@ -1,8 +1,16 @@
-package semantic
+package env
+
+import "github.com/renatopp/golden/internal/compiler/ast"
 
 type Binding struct {
-	Type any
+	Type ast.Type
 }
+
+func NewBinding(t ast.Type) *Binding {
+	return &Binding{Type: t}
+}
+
+var B = NewBinding
 
 //
 //

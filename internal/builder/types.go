@@ -22,6 +22,7 @@ func NewPackage(name, path string) *Package {
 	}
 }
 
+// Represents a .gold file.
 type Module struct {
 	Name     string          // Name of the module, ex: `hello`
 	Path     string          // Absolute path of the module in the file system, ex: `/d/project/foo/bar/hello.gold`
@@ -42,6 +43,7 @@ func NewModule(name, path, fileName string, pkg *Package) *Module {
 	}
 }
 
+// Represents the import from one module to another.
 type ModuleImport struct {
 	Path  string // Absolute path of the module in the file system, eg: /d/project/foo/bar/hello.gold``
 	Alias string // Alias of the module, eg: `hello`
