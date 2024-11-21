@@ -3,6 +3,8 @@ package syntax
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/tokens"
+	"github.com/renatopp/golden/internal/helpers/safe"
 	"github.com/renatopp/golden/lang"
 )
 
@@ -11,27 +13,67 @@ func (p *parser) typePrecedence(t *lang.Token) int {
 }
 
 func (p *parser) registerTypeExpressions() {
-	// p.TypeSolver.RegisterPrefixFn(core.TKeyword, p.parseTypeKeyword)
-	// p.TypeSolver.RegisterPrefixFn(core.TTypeIdent, p.parseTypeIdent)
-	// p.TypeSolver.RegisterPrefixFn(core.TLparen, p.parseAnonymousDataDecl)
+	p.TypeSolver.RegisterPrefixFn(tokens.TTypeIdent, p.parseTypeIdent)
+	p.TypeSolver.RegisterPrefixFn(tokens.TFN, p.parseFunctionType)
+	// p.TypeSolver.RegisterPrefixFn(tokens.TLparen, p.parseAnonymousDataDecl)
 }
 
 // Nullable
 func (p *parser) parseTypeExpression(precedence ...int) ast.Node {
-	// pr := 0
-	// if len(precedence) > 0 {
-	// 	pr = precedence[0]
-	// }
-	// return p.TypeSolver.SolveExpression(p.Scanner, pr)
-	return nil
+	pr := 0
+	if len(precedence) > 0 {
+		pr = precedence[0]
+	}
+	return p.TypeSolver.SolveExpression(p.Scanner, pr)
 }
 
-// func (p *Parser) parseTypeKeyword() *core.AstNode {
+// Parse type identifier.
+func (p *parser) parseTypeIdent() ast.Node {
+	p.ExpectTokens(tokens.TTypeIdent)
+	ident := p.EatToken()
+
+	return ast.NewTypeIdent(ident, ident.Literal)
+}
+
+// Parse function type. Example: `Fn (Int) String`
+func (p *parser) parseFunctionType() ast.Node {
+	p.ExpectTokens(tokens.TFN)
+	fn := p.EatToken()
+
+	p.ExpectTokens(tokens.TLparen)
+	p.EatToken()
+
+	parameters := []*ast.FuncTypeParam{}
+	for {
+		p.SkipNewlines()
+
+		tp := p.parseTypeExpression()
+		if tp == nil {
+			break
+		}
+		parameters = append(parameters, ast.NewFuncTypeParam(tp.Token(), len(parameters), tp))
+
+		p.ExpectTokens(tokens.TComma, tokens.TRparen, tokens.TNewline)
+		p.SkipSeparator(tokens.TComma)
+	}
+
+	p.ExpectTokens(tokens.TRparen)
+	p.EatToken()
+
+	ret := safe.None[ast.Node]()
+	tok := p.parseTypeExpression()
+	if tok != nil {
+		ret = safe.Some(tok)
+	}
+	return ast.NewFuncType(fn, parameters, ret)
+}
+
+// func (p *parser) parseTypeKeyword() ast.Node {
 // 	switch {
-// 	// case p.IsNextLiteralsOf(core.TKeyword, core.KData):
+// 	// case p.IsNextLiteralsOf(tokens.TKeyword, core.KData):
 // 	// 	return p.parseDataDecl()
 
-// 	case p.IsNextLiteralsOf(core.TKeyword, core.KFN):
+// 	case p.IsNextLiteralsOf(tokens.TKeyword, core.KFN):
 // 		return p.parseFunctionType()
 // 	}
 
@@ -40,10 +82,10 @@ func (p *parser) parseTypeExpression(precedence ...int) ast.Node {
 // }
 
 // // Parse data declaration. Example: `data ...`
-// // func (p *Parser) parseDataDecl() *core.AstNode {
+// // func (p *parser) parseDataDecl() ast.Node {
 // // 	first := p.EatToken()
 
-// // 	p.ExpectTokens(core.TTypeIdent)
+// // 	p.ExpectTokens(tokens.TTypeIdent)
 // // 	ident := p.EatToken()
 
 // // 	constructors := []*DataConstructor{}
@@ -83,7 +125,7 @@ func (p *parser) parseTypeExpression(precedence ...int) ast.Node {
 // // }
 
 // // Parse data constructor. Example: `A | B(Int) | Other`
-// // func (p *Parser) parseDataConstructors() []*DataConstructor {
+// // func (p *parser) parseDataConstructors() []*DataConstructor {
 // // 	constructors := []*DataConstructor{}
 
 // // 	if p.IsNextTokens(TNewline) {
@@ -122,7 +164,7 @@ func (p *parser) parseTypeExpression(precedence ...int) ast.Node {
 // // }
 
 // // Parse fields from data constructor, without parenthesis. Example: `Int, String` or `x Int, y String`
-// // func (p *Parser) parseDataConstructorFields() (shape string, fields []*DataConstructorField) {
+// // func (p *parser) parseDataConstructorFields() (shape string, fields []*DataConstructorField) {
 // // 	shape = ""
 // // 	fields = []*DataConstructorField{}
 
@@ -183,52 +225,7 @@ func (p *parser) parseTypeExpression(precedence ...int) ast.Node {
 // // 	return shape, fields
 // // }
 
-// // Parse function type. Example: `Fn (Int) String`
-// func (p *Parser) parseFunctionType() *core.AstNode {
-// 	p.ExpectLiteralsOf(core.TKeyword, core.KFN)
-// 	fn := p.EatToken()
-
-// 	p.ExpectTokens(core.TLparen)
-// 	p.EatToken()
-
-// 	parameters := []*ast.FunctionTypeParam{}
-// 	for {
-// 		p.SkipNewlines()
-
-// 		tp := p.parseTypeExpression()
-// 		if tp == nil {
-// 			break
-// 		}
-
-// 		parameters = append(parameters, &ast.FunctionTypeParam{
-// 			Type: tp,
-// 		})
-
-// 		p.ExpectTokens(core.TComma, core.TRparen, core.TNewline)
-// 		p.SkipSeparator(core.TComma)
-// 	}
-
-// 	p.ExpectTokens(core.TRparen)
-// 	p.EatToken()
-
-// 	tp := p.parseTypeExpression()
-// 	return core.NewNode(fn, &ast.FunctionType{
-// 		Params:     parameters,
-// 		ReturnType: tp,
-// 	})
-// }
-
-// // Parse data identifier.
-// func (p *Parser) parseTypeIdent() *core.AstNode {
-// 	p.ExpectTokens(core.TTypeIdent)
-// 	ident := p.EatToken()
-
-// 	return core.NewNode(ident, &ast.TypeIdent{
-// 		Name: ident.Literal,
-// 	})
-// }
-
-// // func (p *Parser) parseAnonymousDataDecl() *core.AstNode {
+// // func (p *parser) parseAnonymousDataDecl() ast.Node {
 // // 	p.ExpectTokens(TLparen)
 // // 	p.EatToken()
 // // 	shape, fields := p.parseDataConstructorFields()

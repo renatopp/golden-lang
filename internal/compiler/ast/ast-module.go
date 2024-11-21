@@ -6,16 +6,18 @@ type Module struct {
 	*BaseNode
 	ModulePath string
 	Imports    []*Import
+	Functions  []*FuncDecl
 	Variables  []*VarDecl
 }
 
-func NewModule(token *lang.Token, path string, imports []*Import, variables []*VarDecl) *Module {
+func NewModule(token *lang.Token, path string, imports []*Import, functions []*FuncDecl, variables []*VarDecl) *Module {
 	return &Module{
 		BaseNode: NewBaseNode(
 			token,
 		),
 		ModulePath: path,
 		Imports:    imports,
+		Functions:  functions,
 		Variables:  variables,
 	}
 }

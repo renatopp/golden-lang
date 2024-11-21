@@ -9,7 +9,7 @@ import (
 
 func (p *parser) parseModule() *ast.Module {
 	imports := []*ast.Import{}
-	// functions := []*ast.FunctionDecl{}
+	functions := []*ast.FuncDecl{}
 	variables := []*ast.VarDecl{}
 
 	first := p.PeekToken()
@@ -22,8 +22,8 @@ func (p *parser) parseModule() *ast.Module {
 		// case p.IsNextTokens(tokens.TData):
 		// types = append(types, p.parseTypeExpression())
 
-		// case p.IsNextTokens(tokens.TFn):
-		// 	p.parseValueExpression()
+		case p.IsNextTokens(tokens.TFn):
+			functions = append(functions, p.parseValueExpression().(*ast.FuncDecl))
 
 		case p.IsNextTokens(tokens.TLet):
 			variables = append(variables, p.parseValueExpression().(*ast.VarDecl))
@@ -44,7 +44,7 @@ func (p *parser) parseModule() *ast.Module {
 		}
 	}
 
-	return ast.NewModule(first, p.ModulePath, imports, variables)
+	return ast.NewModule(first, p.ModulePath, imports, functions, variables)
 }
 
 func (p *parser) parserImport() *ast.Import {

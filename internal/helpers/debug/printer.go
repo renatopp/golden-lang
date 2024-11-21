@@ -36,6 +36,9 @@ func (p *AstPrinter) VisitModule(node *ast.Module) {
 	for _, stmt := range node.Imports {
 		stmt.Accept(p)
 	}
+	for _, stmt := range node.Functions {
+		stmt.Accept(p)
+	}
 	for _, stmt := range node.Variables {
 		stmt.Accept(p)
 	}
@@ -131,4 +134,70 @@ func (p *AstPrinter) VisitAccess(node *ast.Access) {
 	p.print("- [access]")
 	node.Target.Accept(p)
 	node.Accessor.Accept(p)
+}
+
+func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) {
+	p.inc()
+	defer p.dec()
+
+	p.print("- [type-ident %s]", node.Literal)
+}
+
+func (p *AstPrinter) VisitFuncType(node *ast.FuncType) {
+	p.inc()
+	defer p.dec()
+
+	p.print("- [func-type]")
+	for _, param := range node.Params {
+		param.Accept(p)
+	}
+	node.Return.If(func(expr ast.Node) { expr.Accept(p) })
+}
+
+func (p *AstPrinter) VisitFuncTypeParam(node *ast.FuncTypeParam) {
+	p.inc()
+	defer p.dec()
+
+	p.print("- [func-type-param %d]", node.Index)
+	node.TypeExpr.Accept(p)
+}
+
+func (p *AstPrinter) VisitFuncDecl(node *ast.FuncDecl) {
+	p.inc()
+	defer p.dec()
+
+	p.print("- [func-decl]")
+	node.Name.If(func(name *ast.VarIdent) { name.Accept(p) })
+	for _, param := range node.Params {
+		param.Accept(p)
+	}
+	node.Return.If(func(expr ast.Node) { expr.Accept(p) })
+	node.Body.Accept(p)
+}
+
+func (p *AstPrinter) VisitFuncDeclParam(node *ast.FuncDeclParam) {
+	p.inc()
+	defer p.dec()
+
+	p.print("- [func-decl-param %d %s]", node.Index, node.Name.Literal)
+	node.TypeExpr.Accept(p)
+}
+
+func (p *AstPrinter) VisitAppl(node *ast.Appl) {
+	p.inc()
+	defer p.dec()
+
+	p.print("- [appl]")
+	node.Target.Accept(p)
+	for _, arg := range node.Arguments {
+		arg.Accept(p)
+	}
+}
+
+func (p *AstPrinter) VisitApplArg(node *ast.ApplArg) {
+	p.inc()
+	defer p.dec()
+
+	p.print("- [appl-arg %d]", node.Index)
+	node.ValueExpr.Accept(p)
 }

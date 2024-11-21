@@ -46,6 +46,7 @@ func (p *parser) valuePrecedence(t *lang.Token) int {
 
 func (p *parser) registerValueExpressions() {
 	p.ValueSolver.RegisterPrefixFn(tokens.TLet, p.parseVarDecl)
+	p.ValueSolver.RegisterPrefixFn(tokens.TFn, p.parseFuncDecl)
 	p.ValueSolver.RegisterPrefixFn(tokens.TInteger, p.parseInt)
 	p.ValueSolver.RegisterPrefixFn(tokens.THex, p.parseInt)
 	p.ValueSolver.RegisterPrefixFn(tokens.TOctal, p.parseInt)
@@ -58,8 +59,6 @@ func (p *parser) registerValueExpressions() {
 	p.ValueSolver.RegisterPrefixFn(tokens.TPlus, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(tokens.TMinus, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(tokens.TBang, p.parseUnaryOp)
-	// p.ValueSolver.RegisterPrefixFn(tokens.TTypeIdent, p.parseTypeExpressionAsValue)
-	// p.ValueSolver.RegisterPrefixFn(tokens.TLparen, p.parseAnonymousDataApply)
 
 	p.ValueSolver.RegisterInfixFn(tokens.TPlus, p.parseBinaryOp)
 	p.ValueSolver.RegisterInfixFn(tokens.TMinus, p.parseBinaryOp)
@@ -77,7 +76,7 @@ func (p *parser) registerValueExpressions() {
 	p.ValueSolver.RegisterInfixFn(tokens.TGt, p.parseBinaryOp)
 	p.ValueSolver.RegisterInfixFn(tokens.TGte, p.parseBinaryOp)
 	p.ValueSolver.RegisterInfixFn(tokens.TDot, p.parseAccess)
-	// p.ValueSolver.RegisterInfixFn(tokens.TLparen, p.parseApply)
+	p.ValueSolver.RegisterInfixFn(tokens.TLparen, p.parseAppl)
 }
 
 // // Nullable
@@ -89,6 +88,7 @@ func (p *parser) parseValueExpression(precedence ...int) ast.Node {
 	return p.ValueSolver.SolveExpression(p.Scanner, pr)
 }
 
+// Parse a let expression: `let x Int = 2`
 func (p *parser) parseVarDecl() ast.Node {
 	p.ExpectTokens(tokens.TLet)
 	let := p.EatToken()
@@ -114,6 +114,62 @@ func (p *parser) parseVarDecl() ast.Node {
 	}
 
 	return ast.NewVarDecl(let, name, tp, val)
+}
+
+// Parse a function declaration. Example: `fn add(x Int, y Int) Int { x + y }`
+func (p *parser) parseFuncDecl() ast.Node {
+	p.ExpectTokens(tokens.TFn)
+	fn := p.EatToken()
+
+	name := safe.None[*ast.VarIdent]()
+	if p.IsNextTokens(tokens.TVarIdent) {
+		tok := p.EatToken()
+		name = safe.Some(ast.NewVarIdent(tok, tok.Literal))
+	}
+
+	p.ExpectTokens(tokens.TLparen)
+	p.EatToken()
+	params := p.parseFuncDeclParams()
+	p.ExpectTokens(tokens.TRparen)
+	p.EatToken()
+
+	ret := safe.None[ast.Node]()
+	tp := p.parseTypeExpression()
+	if tp != nil {
+		ret = safe.Some(tp)
+	}
+
+	p.ExpectTokens(tokens.TLbrace)
+	body := p.parseBlock().(*ast.Block)
+
+	return ast.NewFuncDecl(fn, name, params, ret, body)
+}
+
+// Parse function parameters. Example: `x Int, y Int`
+func (p *parser) parseFuncDeclParams() []*ast.FuncDeclParam {
+	params := []*ast.FuncDeclParam{}
+
+	p.SkipNewlines()
+	for {
+		if !p.IsNextTokens(tokens.TVarIdent) {
+			break
+		}
+
+		name := p.EatToken().Literal
+		tp := p.parseTypeExpression()
+		if tp == nil {
+			errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected type expression, but none was found")
+		}
+		params = append(params, ast.NewFuncDeclParam(tp.Token(), len(params), ast.NewVarIdent(tp.Token(), name), tp))
+
+		if !p.IsNextTokens(tokens.TComma, tokens.TNewline) {
+			break
+		}
+		p.SkipSeparator(tokens.TComma)
+	}
+
+	p.SkipNewlines()
+	return params
 }
 
 // Parse an integer literal with support for different bases.
@@ -219,172 +275,23 @@ func (p *parser) parseAccess(left ast.Node) ast.Node {
 	return ast.NewAccess(op, left, accessor)
 }
 
-// func (p *parser) parseValueKeyword() *tokens.AstNode {
-// 	switch {
-// 	case p.IsNextLiteralsOf(tokens.TKeyword, tokens.KFn):
-// 		return p.parseFunctionDecl()
+// Parse a function or type application. Example: `f(x, y)`
+func (p *parser) parseAppl(left ast.Node) ast.Node {
+	op := p.EatToken()
+	args := []*ast.ApplArg{}
+	for !p.IsNextTokens(tokens.TRparen) {
+		arg := p.parseValueExpression()
+		if arg == nil {
+			errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression, but none was found")
+		}
+		args = append(args, ast.NewApplArg(arg.Token(), len(args), arg))
+		if !p.IsNextTokens(tokens.TComma) {
+			break
+		}
+		p.EatToken()
+	}
 
-// 	case p.IsNextLiteralsOf(tokens.TKeyword, tokens.KLet):
-// 		return p.parseVariableDecl()
-// 	}
-
-// 	errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression keyword, got '%s' instead", p.PeekToken().Literal)
-// 	return nil
-// }
-
-// func (p *parser) parseFunctionDecl() *tokens.AstNode {
-// 	p.ExpectLiteralsOf(tokens.TKeyword, tokens.KFn)
-// 	fn := p.EatToken()
-
-// 	name := ""
-// 	if p.IsNextTokens(tokens.TVarIdent) {
-// 		name = p.EatToken().Literal
-// 	}
-
-// 	p.ExpectTokens(tokens.TLparen)
-// 	p.EatToken()
-// 	params := p.parseFunctionParams()
-// 	p.ExpectTokens(tokens.TRparen)
-// 	p.EatToken()
-
-// 	tp := p.parseTypeExpression()
-
-// 	p.ExpectTokens(tokens.TLbrace)
-// 	body := p.parseBlock()
-
-// 	node := tokens.NewNode(fn, &ast.FunctionDecl{
-// 		Name:       name,
-// 		Params:     params,
-// 		ReturnType: tp,
-// 		Body:       body,
-// 	})
-
-// 	return node
-// }
-
-// func (p *parser) parseFunctionParams() []*ast.FunctionDeclParam {
-// 	params := []*ast.FunctionDeclParam{}
-
-// 	p.SkipNewlines()
-// 	for {
-// 		if !p.IsNextTokens(tokens.TVarIdent) {
-// 			break
-// 		}
-
-// 		name := p.EatToken().Literal
-// 		tp := p.parseTypeExpression()
-// 		if tp == nil {
-// 			errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected type expression, but none was found")
-// 		}
-// 		params = append(params, &ast.FunctionDeclParam{
-// 			Name: name,
-// 			Type: tp,
-// 		})
-
-// 		if !p.IsNextTokens(tokens.TComma, tokens.TNewline) {
-// 			break
-// 		}
-// 		p.SkipSeparator(tokens.TComma)
-// 	}
-
-// 	p.SkipNewlines()
-// 	return params
-// }
-
-// func (p *parser) parseTypeExpressionAsValue() *tokens.AstNode {
-// 	tp := p.parseTypeExpression()
-// 	if tp == nil {
-// 		errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected type expression, but none was found")
-// 	}
-// 	return tokens.NewNode(tp.Token(), &ast.Apply{
-// 		Shape:  "unit",
-// 		Args:   []*ast.ApplyArgument{},
-// 		Target: tp,
-// 	})
-// }
-
-// // Parse an application. Example: `f(x, y)` or `F(x=2, y=3)`
-// func (p *parser) parseApply(left *tokens.AstNode) *tokens.AstNode {
-// 	p.ExpectTokens(tokens.TLparen)
-// 	first := p.EatToken()
-// 	shape, args := p.parseApplyArguments()
-// 	p.ExpectTokens(tokens.TRparen)
-// 	p.EatToken()
-// 	return tokens.NewNode(first, &ast.Apply{
-// 		Shape:  shape,
-// 		Target: left,
-// 		Args:   args,
-// 	})
-// }
-
-// // Parse an anonymous data application. Example: `(2, 4)`
-// func (p *parser) parseAnonymousDataApply() *tokens.AstNode {
-// 	p.ExpectTokens(tokens.TLparen)
-// 	lparen := p.EatToken()
-// 	shape, args := p.parseApplyArguments()
-// 	p.ExpectTokens(tokens.TRparen)
-// 	p.EatToken()
-
-// 	return tokens.NewNode(lparen, &ast.Apply{
-// 		Shape: shape,
-// 		Args:  args,
-// 	})
-// }
-
-// // Parse a sequence of type application arguments. Example: `1, 2` or `x=2, s=2`
-// func (p *parser) parseApplyArguments() (shape string, args []*ast.ApplyArgument) {
-// 	args = []*ast.ApplyArgument{}
-// 	p.SkipNewlines()
-
-// 	n0 := p.PeekToken()
-// 	n1 := p.PeekTokenAt(1)
-// 	switch {
-// 	case n0.IsKind(tokens.TRparen):
-// 		shape = "unit"
-
-// 	case n0.IsKind(tokens.TVarIdent) && n1.IsKind(tokens.TAssign):
-// 		shape = "record"
-// 		for {
-// 			p.ExpectTokens(tokens.TVarIdent)
-// 			name := p.EatToken()
-// 			p.ExpectTokens(tokens.TAssign)
-// 			p.EatToken()
-// 			expr := p.parseValueExpression()
-// 			if expr == nil {
-// 				errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected value expression, but none was found")
-// 			}
-// 			args = append(args, &ast.ApplyArgument{
-// 				Token: name,
-// 				Name:  name.Literal,
-// 				Value: expr,
-// 			})
-
-// 			if !p.IsNextTokens(tokens.TComma, tokens.TNewline) {
-// 				break
-// 			}
-// 			p.SkipSeparator(tokens.TComma)
-// 		}
-
-// 	default:
-// 		shape = "tuple"
-// 		for {
-// 			first := p.PeekToken()
-// 			expr := p.parseValueExpression()
-// 			if expr == nil {
-// 				break
-// 			}
-// 			args = append(args, &ast.ApplyArgument{
-// 				Token: first,
-// 				Value: expr,
-// 			})
-
-// 			if !p.IsNextTokens(tokens.TComma, tokens.TNewline) {
-// 				break
-// 			}
-// 			p.SkipSeparator(tokens.TComma)
-// 		}
-// 	}
-
-// 	p.SkipNewlines()
-// 	return shape, args
-// }
+	p.ExpectTokens(tokens.TRparen)
+	p.EatToken()
+	return ast.NewAppl(op, left, args)
+}

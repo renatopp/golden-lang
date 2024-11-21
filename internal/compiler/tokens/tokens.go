@@ -22,7 +22,7 @@ const (
 	TImport = "import" // import
 	TData   = "data"   // data
 	TFn     = "fn"     // fn
-	TFN     = "FN"     // FN
+	TFN     = "Fn"     // Fn
 	TLet    = "let"    // let
 	TAs     = "as"     // as
 
@@ -65,7 +65,7 @@ func LiteralToToken(lit string) string {
 		return TData
 	case "fn":
 		return TFn
-	case "FN":
+	case "Fn":
 		return TFN
 	case "let":
 		return TLet

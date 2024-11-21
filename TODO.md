@@ -1,13 +1,16 @@
 # TODO
 
-[ ] Build Pipeline
-  [ ] Step 1:
-    [ ] Discover Package from file
-    [ ] Lex and Parse all modules in the package
-    [ ] Repeat for all imports
-  [ ] Step 2:
-    [ ] Construct dependency graph between imports
-  [ ] Step 3:
-    [ ] Semantic analysis all files given the dependency order
-  [ ] Step 4:
-    [ ] Generate IR for all packages
+## Step 1
+[x] parse types
+[x] parse function types
+[x] parse function declarations
+[x] parse function applications
+
+## Step 2
+- create dependency graph
+
+## Step 3
+- create semantic analysis
+
+## Step 4
+- create IR

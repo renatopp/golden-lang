@@ -13,4 +13,11 @@ type Visitor interface {
 	VisitUnaryOp(*UnaryOp)
 	VisitBinaryOp(*BinaryOp)
 	VisitAccess(*Access)
+	VisitTypeIdent(*TypeIdent)
+	VisitFuncType(*FuncType)
+	VisitFuncTypeParam(*FuncTypeParam)
+	VisitFuncDecl(*FuncDecl)
+	VisitFuncDeclParam(*FuncDeclParam)
+	VisitAppl(*Appl)
+	VisitApplArg(*ApplArg)
 }

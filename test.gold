@@ -1,31 +1,13 @@
-import '.test/main' as sample
+fn main() {
+  add(3, 4)
+}
 
-let int = 2
+fn add(a Int, b Int) Int {
+  a + b
+}
 
-let float = 1.2
-let bool = true
-let string = 'hello'
-
-let unaryMinus = -int 
-let unaryPlus = +int
-let unaryNot = !bool
-
-let blocks =  {1; 2; 3; 4; false}
-
-let binPlus = 1 + int
-let binMinus = 1 - int
-let binMul = 1 * int
-let binDiv = 1 / int
-let binMod = 1 % int
-let binSpaceship = 1 <=> int
-let binEq = 1 == int
-let binNeq = 1 != int
-let binAnd = true and bool
-let binOr = true or bool
-let binXor = true xor bool
-let binLt = 1 < 2
-let binLte = 1 <= 2
-let binGt = 1 > 2
-let binGte = 1 >= 2
-
-let access = sample.x
+fn mult(x Int) Fn(Int, Int) Int {
+  fn(a Int, b Int) Int {
+    x * {a + b}
+  }
+}
