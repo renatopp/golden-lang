@@ -95,6 +95,7 @@ func (b *Builder) build() *BuildResult {
 	loadPackages(ctx)
 	checkEntries(ctx)
 	buildDependencyGraph(ctx)
+	semanticAnalysis(ctx)
 
 	return res
 }
@@ -184,4 +185,12 @@ func buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visite
 	}
 	stack[pkg.Path] = false
 	return append(order, pkg)
+}
+
+func semanticAnalysis(ctx *BuildContext) {
+	// for _, pkg := range ctx.DependencyOrder {
+	// 	for _, mod := range pkg.Modules.Values() {
+	// 		semanticAnalysisModule(ctx, mod)
+	// 	}
+	// }
 }

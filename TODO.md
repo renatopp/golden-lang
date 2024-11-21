@@ -15,7 +15,11 @@ clear && golden run --debug --working-dir=.samples/imports-non-cyclic/ .samples/
 [x] check for circular imports
 
 ## Step 3
-- create semantic analysis
+[ ] add type annotation in the node
+[ ] create the scopes
+[ ] create the module type
+[ ] pre resolve all modules
+[ ] resolve all modules for each package
 
 ## Step 4
 - create IR
