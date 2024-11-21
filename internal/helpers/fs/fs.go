@@ -31,6 +31,23 @@ func CheckFileExists(path string) error {
 	return err
 }
 
+func CheckFolderExists(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	if !info.IsDir() {
+		return os.ErrNotExist
+	}
+
+	return nil
+}
+
+func GetWorkingDir() string {
+	return WorkingDir
+}
+
 func IsFileExtension(path, extension string, sensitive bool) bool {
 	ext := path[len(path)-len(extension):]
 

@@ -3,10 +3,12 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/helpers/debug"
 	"github.com/renatopp/golden/internal/helpers/errors"
+	"github.com/renatopp/golden/internal/helpers/fs"
 	"github.com/renatopp/golden/internal/helpers/logger"
 )
 
@@ -27,6 +29,7 @@ func (c *Run) Help() string {
 func (c *Run) Run() error {
 	flagDebug := flag.Bool("debug", false, "enable debug information")
 	flagLevel := flag.String("log-level", "error", "log level")
+	flagWorkingDir := flag.String("working-dir", ".", "working directory")
 	flag.Parse()
 
 	args := flag.Args()
@@ -40,6 +43,12 @@ func (c *Run) Run() error {
 	if *flagDebug {
 		opts.OnTokensReady.Subscribe(debug.PrettyPrintTokens)
 		opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
+		opts.OnDependencyGraphReady.Subscribe(printDependencyGraph)
+	}
+
+	if flagWorkingDir != nil {
+		abs, _ := fs.GetAbsolutePath(*flagWorkingDir)
+		opts.WorkingDir = abs
 	}
 
 	b := builder.NewBuilder(opts)
@@ -51,4 +60,14 @@ func (c *Run) Run() error {
 
 	fmt.Println("Build completed in", res.Elapsed)
 	return nil
+}
+
+func printDependencyGraph(order []*builder.Package) {
+	deps := []string{}
+	for _, p := range order {
+		deps = append(deps, p.Path)
+	}
+	names := strings.Join(deps, "\n- ")
+	fmt.Printf("Order of dependencies:\n- %s\n", names)
+	println()
 }

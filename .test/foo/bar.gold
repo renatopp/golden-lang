@@ -1,3 +1,0 @@
-import '@/.test/foo/baz' as bbb
-
-let x = 2

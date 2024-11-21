@@ -16,21 +16,6 @@ type loader struct {
 	pending sync.WaitGroup
 }
 
-func loadPackages(ctx *BuildContext) {
-	l := &loader{
-		ctx:     ctx,
-		errors:  ds.NewSyncList[error](),
-		pending: sync.WaitGroup{},
-	}
-	l.discover(ctx.Options.EntryFilePath)
-	l.pending.Wait()
-
-	if l.errors.Len() > 0 {
-		e, _ := l.errors.Get(0)
-		errors.Rethrow(e)
-	}
-}
-
 func (l *loader) discover(modulePath string) {
 	if l.errors.Len() > 0 {
 		return
@@ -116,6 +101,14 @@ func (l *loader) loadModule(pkg *Package, modulePath string) {
 
 		packagePath := fs.ModulePath2PackagePath(path)
 		module.Package.Imports.AddUnique(packagePath)
+
+		if fs.CheckFolderExists(packagePath) != nil {
+			l.errors.Add(errors.NewError(errors.InvalidFolderError, "could not find package '%s'", packagePath).WithNode(a.Path))
+		}
+
+		if fs.CheckFileExists(path) != nil {
+			l.errors.Add(errors.NewError(errors.InvalidFileError, "could not find module '%s'", path).WithNode(a.Path))
+		}
 
 		l.discover(path)
 	}

@@ -1,6 +1,8 @@
 package builder
 
 import (
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/renatopp/golden/internal/compiler/ast"
@@ -11,29 +13,52 @@ import (
 	"github.com/renatopp/golden/lang"
 )
 
+//
+//
+//
+
 type BuildContext struct {
 	Options         *BuildOptions
 	PackageRegistry *ds.SyncMap[string, *Package]
 	ModuleRegistry  *ds.SyncMap[string, *Module]
+	EntryPackage    *Package
+	EntryModule     *Module
+	DependencyOrder []*Package
 }
 
+//
+//
+//
+
 type BuildOptions struct {
-	EntryFilePath string // Absolute path of the entry file containing main function
-	OnTokensReady *events.Signal2[*Module, []*lang.Token]
-	OnAstReady    *events.Signal2[*Module, *ast.Module]
+	EntryFilePath          string // Absolute path of the entry file containing main function
+	WorkingDir             string // Absolute path of the working directory
+	OnTokensReady          *events.Signal2[*Module, []*lang.Token]
+	OnAstReady             *events.Signal2[*Module, *ast.Module]
+	OnDependencyGraphReady *events.Signal1[[]*Package]
 }
 
 func NewBuildOptions(fileName string) *BuildOptions {
 	return &BuildOptions{
-		EntryFilePath: fileName,
-		OnTokensReady: events.NewSignal2[*Module, []*lang.Token](),
-		OnAstReady:    events.NewSignal2[*Module, *ast.Module](),
+		EntryFilePath:          fileName,
+		WorkingDir:             fs.GetWorkingDir(),
+		OnTokensReady:          events.NewSignal2[*Module, []*lang.Token](),
+		OnAstReady:             events.NewSignal2[*Module, *ast.Module](),
+		OnDependencyGraphReady: events.NewSignal1[[]*Package](),
 	}
 }
+
+//
+//
+//
 
 type BuildResult struct {
 	Elapsed time.Duration
 }
+
+//
+//
+//
 
 type Builder struct {
 	Options *BuildOptions
@@ -61,16 +86,21 @@ func (b *Builder) build() *BuildResult {
 		Options:         b.Options,
 		PackageRegistry: ds.NewSyncMap[string, *Package](),
 		ModuleRegistry:  ds.NewSyncMap[string, *Module](),
+		EntryPackage:    nil,
+		EntryModule:     nil,
 	}
 
-	b.validateEntry()
+	fs.WorkingDir = ctx.Options.WorkingDir
+	validateEntry(ctx)
 	loadPackages(ctx)
+	checkEntries(ctx)
+	buildDependencyGraph(ctx)
 
 	return res
 }
 
-func (b *Builder) validateEntry() {
-	inputPath := b.Options.EntryFilePath
+func validateEntry(ctx *BuildContext) {
+	inputPath := ctx.Options.EntryFilePath
 
 	extension := fs.GetFileExtension(inputPath)
 	if extension == "" {
@@ -98,5 +128,60 @@ func (b *Builder) validateEntry() {
 		errors.Throw(errors.InvalidFileError, "input file '%s' does not have a valid name", inputPath)
 	}
 
-	b.Options.EntryFilePath = absPath
+	ctx.Options.EntryFilePath = absPath
+}
+
+func loadPackages(ctx *BuildContext) {
+	l := &loader{
+		ctx:     ctx,
+		errors:  ds.NewSyncList[error](),
+		pending: sync.WaitGroup{},
+	}
+	l.discover(ctx.Options.EntryFilePath)
+	l.pending.Wait()
+
+	if l.errors.Len() > 0 {
+		e, _ := l.errors.Get(0)
+		errors.Rethrow(e)
+	}
+}
+
+func checkEntries(ctx *BuildContext) {
+	modulePath := ctx.Options.EntryFilePath
+	packagePath := fs.ModulePath2PackagePath(modulePath)
+	ctx.EntryModule, _ = ctx.ModuleRegistry.Get(modulePath)
+	ctx.EntryPackage, _ = ctx.PackageRegistry.Get(packagePath)
+}
+
+func buildDependencyGraph(ctx *BuildContext) {
+	registry := ctx.PackageRegistry.Items()
+	entry := ctx.EntryPackage.Path
+
+	visited := map[string]bool{}
+	stack := map[string]bool{}
+	order := []*Package{}
+	pkg := registry[entry]
+	ctx.DependencyOrder = buildDependencyGraphLoop(registry, pkg, visited, stack, order)
+	ctx.Options.OnDependencyGraphReady.Emit(ctx.DependencyOrder)
+}
+
+func buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
+	visited[pkg.Path] = true
+	stack[pkg.Path] = true
+	for _, dep := range pkg.Imports.Values() {
+		if !visited[dep] {
+			p := registry[dep]
+			order = buildDependencyGraphLoop(registry, p, visited, stack, order)
+
+		} else if stack[dep] {
+			names := []string{}
+			for k := range stack {
+				names = append(names, k)
+			}
+			deps := strings.Join(names, "\n- ")
+			errors.Throw(errors.CircularReferenceError, "cyclic dependency detected importing packages: \n- %s", deps)
+		}
+	}
+	stack[pkg.Path] = false
+	return append(order, pkg)
 }

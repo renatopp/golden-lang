@@ -1,5 +1,8 @@
 # TODO
 
+clear && golden run --debug --working-dir=.samples/imports-cyclic/ .samples/imports-cyclic/a/a.gold
+clear && golden run --debug --working-dir=.samples/imports-non-cyclic/ .samples/imports-non-cyclic/a/a.gold
+
 ## Step 1
 [x] parse types
 [x] parse function types
@@ -7,7 +10,9 @@
 [x] parse function applications
 
 ## Step 2
-- create dependency graph
+[x] validate if all imports are valid
+[x] create dependency graph
+[x] check for circular imports
 
 ## Step 3
 - create semantic analysis
