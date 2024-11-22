@@ -31,6 +31,23 @@ func CheckFileExists(path string) error {
 	return err
 }
 
+func CheckFolderExists(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	if !info.IsDir() {
+		return os.ErrNotExist
+	}
+
+	return nil
+}
+
+func GetWorkingDir() string {
+	return WorkingDir
+}
+
 func IsFileExtension(path, extension string, sensitive bool) bool {
 	ext := path[len(path)-len(extension):]
 
@@ -83,30 +100,30 @@ func ToLinuxSlash(path string) string {
 }
 
 // Conversions ---------------------------------------------------------------
-func ImportName_To_ModulePath(importName string) string {
-	path := PackageName_To_PackagePath(importName)
+func ImportName2ModulePath(importName string) string {
+	path := PackageName2PackagePath(importName)
 	return path + ".gold"
 }
 
-func ModulePath_To_ModuleName(modulePath string) string {
+func ModulePath2ModuleName(modulePath string) string {
 	extension := GetFileExtension(modulePath)
 	return filepath.Base(modulePath)[0 : len(filepath.Base(modulePath))-len(extension)]
 }
 
-func ModulePath_To_ModuleFileName(modulePath string) string {
+func ModulePath2ModuleFileName(modulePath string) string {
 	return filepath.Base(modulePath)
 }
 
-func ModulePath_To_PackageName(modulePath string) string {
-	packagePath := ModulePath_To_PackagePath(modulePath)
-	return PackagePath_To_PackageName(packagePath)
+func ModulePath2PackageName(modulePath string) string {
+	packagePath := ModulePath2PackagePath(modulePath)
+	return PackagePath2PackageName(packagePath)
 }
 
-func ModulePath_To_PackagePath(modulePath string) string {
+func ModulePath2PackagePath(modulePath string) string {
 	return filepath.Dir(modulePath)
 }
 
-func PackagePath_To_PackageName(packagePath string) string {
+func PackagePath2PackageName(packagePath string) string {
 	if strings.HasPrefix(packagePath, WorkingDir) {
 		packagePath = filepath.Join("@", strings.TrimPrefix(packagePath, WorkingDir))
 	}
@@ -114,25 +131,25 @@ func PackagePath_To_PackageName(packagePath string) string {
 	return ToLinuxSlash(packagePath)
 }
 
-func PackageName_To_PackagePath(packageName string) string {
+func PackageName2PackagePath(packageName string) string {
 	packageName = strings.ReplaceAll(packageName, "@", WorkingDir)
 
 	path := ToOSSlash(packageName)
 	return path
 }
 
-func Path_To_PackagePath(path string) string {
+func Path2PackagePath(path string) string {
 	if IsFileExtension(path, ".gold", false) {
-		return ModulePath_To_PackagePath(path)
+		return ModulePath2PackagePath(path)
 	}
 	return path
 }
 
-func Path_To_PackageName(path string) string {
+func Path2PackageName(path string) string {
 	if IsFileExtension(path, ".gold", false) {
-		return ModulePath_To_PackageName(path)
+		return ModulePath2PackageName(path)
 	}
-	return PackagePath_To_PackageName(path)
+	return PackagePath2PackageName(path)
 }
 
 // ----------------------------------------------------------------------------
@@ -158,7 +175,7 @@ func ListFiles(path string) ([]string, error) {
 func DiscoverModules(path string) []string {
 	var modules []string
 
-	packagePath := Path_To_PackagePath(path)
+	packagePath := Path2PackagePath(path)
 
 	files, err := ListFiles(packagePath)
 	if err != nil {

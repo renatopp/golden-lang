@@ -12,7 +12,7 @@ import (
 type Token struct {
 	Kind    string
 	Literal string
-	Loc     Loc
+	Loc     *Loc
 }
 
 // Creates a new token.
@@ -20,21 +20,21 @@ func NewToken(t string, l string) *Token {
 	return &Token{Kind: t, Literal: l}
 }
 
-// Creates a new error at the token location.
-func (t *Token) AsError(kind, msg string) Error {
-	return NewError(t.Loc, kind, msg)
-}
-
 // Creates a new token with the given char range. You can use this method as a
 // chain.
 func (t *Token) WithChars(from, to Char) *Token {
-	t.Loc = Loc{Start: from.Span, End: to.Span}
+	t.Loc = &Loc{Start: from.Span, End: to.Span}
 	return t
 }
 
 // Creates a new token with the given type. You can use this method as a chain.
 func (t *Token) WithType(tp string) *Token {
 	t.Kind = tp
+	return t
+}
+
+func (t *Token) WithFile(fileName string) *Token {
+	t.Loc.Filename = fileName
 	return t
 }
 

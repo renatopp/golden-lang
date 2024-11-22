@@ -1,3 +1,0 @@
-import "@/.test/c/c"
-
-fn b() {}

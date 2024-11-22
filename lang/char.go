@@ -19,7 +19,7 @@ func (p Char) Is(runes ...rune) bool {
 // Creates an error at the char position.
 func (p Char) AsError(kind, msg string) Error {
 	return NewError(
-		Loc{Start: p.Span, End: p.Span},
+		&Loc{Start: p.Span, End: p.Span},
 		kind,
 		msg,
 	)

@@ -15,5 +15,3 @@ extension-install:
 
 .PHONY: extension
 extension: extension-build extension-install
-
-	
