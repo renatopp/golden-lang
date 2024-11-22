@@ -37,6 +37,15 @@ func (s *Stack[T]) Top() *T {
 	return val
 }
 
+func (s *Stack[T]) Has(v *T) bool {
+	for _, val := range s.data {
+		if val == v {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Stack[T]) Iter() iter.Seq2[int, *T] {
 	return func(yield func(int, *T) bool) {
 		for i, v := range s.data {

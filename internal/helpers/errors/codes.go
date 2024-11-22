@@ -10,4 +10,5 @@ const (
 	TypeError
 	NameNotFound
 	NameAlreadyDefined
+	InvalidEntryFile
 )

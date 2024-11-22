@@ -103,6 +103,7 @@ func (b *Builder) build() *BuildResult {
 	buildDependencyGraph(ctx)
 	buildGlobalScope(ctx)
 	semanticAnalysis(ctx)
+	checkMain(ctx)
 
 	return res
 }
@@ -239,5 +240,16 @@ func semanticAnalysis(ctx *BuildContext) {
 			checker.Resolve(mod.Root)
 			ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
 		}
+	}
+}
+
+func checkMain(ctx *BuildContext) {
+	main := ctx.EntryModule.Scope().Values.Get("main")
+	if main == nil {
+		errors.Throw(errors.InvalidEntryFile, "entry module '%s' does not contain a 'main' function", ctx.EntryModule.Path)
+	}
+
+	if !types.NoopFn.Compatible(main.Type) {
+		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", ctx.EntryModule.Path)
 	}
 }

@@ -2,6 +2,8 @@ package builder
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/env"
+	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
 )
 
@@ -41,6 +43,10 @@ func NewModule(name, path, fileName string, pkg *Package) *Module {
 		Root:     nil,
 		Imports:  make([]*ModuleImport, 0),
 	}
+}
+
+func (m *Module) Scope() *env.Scope {
+	return m.Root.Type().(*types.Module).Scope
 }
 
 // Represents the import from one module to another.

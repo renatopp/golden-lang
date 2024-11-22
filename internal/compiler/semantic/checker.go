@@ -2,6 +2,7 @@ package semantic
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/renatopp/golden/internal/compiler/ast"
@@ -14,12 +15,14 @@ import (
 var _ ast.Visitor = &TypeChecker{}
 
 type TypeChecker struct {
-	scopeStack *ds.Stack[env.Scope]
+	scopeStack          *ds.Stack[env.Scope]
+	initializationStack []ast.Node
 }
 
 func NewTypeChecker() *TypeChecker {
 	return &TypeChecker{
-		scopeStack: ds.NewStack[env.Scope](),
+		scopeStack:          ds.NewStack[env.Scope](),
+		initializationStack: []ast.Node{},
 	}
 }
 
@@ -29,6 +32,17 @@ func (c *TypeChecker) pushScope(scope *env.Scope) {
 
 func (c *TypeChecker) popScope() *env.Scope {
 	return c.scopeStack.Pop()
+}
+
+func (c *TypeChecker) pushInitialization(node ast.Node) {
+	if slices.Contains(c.initializationStack, node) {
+		errors.ThrowAtNode(node, errors.CircularReferenceError, "circular initialization detected")
+	}
+	c.initializationStack = append(c.initializationStack, node)
+}
+
+func (c *TypeChecker) popInitialization() {
+	c.initializationStack = c.initializationStack[:len(c.initializationStack)-1]
 }
 
 func (c *TypeChecker) scope() *env.Scope {
@@ -147,6 +161,13 @@ func (c *TypeChecker) VisitVarIdent(node *ast.VarIdent) {
 }
 
 func (c *TypeChecker) VisitVarDecl(node *ast.VarDecl) {
+	if node.Type() != nil {
+		return
+	}
+
+	c.pushInitialization(node)
+	defer c.popInitialization()
+
 	var tp = node.TypeExpr.Or(nil)
 	var val = node.ValueExpr.Or(nil)
 	var err error
@@ -280,6 +301,13 @@ func (c *TypeChecker) VisitFuncTypeParam(node *ast.FuncTypeParam) {
 }
 
 func (c *TypeChecker) VisitFuncDecl(node *ast.FuncDecl) {
+	if node.Type() != nil {
+		return
+	}
+
+	c.pushInitialization(node)
+	defer c.popInitialization()
+
 	scope := c.scope().New()
 	c.pushScope(scope)
 	params := []ast.Type{}
@@ -333,7 +361,7 @@ func (c *TypeChecker) VisitAppl(node *ast.Appl) {
 		c.applFunction(node, target)
 
 	case nil:
-		errors.ThrowAtNode(node, errors.TypeError, "target type is nil")
+		errors.ThrowAtNode(node, errors.InternalError, "target type is nil")
 
 	default:
 		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not applicable", node.Target.Type().Signature())
@@ -361,5 +389,29 @@ func (c *TypeChecker) applFunction(node *ast.Appl, fn *types.Function) {
 }
 
 func (c *TypeChecker) VisitAccess(node *ast.Access) {
-	errors.Throw(errors.NotImplemented, "VisitAccess not implemented.")
+	node.Target.Accept(c)
+
+	switch target := node.Target.Type().(type) {
+	case *types.Module:
+		c.accessModule(node, target)
+
+	case nil:
+		errors.ThrowAtNode(node, errors.InternalError, "target type is nil")
+
+	default:
+		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not accessible", node.Target.Type().Signature())
+	}
+}
+
+func (c *TypeChecker) accessModule(node *ast.Access, mod *types.Module) {
+	c.pushScope(mod.Scope)
+	defer c.popScope()
+
+	if node.ExpressionKind() == ast.ValueExpressionKind {
+		node.Accessor.Accept(c)
+		node.SetType(node.Accessor.Type())
+		return
+	}
+
+	errors.Throw(errors.NotImplemented, "access module for types is not implemented.")
 }
