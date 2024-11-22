@@ -2,8 +2,12 @@ package errors
 
 const (
 	InternalError ErrorCode = iota
+	NotImplemented
 	InvalidFileError
 	InvalidFolderError
-	ParserError
 	CircularReferenceError
+	ParserError
+	TypeError
+	NameNotFound
+	NameAlreadyDefined
 )

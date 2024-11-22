@@ -2,6 +2,14 @@ package ast
 
 import "github.com/renatopp/golden/lang"
 
+type ExpressionKind int
+
+const (
+	UnknownExpressionKind ExpressionKind = iota
+	TypeExpressionKind
+	ValueExpressionKind
+)
+
 type Type interface {
 	Id() uint64
 	Definition() Node
@@ -15,6 +23,9 @@ type Node interface {
 	Token() *lang.Token
 	Accept(Visitor)
 	Type() Type
+	SetType(Type)
+	ExpressionKind() ExpressionKind
+	SetExpressionKind(ExpressionKind)
 }
 
 //
@@ -24,17 +35,24 @@ type Node interface {
 var _baseNodeId uint64
 
 type BaseNode struct {
-	id    uint64
-	token *lang.Token
-	type_ Type
+	id             uint64
+	token          *lang.Token
+	type_          Type
+	expressionKind ExpressionKind
 }
 
-func NewBaseNode(token *lang.Token) *BaseNode {
+func NewBaseNode(expressionKind ExpressionKind, token *lang.Token) *BaseNode {
 	_baseNodeId++
-	return &BaseNode{id: _baseNodeId, token: token}
+	return &BaseNode{
+		id:             _baseNodeId,
+		token:          token,
+		expressionKind: expressionKind,
+	}
 }
 
-func (n *BaseNode) Id() uint64                { return n.id }
-func (n *BaseNode) Token() *lang.Token        { return n.token }
-func (n *BaseNode) Type() Type                { return n.type_ }
-func (n *BaseNode) WithType(t Type) *BaseNode { n.type_ = t; return n }
+func (n *BaseNode) Id() uint64                            { return n.id }
+func (n *BaseNode) Token() *lang.Token                    { return n.token }
+func (n *BaseNode) Type() Type                            { return n.type_ }
+func (n *BaseNode) SetType(t Type)                        { n.type_ = t }
+func (n *BaseNode) ExpressionKind() ExpressionKind        { return n.expressionKind }
+func (n *BaseNode) SetExpressionKind(kind ExpressionKind) { n.expressionKind = kind }

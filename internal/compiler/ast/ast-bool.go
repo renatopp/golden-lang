@@ -10,6 +10,7 @@ type Bool struct {
 func NewBool(token *lang.Token, literal bool) *Bool {
 	return &Bool{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Literal: literal,

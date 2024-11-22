@@ -10,6 +10,7 @@ type TypeIdent struct {
 func NewTypeIdent(token *lang.Token, literal string) *TypeIdent {
 	return &TypeIdent{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Literal: literal,

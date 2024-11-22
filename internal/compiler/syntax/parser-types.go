@@ -32,7 +32,9 @@ func (p *parser) parseTypeIdent() ast.Node {
 	p.ExpectTokens(tokens.TTypeIdent)
 	ident := p.EatToken()
 
-	return ast.NewTypeIdent(ident, ident.Literal)
+	node := ast.NewTypeIdent(ident, ident.Literal)
+	node.SetExpressionKind(ast.TypeExpressionKind)
+	return node
 }
 
 // Parse function type. Example: `Fn (Int) String`
@@ -65,7 +67,9 @@ func (p *parser) parseFunctionType() ast.Node {
 	if tok != nil {
 		ret = safe.Some(tok)
 	}
-	return ast.NewFuncType(fn, parameters, ret)
+	node := ast.NewFuncType(fn, parameters, ret)
+	node.SetExpressionKind(ast.TypeExpressionKind)
+	return node
 }
 
 // func (p *parser) parseTypeKeyword() ast.Node {

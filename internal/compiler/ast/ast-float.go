@@ -10,6 +10,7 @@ type Float struct {
 func NewFloat(token *lang.Token, literal float64) *Float {
 	return &Float{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Literal: literal,

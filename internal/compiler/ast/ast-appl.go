@@ -11,6 +11,7 @@ type Appl struct {
 func NewAppl(token *lang.Token, target Node, args []*ApplArg) *Appl {
 	return &Appl{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Target:    target,
@@ -29,6 +30,7 @@ type ApplArg struct {
 func NewApplArg(token *lang.Token, index int, val Node) *ApplArg {
 	return &ApplArg{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Index:     index,

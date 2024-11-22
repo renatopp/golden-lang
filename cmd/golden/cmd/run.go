@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/renatopp/golden/internal/builder"
+	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/helpers/debug"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -44,6 +46,7 @@ func (c *Run) Run() error {
 		opts.OnTokensReady.Subscribe(debug.PrettyPrintTokens)
 		opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
 		opts.OnDependencyGraphReady.Subscribe(printDependencyGraph)
+		opts.OnTypeCheckReady.Subscribe(printTypedAst)
 	}
 
 	if flagWorkingDir != nil {
@@ -70,4 +73,9 @@ func printDependencyGraph(order []*builder.Package) {
 	names := strings.Join(deps, "\n- ")
 	fmt.Printf("Order of dependencies:\n- %s\n", names)
 	println()
+}
+
+func printTypedAst(mod *builder.Module, a *ast.Module, scope *env.Scope) {
+	debug.PrettyPrintAst(mod, a)
+	debug.PrettyPrintScope(scope)
 }

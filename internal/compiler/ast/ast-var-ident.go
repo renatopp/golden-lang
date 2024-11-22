@@ -10,6 +10,7 @@ type VarIdent struct {
 func NewVarIdent(token *lang.Token, literal string) *VarIdent {
 	return &VarIdent{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Literal: literal,

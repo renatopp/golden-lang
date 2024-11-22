@@ -10,6 +10,7 @@ type Int struct {
 func NewInt(token *lang.Token, literal int64) *Int {
 	return &Int{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Literal: literal,

@@ -14,6 +14,7 @@ type Import struct {
 func NewImport(token *lang.Token, path *String, alias safe.Optional[*VarIdent]) *Import {
 	return &Import{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Path:  path,

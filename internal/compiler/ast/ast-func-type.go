@@ -14,6 +14,7 @@ type FuncType struct {
 func NewFuncType(token *lang.Token, params []*FuncTypeParam, ret safe.Optional[Node]) *FuncType {
 	return &FuncType{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Params: params,
@@ -32,6 +33,7 @@ type FuncTypeParam struct {
 func NewFuncTypeParam(token *lang.Token, index int, tpExpr Node) *FuncTypeParam {
 	return &FuncTypeParam{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Index:    index,

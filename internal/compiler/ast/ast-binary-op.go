@@ -12,6 +12,7 @@ type BinaryOp struct {
 func NewBinaryOp(token *lang.Token, op string, left, right Node) *BinaryOp {
 	return &BinaryOp{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Operator: op,

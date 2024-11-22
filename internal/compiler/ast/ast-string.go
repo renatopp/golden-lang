@@ -10,6 +10,7 @@ type String struct {
 func NewString(token *lang.Token, literal string) *String {
 	return &String{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Literal: literal,

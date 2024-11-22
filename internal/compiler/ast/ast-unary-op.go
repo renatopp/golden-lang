@@ -11,6 +11,7 @@ type UnaryOp struct {
 func NewUnaryOp(token *lang.Token, op string, right Node) *UnaryOp {
 	return &UnaryOp{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Operator: op,

@@ -15,6 +15,7 @@ type VarDecl struct {
 func NewVarDecl(token *lang.Token, name *VarIdent, typeExpr, valueExpr safe.Optional[Node]) *VarDecl {
 	return &VarDecl{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Name:      name,

@@ -10,6 +10,7 @@ type Block struct {
 func NewBlock(token *lang.Token, expressions []Node) *Block {
 	return &Block{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Expressions: expressions,

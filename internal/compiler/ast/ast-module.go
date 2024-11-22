@@ -13,6 +13,7 @@ type Module struct {
 func NewModule(token *lang.Token, path string, imports []*Import, functions []*FuncDecl, variables []*VarDecl) *Module {
 	return &Module{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		ModulePath: path,

@@ -19,7 +19,11 @@ clear && golden run --debug --working-dir=.samples/imports-non-cyclic/ .samples/
 [x] create the scopes
 [x] create the module type
 [x] pre resolve all modules
-[ ] resolve all modules for each package
+[x] resolve all modules for each package
+[x] block redeclare
+[ ] create function type
+[ ] check function types
+[ ] check function appl
 [ ] check for main function in the entry
 
 ## Step 4

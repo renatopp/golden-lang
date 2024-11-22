@@ -11,6 +11,7 @@ type Access struct {
 func NewAccess(token *lang.Token, target Node, accessor *VarIdent) *Access {
 	return &Access{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Target:   target,

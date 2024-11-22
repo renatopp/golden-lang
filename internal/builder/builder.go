@@ -40,6 +40,7 @@ type BuildOptions struct {
 	OnTokensReady          *events.Signal2[*Module, []*lang.Token]
 	OnAstReady             *events.Signal2[*Module, *ast.Module]
 	OnDependencyGraphReady *events.Signal1[[]*Package]
+	OnTypeCheckReady       *events.Signal3[*Module, *ast.Module, *env.Scope]
 }
 
 func NewBuildOptions(fileName string) *BuildOptions {
@@ -49,6 +50,7 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		OnTokensReady:          events.NewSignal2[*Module, []*lang.Token](),
 		OnAstReady:             events.NewSignal2[*Module, *ast.Module](),
 		OnDependencyGraphReady: events.NewSignal1[[]*Package](),
+		OnTypeCheckReady:       events.NewSignal3[*Module, *ast.Module, *env.Scope](),
 	}
 }
 
@@ -194,6 +196,11 @@ func buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visite
 
 func buildGlobalScope(ctx *BuildContext) {
 	ctx.GlobalScope = env.NewScope()
+	ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
+	ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
+	ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
+	ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
+	ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
 }
 
 func semanticAnalysis(ctx *BuildContext) {
@@ -205,7 +212,7 @@ func semanticAnalysis(ctx *BuildContext) {
 		// create type instances for all modules
 		for _, mod := range mods {
 			scope := ctx.GlobalScope.New()
-			mod.Root.WithType(types.NewModule(mod.Root, mod.Path, scope))
+			mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
 		}
 
 		// attach type instances to the module scopes
@@ -230,6 +237,7 @@ func semanticAnalysis(ctx *BuildContext) {
 		// resolve everything
 		for _, mod := range mods {
 			checker.Resolve(mod.Root)
+			ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
 		}
 	}
 }

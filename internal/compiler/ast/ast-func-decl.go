@@ -22,6 +22,7 @@ func NewFuncDecl(
 ) *FuncDecl {
 	return &FuncDecl{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Name:   name,
@@ -43,6 +44,7 @@ type FuncDeclParam struct {
 func NewFuncDeclParam(token *lang.Token, index int, name *VarIdent, typeExpr Node) *FuncDeclParam {
 	return &FuncDeclParam{
 		BaseNode: NewBaseNode(
+			ValueExpressionKind,
 			token,
 		),
 		Index:    index,
