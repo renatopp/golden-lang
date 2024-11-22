@@ -72,16 +72,24 @@ func (c *TypeChecker) expectCompatible(a, b ast.Node) {
 	}
 }
 
+func (c *TypeChecker) declare(name string, node ast.Node, type_ ast.Type) {
+	if bind := c.scope().Values.GetLocal(name); bind != nil && bind.Type != nil {
+		errors.ThrowAtNode(node, errors.NameAlreadyDefined, "name '%s' already defined", name)
+	}
+
+	c.scope().Values.Set(name, env.BN(type_, node))
+}
+
 func (c *TypeChecker) PreResolve(node *ast.Module) {
 	c.pushScope(node.Type().(*types.Module).Scope)
 	defer c.popScope()
 
 	for _, fn := range node.Functions {
-		c.scope().Values.Set(fn.Name.Unwrap().Literal, env.B(nil))
+		c.scope().Values.Set(fn.Name.Unwrap().Literal, env.BN(nil, fn))
 	}
 
 	for _, v := range node.Variables {
-		c.scope().Values.Set(v.Name.Literal, env.B(nil))
+		c.scope().Values.Set(v.Name.Literal, env.BN(nil, v))
 	}
 }
 
@@ -128,6 +136,13 @@ func (c *TypeChecker) VisitVarIdent(node *ast.VarIdent) {
 	if binding == nil {
 		errors.ThrowAtNode(node, errors.NameNotFound, "variable '%s' not defined", name)
 	}
+
+	// Pre solved
+	if binding.Type == nil {
+		binding.Node.Accept(c)
+		binding = c.scope().Values.Get(name)
+	}
+
 	node.SetType(binding.Type)
 }
 
@@ -154,16 +169,10 @@ func (c *TypeChecker) VisitVarDecl(node *ast.VarDecl) {
 		}
 	}
 	node.SetType(types.Void)
-
-	// Check for redeclaration
-	name := node.Name.Literal
-	if bind := c.scope().Values.GetLocal(name); bind != nil && bind.Type != nil {
-		errors.ThrowAtNode(node, errors.NameAlreadyDefined, "variable '%s' already defined", name)
-	}
+	node.Name.SetType(val.Type())
 
 	// Add to scope
-	node.Name.SetType(val.Type())
-	c.scope().Values.Set(name, env.BN(val.Type(), val))
+	c.declare(node.Name.Literal, val, val.Type())
 }
 
 func (c *TypeChecker) VisitBlock(node *ast.Block) {
@@ -235,10 +244,6 @@ func (c *TypeChecker) VisitBinaryOp(node *ast.BinaryOp) {
 	}
 }
 
-func (c *TypeChecker) VisitAccess(node *ast.Access) {
-	errors.Throw(errors.NotImplemented, "VisitAccess not implemented.")
-}
-
 func (c *TypeChecker) VisitTypeIdent(node *ast.TypeIdent) {
 	if node.ExpressionKind() == ast.TypeExpressionKind {
 		binding := c.scope().Types.Get(node.Literal)
@@ -253,25 +258,108 @@ func (c *TypeChecker) VisitTypeIdent(node *ast.TypeIdent) {
 }
 
 func (c *TypeChecker) VisitFuncType(node *ast.FuncType) {
-	errors.Throw(errors.NotImplemented, "VisitFuncType not implemented.")
+	params := []ast.Type{}
+	for _, param := range node.Params {
+		param.Accept(c)
+		params = append(params, param.Type())
+	}
+
+	var ret ast.Type = types.Void
+	if node.Return.Has() {
+		r := node.Return.Unwrap()
+		r.Accept(c)
+		ret = r.Type()
+	}
+
+	node.SetType(types.NewFunction(node, params, ret))
 }
 
 func (c *TypeChecker) VisitFuncTypeParam(node *ast.FuncTypeParam) {
-	errors.Throw(errors.NotImplemented, "VisitFuncTypeParam not implemented.")
+	node.TypeExpr.Accept(c)
+	node.SetType(node.TypeExpr.Type())
 }
 
 func (c *TypeChecker) VisitFuncDecl(node *ast.FuncDecl) {
-	errors.Throw(errors.NotImplemented, "VisitFuncDecl not implemented.")
+	scope := c.scope().New()
+	c.pushScope(scope)
+	params := []ast.Type{}
+	for _, param := range node.Params {
+		param.Accept(c)
+		params = append(params, param.Type())
+	}
+
+	var ret ast.Type = types.Void
+	if node.Return.Has() {
+		r := node.Return.Unwrap()
+		r.Accept(c)
+		ret = r.Type()
+	}
+
+	node.Body.Accept(c)
+	if !ret.Compatible(node.Body.Type()) {
+		errors.ThrowAtNode(node, errors.TypeError, "function return type '%s' does not match body type '%s'", ret.Signature(), node.Body.Type().Signature())
+	}
+	c.popScope()
+
+	fn := types.NewFunction(node, params, ret)
+	if node.Name.Has() {
+		node.Name.Unwrap().SetType(fn)
+		node.SetType(types.Void)
+		c.declare(node.Name.Unwrap().Literal, node, fn)
+
+	} else {
+		node.SetType(fn)
+	}
 }
 
 func (c *TypeChecker) VisitFuncDeclParam(node *ast.FuncDeclParam) {
-	errors.Throw(errors.NotImplemented, "VisitFuncDeclParam not implemented.")
+	name := node.Name.Literal
+	if c.scope().Values.GetLocal(name) != nil {
+		errors.ThrowAtNode(node, errors.NameAlreadyDefined, "parameter '%s' already defined", name)
+	}
+	node.TypeExpr.Accept(c)
+	tp := node.TypeExpr.Type()
+	node.Name.SetType(tp)
+	node.SetType(tp)
+
+	c.scope().Values.Set(name, env.BN(tp, node))
 }
 
 func (c *TypeChecker) VisitAppl(node *ast.Appl) {
-	errors.Throw(errors.NotImplemented, "VisitAppl not implemented.")
+	node.Target.Accept(c)
+
+	switch target := node.Target.Type().(type) {
+	case *types.Function:
+		c.applFunction(node, target)
+
+	case nil:
+		errors.ThrowAtNode(node, errors.TypeError, "target type is nil")
+
+	default:
+		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not applicable", node.Target.Type().Signature())
+	}
 }
 
 func (c *TypeChecker) VisitApplArg(node *ast.ApplArg) {
 	errors.Throw(errors.NotImplemented, "VisitApplArg not implemented.")
+}
+
+func (c *TypeChecker) applFunction(node *ast.Appl, fn *types.Function) {
+	if len(node.Args) != len(fn.Params) {
+		errors.ThrowAtNode(node, errors.TypeError, "expected %d arguments, but got %d", len(fn.Params), len(node.Args))
+	}
+
+	for i, arg := range node.Args {
+		arg.ValueExpr.Accept(c)
+		arg.SetType(arg.ValueExpr.Type())
+		if !fn.Params[i].Compatible(arg.Type()) {
+			errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not compatible with '%s'", arg.Type().Signature(), fn.Params[i].Signature())
+		}
+	}
+
+	node.SetType(fn.Return)
+}
+
+func (c *TypeChecker) VisitAccess(node *ast.Access) {
+	errors.Throw(errors.NotImplemented, "VisitAccess not implemented.")
 }

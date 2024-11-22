@@ -1,17 +1,10 @@
-let a = 2
-let b = 2.0
-let c = true
-let d = 'hello'
-let e = -2
-let f = !false
-let g = 1 + 1
-let h = 1 < 2
-let i = 1 == 2
-let j = 1.0 <=> 2.0
-let k = true and false
-let l = 1 + 2 * 3
+fn main() {
+  add(1, 2)
+  multi(3)(1, 2)
+}
 
-let int Int
-let int2 Int = 3
+fn add(a Int, b Int) Int { a + b }
 
-let blk = { let a = 1 + 2; a }
+fn multi(x Int) Fn(Int, Int) Int {
+  fn(a Int, b Int) Int { x*{a + b} }
+}

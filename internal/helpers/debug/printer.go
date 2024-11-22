@@ -215,7 +215,7 @@ func (p *AstPrinter) VisitAppl(node *ast.Appl) {
 	p.print("- [appl]")
 	p.printType(node)
 	node.Target.Accept(p)
-	for _, arg := range node.Arguments {
+	for _, arg := range node.Args {
 		arg.Accept(p)
 	}
 }

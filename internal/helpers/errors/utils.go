@@ -26,6 +26,7 @@ func WithRecovery(f func()) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = ToGoldenError(r)
+			// println(string(debug.Stack()))
 		}
 	}()
 	f()

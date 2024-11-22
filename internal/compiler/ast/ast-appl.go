@@ -4,8 +4,8 @@ import "github.com/renatopp/golden/lang"
 
 type Appl struct {
 	*BaseNode
-	Target    Node
-	Arguments []*ApplArg
+	Target Node
+	Args   []*ApplArg
 }
 
 func NewAppl(token *lang.Token, target Node, args []*ApplArg) *Appl {
@@ -14,8 +14,8 @@ func NewAppl(token *lang.Token, target Node, args []*ApplArg) *Appl {
 			ValueExpressionKind,
 			token,
 		),
-		Target:    target,
-		Arguments: args,
+		Target: target,
+		Args:   args,
 	}
 }
 
