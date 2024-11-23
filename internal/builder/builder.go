@@ -7,6 +7,7 @@ import (
 
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/env"
+	"github.com/renatopp/golden/internal/compiler/girl"
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
@@ -104,6 +105,7 @@ func (b *Builder) build() *BuildResult {
 	buildGlobalScope(ctx)
 	semanticAnalysis(ctx)
 	checkMain(ctx)
+	convertIr(ctx)
 
 	return res
 }
@@ -251,5 +253,19 @@ func checkMain(ctx *BuildContext) {
 
 	if !types.NoopFn.Compatible(main.Type) {
 		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", ctx.EntryModule.Path)
+	}
+}
+
+func convertIr(ctx *BuildContext) {
+	writer := girl.NewConverter()
+
+	for _, pkg := range ctx.DependencyOrder {
+		mods := pkg.Modules.Values()
+
+		modAsts := []*ast.Module{}
+		for _, mod := range mods {
+			modAsts = append(modAsts, mod.Root)
+		}
+		writer.Process(modAsts)
 	}
 }

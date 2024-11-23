@@ -1,10 +1,1 @@
-fn main() {
-  add(1, 2)
-  multi(3)(1, 2)
-}
-
-fn add(a Int, b Int) Int { a + b }
-
-fn multi(x Int) Fn(Int, Int) Int {
-  fn(a Int, b Int) Int { x*{a + b} }
-}
+let a = 1
