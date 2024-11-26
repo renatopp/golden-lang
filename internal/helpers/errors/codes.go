@@ -11,4 +11,5 @@ const (
 	NameNotFound
 	NameAlreadyDefined
 	InvalidEntryFile
+	TemporaryImplementationError
 )

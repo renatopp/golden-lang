@@ -4,10 +4,10 @@ import "github.com/renatopp/golden/lang"
 
 type Module struct {
 	*BaseNode
-	ModulePath string
-	Imports    []*Import
-	Functions  []*FuncDecl
-	Variables  []*VarDecl
+	Path      string
+	Imports   []*Import
+	Functions []*FuncDecl
+	Variables []*VarDecl
 }
 
 func NewModule(token *lang.Token, path string, imports []*Import, functions []*FuncDecl, variables []*VarDecl) *Module {
@@ -16,10 +16,10 @@ func NewModule(token *lang.Token, path string, imports []*Import, functions []*F
 			ValueExpressionKind,
 			token,
 		),
-		ModulePath: path,
-		Imports:    imports,
-		Functions:  functions,
-		Variables:  variables,
+		Path:      path,
+		Imports:   imports,
+		Functions: functions,
+		Variables: variables,
 	}
 }
 

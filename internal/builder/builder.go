@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/codegen"
 	"github.com/renatopp/golden/internal/compiler/env"
-	"github.com/renatopp/golden/internal/compiler/girl"
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
@@ -105,7 +105,7 @@ func (b *Builder) build() *BuildResult {
 	buildGlobalScope(ctx)
 	semanticAnalysis(ctx)
 	checkMain(ctx)
-	convertIr(ctx)
+	generateCode(ctx)
 
 	return res
 }
@@ -215,6 +215,7 @@ func semanticAnalysis(ctx *BuildContext) {
 		// create type instances for all modules
 		for _, mod := range mods {
 			scope := ctx.GlobalScope.New()
+			scope.IsModule = true
 			mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
 		}
 
@@ -256,16 +257,17 @@ func checkMain(ctx *BuildContext) {
 	}
 }
 
-func convertIr(ctx *BuildContext) {
-	writer := girl.NewConverter()
+func generateCode(ctx *BuildContext) {
+	cg := codegen.NewCodegen()
 
+	cg.StartGeneration()
 	for _, pkg := range ctx.DependencyOrder {
+		cg.StartPackage()
 		mods := pkg.Modules.Values()
-
-		modAsts := []*ast.Module{}
 		for _, mod := range mods {
-			modAsts = append(modAsts, mod.Root)
+			mod.Root.Accept(cg)
 		}
-		writer.Process(modAsts)
+		cg.EndPackage()
 	}
+	cg.EndGeneration()
 }

@@ -330,6 +330,9 @@ func (c *TypeChecker) VisitFuncDecl(node *ast.FuncDecl) {
 	c.popScope()
 
 	fn := types.NewFunction(node, params, ret)
+	if !c.scope().IsModule {
+		errors.ThrowAtNode(node, errors.TemporaryImplementationError, "closures are temporarily disabled")
+	}
 	if node.Name.Has() {
 		node.Name.Unwrap().SetType(fn)
 		node.SetType(types.Void)

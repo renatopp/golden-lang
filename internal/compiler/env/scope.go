@@ -54,10 +54,11 @@ func (s *ScopeMap) Clear() {
 //
 
 type Scope struct {
-	Depth  int
-	Parent *Scope
-	Types  *ScopeMap
-	Values *ScopeMap
+	Depth    int
+	IsModule bool
+	Parent   *Scope
+	Types    *ScopeMap
+	Values   *ScopeMap
 }
 
 func NewScope() *Scope {

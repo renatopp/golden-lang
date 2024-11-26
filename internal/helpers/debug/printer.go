@@ -40,7 +40,7 @@ func (p *AstPrinter) VisitModule(node *ast.Module) {
 	p.inc()
 	defer p.dec()
 
-	p.print("- [module %s]", node.ModulePath)
+	p.print("- [module %s]", node.Path)
 	p.printType(node)
 	for _, stmt := range node.Imports {
 		stmt.Accept(p)
