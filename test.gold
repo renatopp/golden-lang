@@ -1,4 +1,2 @@
 let x = 2
-
-fn main() {
-}
+fn main() Int { 2}

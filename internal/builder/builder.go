@@ -236,11 +236,12 @@ func (b *Builder) checkMain() {
 }
 
 func (b *Builder) generateCode() {
-	cg := codegen.NewCodegen()
+	cg := codegen.NewCodegen(b.opts.LocalTargetPath)
 
 	cg.StartGeneration()
 	for _, pkg := range b.ctx.DependencyOrder {
-		cg.StartPackage()
+		imports := pkg.Imports.Values()
+		cg.StartPackage(pkg.Path, imports)
 		mods := pkg.Modules.Values()
 		for _, mod := range mods {
 			mod.Root.Accept(cg)
