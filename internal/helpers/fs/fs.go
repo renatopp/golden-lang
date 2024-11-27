@@ -18,10 +18,13 @@ import (
 
 var Separator = "/"
 var WorkingDir = ""
+var GlobalLangDir = ""
 
 func init() {
 	Separator = string(filepath.Separator)
 	WorkingDir, _ = os.Getwd()
+	GlobalLangDir, _ = os.UserCacheDir()
+	GlobalLangDir, _ = GetAbsolutePath(filepath.Join(GlobalLangDir, ".golden"))
 }
 
 // Checks ---------------------------------------------------------------------
@@ -42,10 +45,6 @@ func CheckFolderExists(path string) error {
 	}
 
 	return nil
-}
-
-func GetWorkingDir() string {
-	return WorkingDir
 }
 
 func IsFileExtension(path, extension string, sensitive bool) bool {
@@ -75,6 +74,41 @@ var validModuleName = regexp.MustCompile(`^[a-z_][a-z0-9_]*$`)
 
 func IsModuleNameValid(moduleName string) bool {
 	return validModuleName.MatchString(moduleName)
+}
+
+// General Utilities ----------------------------------------------------------
+func GetWorkingDir() string {
+	return WorkingDir
+}
+
+func GetGlobalLangPath() string {
+	return GlobalLangDir
+}
+
+func JoinLangPath(p ...string) string {
+	return filepath.Join(append([]string{GlobalLangDir}, p...)...)
+}
+
+func JoinProjectPath(p ...string) string {
+	return filepath.Join(append([]string{WorkingDir}, p...)...)
+}
+
+// Returns the default binary name for the given file
+func GetBinaryName(fileName string) string {
+	trimmed := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	if os.PathSeparator == '\\' {
+		trimmed += ".exe"
+	}
+	return trimmed
+}
+
+func GuaranteeDirectoryExists(path string) error {
+	if err := CheckFolderExists(path); err != nil {
+		if err := os.MkdirAll(path, os.ModePerm); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // General Utilities ----------------------------------------------------------

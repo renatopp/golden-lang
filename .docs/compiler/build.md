@@ -1,0 +1,7 @@
+
+```
+project/
+  .cache/
+  build/
+  src/
+```

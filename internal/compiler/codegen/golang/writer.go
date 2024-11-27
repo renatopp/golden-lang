@@ -13,7 +13,8 @@ type Writer struct {
 }
 
 func (w *Writer) Pop()           {}
-func (w *Writer) PushFile()      {}
+func (w *Writer) PushPackage()   {}
+func (w *Writer) PushModule()    {}
 func (w *Writer) PushVarDecl()   {}
 func (w *Writer) PushFnDecl()    {}
 func (w *Writer) PushBlock()     {}
@@ -28,9 +29,9 @@ func (w *Writer) PushFuncAppl()  {}
 func (w *Writer) PushBinaryOp()  {}
 func (w *Writer) PushUnaryOp()   {}
 
-type File struct {
-}
+// type File struct {
+// }
 
-func (f *File) Open()   {}
-func (f *File) Close()  {}
-func (f *File) String() {}
+// func (f *File) Open()   {}
+// func (f *File) Close()  {}
+// func (f *File) String() {}

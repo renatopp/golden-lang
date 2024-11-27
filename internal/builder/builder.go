@@ -1,63 +1,19 @@
 package builder
 
 import (
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/codegen"
 	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
-	"github.com/renatopp/golden/internal/helpers/events"
 	"github.com/renatopp/golden/internal/helpers/fs"
-	"github.com/renatopp/golden/lang"
 )
-
-//
-//
-//
-
-type BuildContext struct {
-	Options         *BuildOptions
-	PackageRegistry *ds.SyncMap[string, *Package]
-	ModuleRegistry  *ds.SyncMap[string, *Module]
-	EntryPackage    *Package
-	EntryModule     *Module
-	DependencyOrder []*Package
-	GlobalScope     *env.Scope
-}
-
-//
-//
-//
-
-type BuildOptions struct {
-	EntryFilePath          string // Absolute path of the entry file containing main function
-	WorkingDir             string // Absolute path of the working directory
-	OnTokensReady          *events.Signal2[*Module, []*lang.Token]
-	OnAstReady             *events.Signal2[*Module, *ast.Module]
-	OnDependencyGraphReady *events.Signal1[[]*Package]
-	OnTypeCheckReady       *events.Signal3[*Module, *ast.Module, *env.Scope]
-}
-
-func NewBuildOptions(fileName string) *BuildOptions {
-	return &BuildOptions{
-		EntryFilePath:          fileName,
-		WorkingDir:             fs.GetWorkingDir(),
-		OnTokensReady:          events.NewSignal2[*Module, []*lang.Token](),
-		OnAstReady:             events.NewSignal2[*Module, *ast.Module](),
-		OnDependencyGraphReady: events.NewSignal1[[]*Package](),
-		OnTypeCheckReady:       events.NewSignal3[*Module, *ast.Module, *env.Scope](),
-	}
-}
-
-//
-//
-//
 
 type BuildResult struct {
 	Elapsed time.Duration
@@ -68,12 +24,14 @@ type BuildResult struct {
 //
 
 type Builder struct {
-	Options *BuildOptions
+	ctx  *BuildContext
+	opts *BuildOptions
 }
 
 func NewBuilder(opts *BuildOptions) *Builder {
 	return &Builder{
-		Options: opts,
+		ctx:  nil,
+		opts: opts,
 	}
 }
 
@@ -89,29 +47,30 @@ func (b *Builder) Build() (res *BuildResult, err error) {
 
 func (b *Builder) build() *BuildResult {
 	res := &BuildResult{}
-	ctx := &BuildContext{
-		Options:         b.Options,
+	b.ctx = &BuildContext{
+		Options:         b.opts,
 		PackageRegistry: ds.NewSyncMap[string, *Package](),
 		ModuleRegistry:  ds.NewSyncMap[string, *Module](),
 		EntryPackage:    nil,
 		EntryModule:     nil,
 	}
 
-	fs.WorkingDir = ctx.Options.WorkingDir
-	validateEntry(ctx)
-	loadPackages(ctx)
-	checkEntries(ctx)
-	buildDependencyGraph(ctx)
-	buildGlobalScope(ctx)
-	semanticAnalysis(ctx)
-	checkMain(ctx)
-	generateCode(ctx)
+	fs.WorkingDir = b.ctx.Options.WorkingDir
+	b.validateEntry()
+	b.checkCacheFolders()
+	b.loadPackages()
+	b.checkEntries()
+	b.buildDependencyGraph()
+	b.buildGlobalScope()
+	b.semanticAnalysis()
+	b.checkMain()
+	b.generateCode()
 
 	return res
 }
 
-func validateEntry(ctx *BuildContext) {
-	inputPath := ctx.Options.EntryFilePath
+func (b *Builder) validateEntry() {
+	inputPath := b.ctx.Options.EntryFilePath
 
 	extension := fs.GetFileExtension(inputPath)
 	if extension == "" {
@@ -139,16 +98,35 @@ func validateEntry(ctx *BuildContext) {
 		errors.Throw(errors.InvalidFileError, "input file '%s' does not have a valid name", inputPath)
 	}
 
-	ctx.Options.EntryFilePath = absPath
+	b.ctx.Options.EntryFilePath = absPath
 }
 
-func loadPackages(ctx *BuildContext) {
+func (b *Builder) checkCacheFolders() {
+	if err := fs.GuaranteeDirectoryExists(b.opts.GlobalCachePath); err != nil {
+		errors.Throw(errors.InternalError, "could not create global cache path")
+	}
+	if err := fs.GuaranteeDirectoryExists(b.opts.GlobalTargetPath); err != nil {
+		errors.Throw(errors.InternalError, "could not create global target path")
+	}
+	if err := fs.GuaranteeDirectoryExists(b.opts.LocalCachePath); err != nil {
+		errors.Throw(errors.InternalError, "could not create local cache path")
+	}
+	if err := fs.GuaranteeDirectoryExists(b.opts.LocalTargetPath); err != nil {
+		errors.Throw(errors.InternalError, "could not create local target path")
+	}
+	outputDir := filepath.Dir(b.opts.OutputFilePath)
+	if err := fs.GuaranteeDirectoryExists(outputDir); err != nil {
+		errors.Throw(errors.InternalError, "could not create output file path")
+	}
+}
+
+func (b *Builder) loadPackages() {
 	l := &loader{
-		ctx:     ctx,
+		ctx:     b.ctx,
 		errors:  ds.NewSyncList[error](),
 		pending: sync.WaitGroup{},
 	}
-	l.discover(ctx.Options.EntryFilePath)
+	l.discover(b.ctx.Options.EntryFilePath)
 	l.pending.Wait()
 
 	if l.errors.Len() > 0 {
@@ -157,32 +135,32 @@ func loadPackages(ctx *BuildContext) {
 	}
 }
 
-func checkEntries(ctx *BuildContext) {
-	modulePath := ctx.Options.EntryFilePath
+func (b *Builder) checkEntries() {
+	modulePath := b.ctx.Options.EntryFilePath
 	packagePath := fs.ModulePath2PackagePath(modulePath)
-	ctx.EntryModule, _ = ctx.ModuleRegistry.Get(modulePath)
-	ctx.EntryPackage, _ = ctx.PackageRegistry.Get(packagePath)
+	b.ctx.EntryModule, _ = b.ctx.ModuleRegistry.Get(modulePath)
+	b.ctx.EntryPackage, _ = b.ctx.PackageRegistry.Get(packagePath)
 }
 
-func buildDependencyGraph(ctx *BuildContext) {
-	registry := ctx.PackageRegistry.Items()
-	entry := ctx.EntryPackage.Path
+func (b *Builder) buildDependencyGraph() {
+	registry := b.ctx.PackageRegistry.Items()
+	entry := b.ctx.EntryPackage.Path
 
 	visited := map[string]bool{}
 	stack := map[string]bool{}
 	order := []*Package{}
 	pkg := registry[entry]
-	ctx.DependencyOrder = buildDependencyGraphLoop(registry, pkg, visited, stack, order)
-	ctx.Options.OnDependencyGraphReady.Emit(ctx.DependencyOrder)
+	b.ctx.DependencyOrder = b.buildDependencyGraphLoop(registry, pkg, visited, stack, order)
+	b.ctx.Options.OnDependencyGraphReady.Emit(b.ctx.DependencyOrder)
 }
 
-func buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
+func (b *Builder) buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
 	visited[pkg.Path] = true
 	stack[pkg.Path] = true
 	for _, dep := range pkg.Imports.Values() {
 		if !visited[dep] {
 			p := registry[dep]
-			order = buildDependencyGraphLoop(registry, p, visited, stack, order)
+			order = b.buildDependencyGraphLoop(registry, p, visited, stack, order)
 
 		} else if stack[dep] {
 			names := []string{}
@@ -197,24 +175,24 @@ func buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visite
 	return append(order, pkg)
 }
 
-func buildGlobalScope(ctx *BuildContext) {
-	ctx.GlobalScope = env.NewScope()
-	ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
-	ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
-	ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
-	ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
-	ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
+func (b *Builder) buildGlobalScope() {
+	b.ctx.GlobalScope = env.NewScope()
+	b.ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
+	b.ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
+	b.ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
+	b.ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
+	b.ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
 }
 
-func semanticAnalysis(ctx *BuildContext) {
+func (b *Builder) semanticAnalysis() {
 	checker := semantic.NewTypeChecker()
 
-	for _, pkg := range ctx.DependencyOrder {
+	for _, pkg := range b.ctx.DependencyOrder {
 		mods := pkg.Modules.Values()
 
 		// create type instances for all modules
 		for _, mod := range mods {
-			scope := ctx.GlobalScope.New()
+			scope := b.ctx.GlobalScope.New()
 			scope.IsModule = true
 			mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
 		}
@@ -241,27 +219,27 @@ func semanticAnalysis(ctx *BuildContext) {
 		// resolve everything
 		for _, mod := range mods {
 			checker.Resolve(mod.Root)
-			ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
+			b.ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
 		}
 	}
 }
 
-func checkMain(ctx *BuildContext) {
-	main := ctx.EntryModule.Scope().Values.Get("main")
+func (b *Builder) checkMain() {
+	main := b.ctx.EntryModule.Scope().Values.Get("main")
 	if main == nil {
-		errors.Throw(errors.InvalidEntryFile, "entry module '%s' does not contain a 'main' function", ctx.EntryModule.Path)
+		errors.Throw(errors.InvalidEntryFile, "entry module '%s' does not contain a 'main' function", b.ctx.EntryModule.Path)
 	}
 
 	if !types.NoopFn.Compatible(main.Type) {
-		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", ctx.EntryModule.Path)
+		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", b.ctx.EntryModule.Path)
 	}
 }
 
-func generateCode(ctx *BuildContext) {
+func (b *Builder) generateCode() {
 	cg := codegen.NewCodegen()
 
 	cg.StartGeneration()
-	for _, pkg := range ctx.DependencyOrder {
+	for _, pkg := range b.ctx.DependencyOrder {
 		cg.StartPackage()
 		mods := pkg.Modules.Values()
 		for _, mod := range mods {
