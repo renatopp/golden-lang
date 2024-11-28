@@ -42,7 +42,7 @@ func (c *Run) Run() error {
 	opts := builder.NewBuildOptions(args[0])
 	if *flagDebug {
 		opts.OnTokensReady.Subscribe(debug.PrettyPrintTokens)
-		// opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
+		opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
 		// opts.OnDependencyGraphReady.Subscribe(printDependencyGraph)
 		// opts.OnTypeCheckReady.Subscribe(printTypedAst)
 	}

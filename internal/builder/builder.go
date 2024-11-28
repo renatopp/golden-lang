@@ -56,7 +56,7 @@ func (b *Builder) build() *BuildResult {
 	fs.WorkingDir = b.ctx.Options.WorkingDir
 	b.validateEntry()
 	b.checkCacheFolders()
-	b.loadPackages()
+	b.loadModules()
 	// b.checkEntries()
 	// b.buildDependencyGraph()
 	// b.buildGlobalScope()
@@ -118,7 +118,7 @@ func (b *Builder) checkCacheFolders() {
 	}
 }
 
-func (b *Builder) loadPackages() {
+func (b *Builder) loadModules() {
 	l := &loader{
 		ctx:     b.ctx,
 		errors:  ds.NewSyncList[error](),

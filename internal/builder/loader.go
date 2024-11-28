@@ -8,6 +8,7 @@ import (
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
+	"github.com/renatopp/golden/internal/helpers/safe"
 )
 
 type loader struct {
@@ -50,14 +51,14 @@ func (l *loader) loadModule(modulePath string) {
 	l.ctx.Options.OnTokensReady.Emit(file, tokens)
 
 	// Convert tokens to AST
-	// parser := syntax.NewParser(tokens, modulePath)
-	// root, err := syntax.Parse(tokens, modulePath)
-	// if err != nil {
-	// 	l.errors.Add(err)
-	// 	return
-	// }
-	// module.Root = root
-	// l.ctx.Options.OnAstReady.Emit(module, root)
+	parser := syntax.NewParser(tokens)
+	root, err := parser.Parse()
+	if err != nil {
+		l.errors.Add(err)
+		return
+	}
+	file.Root = safe.Some(root)
+	l.ctx.Options.OnAstReady.Emit(file, root)
 
 	// // Add the module to the package
 	// pkg.Modules.Add(module)

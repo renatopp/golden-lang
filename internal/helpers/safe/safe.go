@@ -29,6 +29,14 @@ func (o *Optional[T]) If(fn func(T)) {
 	}
 }
 
+func (o *Optional[T]) IfElse(fn func(T), elseFn func()) {
+	if o.present {
+		fn(o.value)
+	} else {
+		elseFn()
+	}
+}
+
 func Some[T any](value T) Optional[T] {
 	return Optional[T]{value, true}
 }

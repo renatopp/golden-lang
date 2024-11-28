@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/renatopp/golden/internal/builder"
+	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/token"
 )
 
@@ -12,21 +13,19 @@ func Escape(s string) string {
 	return strings.ReplaceAll(s, "\n", "\\n")
 }
 
-func PrettyPrintTokens(module *builder.File, tokens []token.Token) {
-	fmt.Printf("Tokens for module %s:\n", module.Path)
+func PrettyPrintTokens(file *builder.File, tokens []token.Token) {
+	fmt.Printf("Tokens for module %s:\n", file.Path)
 	for _, token := range tokens {
 		fmt.Printf("- [%s] (%s)\n", token.Display(), Escape(token.Value))
 	}
 	println()
 }
 
-// func PrettyPrintAst(module *builder.Module, root *ast.Module) {
-// 	fmt.Printf("AST for module %s:\n", module.Path)
-
-// 	printer := NewAstPrinter()
-// 	root.Accept(printer)
-// 	println()
-// }
+func PrettyPrintAst(file *builder.File, root ast.Module) {
+	fmt.Printf("AST for module %s:\n", file.Path)
+	root.Visit(NewAstPrinter())
+	println()
+}
 
 // func PrettyPrintScope(scope *env.Scope) {
 // 	if scope == nil {

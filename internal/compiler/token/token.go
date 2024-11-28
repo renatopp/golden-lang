@@ -13,10 +13,11 @@ type Span struct {
 type TokenKind uint64
 
 const (
-	TUnknown TokenKind = iota
-	TEof               // \0
-	TNewline           // \n
-	TComment           // -- comment
+	TUnknown   TokenKind = iota
+	TEof                 // \0
+	TNewline             // \n
+	TComment             // -- comment
+	TSemicolon           // ;
 
 	TConst     // const
 	TVarIdent  // variable identifier
@@ -64,7 +65,21 @@ type Token struct {
 	Value string
 }
 
+func (t Token) Display() string {
+	return KindToLiteral(t.Kind)
+}
+
+func (t Token) Is(kind ...TokenKind) bool {
+	for _, k := range kind {
+		if t.Kind == k {
+			return true
+		}
+	}
+	return false
+}
+
 var literal2kind = map[string]TokenKind{
+	";":     TSemicolon,
 	"const": TConst,
 	"true":  TTrue,
 	"false": TFalse,
@@ -94,6 +109,7 @@ var kind2literal = map[TokenKind]string{
 	TEof:          "eof",
 	TNewline:      "\\n",
 	TComment:      "--",
+	TSemicolon:    ";",
 	TConst:        "const",
 	TVarIdent:     "value identifier",
 	TTypeIdent:    "type identifier",
@@ -138,8 +154,4 @@ func KindToLiteral(kind TokenKind) string {
 		return lit
 	}
 	return fmt.Sprintf("not registered '%d'", kind)
-}
-
-func (t Token) Display() string {
-	return KindToLiteral(t.Kind)
 }

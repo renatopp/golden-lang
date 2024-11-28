@@ -76,8 +76,8 @@ func (e GoldenError) WithToken(token token.Token) GoldenError {
 }
 
 func (e GoldenError) WithNode(node ast.Node) GoldenError {
-	// e.token = node.Token()
-	// e.loc = e.token.Loc
+	e.Token = safe.Some(node.GetToken())
+	e.Loc = safe.Some(e.Token.Unwrap().Loc)
 	e.Node = safe.Some(node)
 	return e
 }

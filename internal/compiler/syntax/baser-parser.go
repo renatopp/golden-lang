@@ -46,6 +46,16 @@ func (p *BaseParser) SkipN(n int, kinds ...token.TokenKind) []token.Token {
 	return res
 }
 
+func (p *BaseParser) SkipNewlines() {
+	p.Skip(token.TNewline)
+}
+
+func (p *BaseParser) SkipSeparator(kind ...token.TokenKind) {
+	p.SkipNewlines()
+	p.SkipN(1, kind...)
+	p.SkipNewlines()
+}
+
 func (p *BaseParser) IsNext(kinds ...token.TokenKind) bool {
 	next := p.Peek()
 	for _, kind := range kinds {
@@ -79,6 +89,34 @@ func (p *BaseParser) Expect(kinds ...token.TokenKind) {
 }
 
 func (p *BaseParser) ValuePrecedence(t token.Token) int {
+	switch {
+	case t.Is(token.TAssign):
+		return 10
+	// case t.Is(token.TPipe):
+	// 	return 20
+	case t.Is(token.TOr):
+		return 40
+	case t.Is(token.TXor):
+		return 45
+	case t.Is(token.TAnd):
+		return 50
+	case t.Is(token.TEqual, token.TNotEqual):
+		return 70
+	case t.Is(token.TLess, token.TGreater, token.TLessEqual, token.TGreaterEqual):
+		return 80
+	case t.Is(token.TPlus, token.TMinus):
+		return 90
+	case t.Is(token.TStar, token.TSlash):
+		return 100
+	case t.Is(token.TSpaceShip):
+		return 110
+	case t.Is(token.TPercent):
+		return 120
+		// case t.Is(token.TLparen):
+		// return 130
+		// case t.Is(token.TDot):
+		// return 140
+	}
 	return 0
 }
 

@@ -48,9 +48,10 @@ func (l *Lexer) lex() []token.Token {
 }
 
 func (l *Lexer) next() (token.Token, bool) {
-	l.fromLine = l.line
-	l.fromColumn = l.column
 	for !l.scanner.IsFinished() {
+		l.fromLine = l.line
+		l.fromColumn = l.column
+
 		c0 := l.scanner.PeekAt(0)
 		c1 := l.scanner.PeekAt(1)
 		c2 := l.scanner.PeekAt(2)
@@ -269,7 +270,7 @@ func (l *Lexer) eatComment() string {
 		}
 
 		res += string(c)
-		l.scanner.Eat()
+		l.eat()
 	}
 	return res
 }
@@ -285,7 +286,7 @@ func (l *Lexer) eatIdentifier() string {
 		}
 
 		res += string(c)
-		l.scanner.Eat()
+		l.eat()
 	}
 	return res
 }
@@ -427,15 +428,22 @@ func (l *Lexer) eatBinary() string {
 func (l *Lexer) eatRawString() string {
 	res := ""
 	escaping := false
+	first := l.eat()
 	for {
 		c := l.scanner.Peek()
+		println(string(c))
+
+		if runes.IsOneOf(c, '\r') {
+			l.eat()
+			continue
+		}
 
 		if runes.IsEof(c) {
 			errors.ThrowAtLocation(l.span(), errors.ParserError, "unexpected end of file")
 			break
 		}
 
-		if !escaping && c == '\'' {
+		if !escaping && c == first {
 			break
 		}
 
@@ -445,11 +453,11 @@ func (l *Lexer) eatRawString() string {
 			continue
 		}
 
-		if escaping && c != '\'' {
+		if escaping && c != first {
 			escaping = false
 			r, err := strconv.Unquote(`"\` + string(c) + `"`)
 			if err != nil {
-				errors.ThrowAtLocation(l.span(), errors.ParserError, err.Error())
+				errors.ThrowAtLocation(l.span(), errors.ParserError, "%v", err.Error())
 			}
 			c = []rune(r)[0]
 		}
@@ -457,5 +465,6 @@ func (l *Lexer) eatRawString() string {
 		res += string(c)
 		l.eat()
 	}
+	l.eat()
 	return res
 }
