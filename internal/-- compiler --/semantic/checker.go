@@ -130,18 +130,22 @@ func (c *TypeChecker) VisitImport(node *ast.Import) {
 
 func (c *TypeChecker) VisitInt(node *ast.Int) {
 	node.SetType(types.Int)
+	node.SetConstant()
 }
 
 func (c *TypeChecker) VisitFloat(node *ast.Float) {
 	node.SetType(types.Float)
+	node.SetConstant()
 }
 
 func (c *TypeChecker) VisitString(node *ast.String) {
 	node.SetType(types.String)
+	node.SetConstant()
 }
 
 func (c *TypeChecker) VisitBool(node *ast.Bool) {
 	node.SetType(types.Bool)
+	node.SetConstant()
 }
 
 func (c *TypeChecker) VisitVarIdent(node *ast.VarIdent) {
@@ -229,8 +233,6 @@ func (c *TypeChecker) VisitBinaryOp(node *ast.BinaryOp) {
 
 	switch node.Operator {
 	case "+":
-		c.expectType(node.Left, types.Int, types.Float, types.String)
-		c.expectType(node.Right, types.Int, types.Float, types.String)
 		c.expectCompatible(node.Left, node.Right)
 		node.SetType(node.Left.Type())
 

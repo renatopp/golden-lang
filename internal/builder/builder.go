@@ -2,14 +2,14 @@ package builder
 
 import (
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/renatopp/golden/internal/compiler/codegen"
-	"github.com/renatopp/golden/internal/compiler/env"
-	"github.com/renatopp/golden/internal/compiler/semantic"
-	"github.com/renatopp/golden/internal/compiler/types"
+	// "github.com/renatopp/golden/internal/compiler/codegen"
+	// "github.com/renatopp/golden/internal/compiler/env"
+	// "github.com/renatopp/golden/internal/compiler/semantic"
+	// "github.com/renatopp/golden/internal/compiler/types"
+
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -48,23 +48,21 @@ func (b *Builder) Build() (res *BuildResult, err error) {
 func (b *Builder) build() *BuildResult {
 	res := &BuildResult{}
 	b.ctx = &BuildContext{
-		Options:         b.opts,
-		PackageRegistry: ds.NewSyncMap[string, *Package](),
-		ModuleRegistry:  ds.NewSyncMap[string, *Module](),
-		EntryPackage:    nil,
-		EntryModule:     nil,
+		Options:        b.opts,
+		ModuleRegistry: ds.NewSyncMap[string, *File](),
+		EntryModule:    nil,
 	}
 
 	fs.WorkingDir = b.ctx.Options.WorkingDir
 	b.validateEntry()
 	b.checkCacheFolders()
 	b.loadPackages()
-	b.checkEntries()
-	b.buildDependencyGraph()
-	b.buildGlobalScope()
-	b.semanticAnalysis()
-	b.checkMain()
-	b.generateCode()
+	// b.checkEntries()
+	// b.buildDependencyGraph()
+	// b.buildGlobalScope()
+	// b.semanticAnalysis()
+	// b.checkMain()
+	// b.generateCode()
 
 	return res
 }
@@ -135,118 +133,118 @@ func (b *Builder) loadPackages() {
 	}
 }
 
-func (b *Builder) checkEntries() {
-	modulePath := b.ctx.Options.EntryFilePath
-	packagePath := fs.ModulePath2PackagePath(modulePath)
-	b.ctx.EntryModule, _ = b.ctx.ModuleRegistry.Get(modulePath)
-	b.ctx.EntryPackage, _ = b.ctx.PackageRegistry.Get(packagePath)
-}
+// func (b *Builder) checkEntries() {
+// 	modulePath := b.ctx.Options.EntryFilePath
+// 	packagePath := fs.ModulePath2PackagePath(modulePath)
+// 	b.ctx.EntryModule, _ = b.ctx.ModuleRegistry.Get(modulePath)
+// 	b.ctx.EntryPackage, _ = b.ctx.PackageRegistry.Get(packagePath)
+// }
 
-func (b *Builder) buildDependencyGraph() {
-	registry := b.ctx.PackageRegistry.Items()
-	entry := b.ctx.EntryPackage.Path
+// func (b *Builder) buildDependencyGraph() {
+// 	registry := b.ctx.PackageRegistry.Items()
+// 	entry := b.ctx.EntryPackage.Path
 
-	visited := map[string]bool{}
-	stack := map[string]bool{}
-	order := []*Package{}
-	pkg := registry[entry]
-	b.ctx.DependencyOrder = b.buildDependencyGraphLoop(registry, pkg, visited, stack, order)
-	b.ctx.Options.OnDependencyGraphReady.Emit(b.ctx.DependencyOrder)
-}
+// 	visited := map[string]bool{}
+// 	stack := map[string]bool{}
+// 	order := []*Package{}
+// 	pkg := registry[entry]
+// 	b.ctx.DependencyOrder = b.buildDependencyGraphLoop(registry, pkg, visited, stack, order)
+// 	b.ctx.Options.OnDependencyGraphReady.Emit(b.ctx.DependencyOrder)
+// }
 
-func (b *Builder) buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
-	visited[pkg.Path] = true
-	stack[pkg.Path] = true
-	for _, dep := range pkg.Imports.Values() {
-		if !visited[dep] {
-			p := registry[dep]
-			order = b.buildDependencyGraphLoop(registry, p, visited, stack, order)
+// func (b *Builder) buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
+// 	visited[pkg.Path] = true
+// 	stack[pkg.Path] = true
+// 	for _, dep := range pkg.Imports.Values() {
+// 		if !visited[dep] {
+// 			p := registry[dep]
+// 			order = b.buildDependencyGraphLoop(registry, p, visited, stack, order)
 
-		} else if stack[dep] {
-			names := []string{}
-			for k := range stack {
-				names = append(names, k)
-			}
-			deps := strings.Join(names, "\n- ")
-			errors.Throw(errors.CircularReferenceError, "cyclic dependency detected importing packages: \n- %s", deps)
-		}
-	}
-	stack[pkg.Path] = false
-	return append(order, pkg)
-}
+// 		} else if stack[dep] {
+// 			names := []string{}
+// 			for k := range stack {
+// 				names = append(names, k)
+// 			}
+// 			deps := strings.Join(names, "\n- ")
+// 			errors.Throw(errors.CircularReferenceError, "cyclic dependency detected importing packages: \n- %s", deps)
+// 		}
+// 	}
+// 	stack[pkg.Path] = false
+// 	return append(order, pkg)
+// }
 
-func (b *Builder) buildGlobalScope() {
-	b.ctx.GlobalScope = env.NewScope()
-	b.ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
-	b.ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
-	b.ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
-	b.ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
-	b.ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
-}
+// func (b *Builder) buildGlobalScope() {
+// 	b.ctx.GlobalScope = env.NewScope()
+// 	b.ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
+// 	b.ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
+// 	b.ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
+// 	b.ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
+// 	b.ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
+// }
 
-func (b *Builder) semanticAnalysis() {
-	checker := semantic.NewTypeChecker()
+// func (b *Builder) semanticAnalysis() {
+// 	checker := semantic.NewTypeChecker()
 
-	for _, pkg := range b.ctx.DependencyOrder {
-		mods := pkg.Modules.Values()
+// 	for _, pkg := range b.ctx.DependencyOrder {
+// 		mods := pkg.Modules.Values()
 
-		// create type instances for all modules
-		for _, mod := range mods {
-			scope := b.ctx.GlobalScope.New()
-			scope.IsModule = true
-			mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
-		}
+// 		// create type instances for all modules
+// 		for _, mod := range mods {
+// 			scope := b.ctx.GlobalScope.New()
+// 			scope.IsModule = true
+// 			mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
+// 		}
 
-		// attach type instances to the module scopes
-		for _, mod := range mods {
-			modType := mod.Root.Type().(*types.Module)
+// 		// attach type instances to the module scopes
+// 		for _, mod := range mods {
+// 			modType := mod.Root.Type().(*types.Module)
 
-			for _, other := range mods {
-				if mod == other {
-					continue
-				}
+// 			for _, other := range mods {
+// 				if mod == other {
+// 					continue
+// 				}
 
-				alias := fs.ModulePath2ModuleName(other.Path)
-				modType.Scope.Values.Set(alias, env.B(other.Root.Type()))
-			}
-		}
+// 				alias := fs.ModulePath2ModuleName(other.Path)
+// 				modType.Scope.Values.Set(alias, env.B(other.Root.Type()))
+// 			}
+// 		}
 
-		// pre-resolve all types, functions and module variables
-		for _, mod := range mods {
-			checker.PreResolve(mod.Root)
-		}
+// 		// pre-resolve all types, functions and module variables
+// 		for _, mod := range mods {
+// 			checker.PreResolve(mod.Root)
+// 		}
 
-		// resolve everything
-		for _, mod := range mods {
-			checker.Resolve(mod.Root)
-			b.ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
-		}
-	}
-}
+// 		// resolve everything
+// 		for _, mod := range mods {
+// 			checker.Resolve(mod.Root)
+// 			b.ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
+// 		}
+// 	}
+// }
 
-func (b *Builder) checkMain() {
-	main := b.ctx.EntryModule.Scope().Values.Get("main")
-	if main == nil {
-		errors.Throw(errors.InvalidEntryFile, "entry module '%s' does not contain a 'main' function", b.ctx.EntryModule.Path)
-	}
+// func (b *Builder) checkMain() {
+// 	main := b.ctx.EntryModule.Scope().Values.Get("main")
+// 	if main == nil {
+// 		errors.Throw(errors.InvalidEntryFile, "entry module '%s' does not contain a 'main' function", b.ctx.EntryModule.Path)
+// 	}
 
-	if !types.NoopFn.Compatible(main.Type) {
-		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", b.ctx.EntryModule.Path)
-	}
-}
+// 	if !types.NoopFn.Compatible(main.Type) {
+// 		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", b.ctx.EntryModule.Path)
+// 	}
+// }
 
-func (b *Builder) generateCode() {
-	cg := codegen.NewCodegen(b.opts.LocalTargetPath)
+// func (b *Builder) generateCode() {
+// 	cg := codegen.NewCodegen(b.opts.LocalTargetPath)
 
-	cg.StartGeneration()
-	for _, pkg := range b.ctx.DependencyOrder {
-		imports := pkg.Imports.Values()
-		cg.StartPackage(pkg.Path, imports)
-		mods := pkg.Modules.Values()
-		for _, mod := range mods {
-			mod.Root.Accept(cg)
-		}
-		cg.EndPackage()
-	}
-	cg.EndGeneration()
-}
+// 	cg.StartGeneration()
+// 	for _, pkg := range b.ctx.DependencyOrder {
+// 		imports := pkg.Imports.Values()
+// 		cg.StartPackage(pkg.Path, imports)
+// 		mods := pkg.Modules.Values()
+// 		for _, mod := range mods {
+// 			mod.Root.Accept(cg)
+// 		}
+// 		cg.EndPackage()
+// 	}
+// 	cg.EndGeneration()
+// }

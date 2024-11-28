@@ -23,6 +23,8 @@ type Node interface {
 	Token() *lang.Token
 	Accept(Visitor)
 	Type() Type
+	SetConstant()
+	IsConstant() bool
 	SetType(Type)
 	ExpressionKind() ExpressionKind
 	SetExpressionKind(ExpressionKind)
@@ -38,6 +40,7 @@ type BaseNode struct {
 	id             uint64
 	token          *lang.Token
 	type_          Type
+	constant       bool
 	expressionKind ExpressionKind
 }
 
@@ -53,6 +56,8 @@ func NewBaseNode(expressionKind ExpressionKind, token *lang.Token) *BaseNode {
 func (n *BaseNode) Id() uint64                            { return n.id }
 func (n *BaseNode) Token() *lang.Token                    { return n.token }
 func (n *BaseNode) Type() Type                            { return n.type_ }
+func (n *BaseNode) SetConstant()                          { n.constant = true }
+func (n *BaseNode) IsConstant() bool                      { return n.constant }
 func (n *BaseNode) SetType(t Type)                        { n.type_ = t }
 func (n *BaseNode) ExpressionKind() ExpressionKind        { return n.expressionKind }
 func (n *BaseNode) SetExpressionKind(kind ExpressionKind) { n.expressionKind = kind }

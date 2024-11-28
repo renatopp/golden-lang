@@ -1,11 +1,9 @@
 package builder
 
 import (
-	"github.com/renatopp/golden/internal/compiler/ast"
-	"github.com/renatopp/golden/internal/compiler/env"
+	"github.com/renatopp/golden/internal/compiler/token"
 	"github.com/renatopp/golden/internal/helpers/events"
 	"github.com/renatopp/golden/internal/helpers/fs"
-	"github.com/renatopp/golden/lang"
 )
 
 type BuildOptions struct {
@@ -18,10 +16,10 @@ type BuildOptions struct {
 	GlobalTargetPath string // Absolute path of the global target directory for storing transpiled files
 
 	// Events
-	OnTokensReady          *events.Signal2[*Module, []*lang.Token]
-	OnAstReady             *events.Signal2[*Module, *ast.Module]
-	OnDependencyGraphReady *events.Signal1[[]*Package]
-	OnTypeCheckReady       *events.Signal3[*Module, *ast.Module, *env.Scope]
+	OnTokensReady *events.Signal2[*File, []token.Token]
+	// OnAstReady             *events.Signal2[*File, *ast.Module]
+	// OnDependencyGraphReady *events.Signal1[[]*Package]
+	// OnTypeCheckReady       *events.Signal3[*File, *ast.Module, *env.Scope]
 }
 
 func NewBuildOptions(fileName string) *BuildOptions {
@@ -34,9 +32,9 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		LocalTargetPath:  fs.JoinProjectPath(".target"),
 		GlobalTargetPath: fs.JoinLangPath("target"),
 
-		OnTokensReady:          events.NewSignal2[*Module, []*lang.Token](),
-		OnAstReady:             events.NewSignal2[*Module, *ast.Module](),
-		OnDependencyGraphReady: events.NewSignal1[[]*Package](),
-		OnTypeCheckReady:       events.NewSignal3[*Module, *ast.Module, *env.Scope](),
+		OnTokensReady: events.NewSignal2[*File, []token.Token](),
+		// OnAstReady:             events.NewSignal2[*File, *ast.Module](),
+		// OnDependencyGraphReady: events.NewSignal1[[]*Package](),
+		// OnTypeCheckReady:       events.NewSignal3[*File, *ast.Module, *env.Scope](),
 	}
 }

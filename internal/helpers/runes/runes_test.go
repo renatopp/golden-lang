@@ -3,7 +3,7 @@ package runes_test
 import (
 	"testing"
 
-	"github.com/renatopp/golden/lang/runes"
+	"github.com/renatopp/golden/internal/helpers/runes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,12 +69,12 @@ func TestIsAlphaNumeric(t *testing.T) {
 }
 
 func TestIsAnyOf(t *testing.T) {
-	assert.True(t, runes.IsOneOf('a', []rune{'a', 'b', 'c'}))
-	assert.True(t, runes.IsOneOf('b', []rune{'a', 'b', 'c'}))
-	assert.True(t, runes.IsOneOf('c', []rune{'a', 'b', 'c'}))
-	assert.False(t, runes.IsOneOf('d', []rune{'a', 'b', 'c'}))
-	assert.False(t, runes.IsOneOf(' ', []rune{'a', 'b', 'c'}))
-	assert.False(t, runes.IsOneOf(';', []rune{'a', 'b', 'c'}))
+	assert.True(t, runes.IsOneOf('a', 'a', 'b', 'c'))
+	assert.True(t, runes.IsOneOf('b', 'a', 'b', 'c'))
+	assert.True(t, runes.IsOneOf('c', 'a', 'b', 'c'))
+	assert.False(t, runes.IsOneOf('d', 'a', 'b', 'c'))
+	assert.False(t, runes.IsOneOf(' ', 'a', 'b', 'c'))
+	assert.False(t, runes.IsOneOf(';', 'a', 'b', 'c'))
 }
 
 func TestIsHexadecimal(t *testing.T) {

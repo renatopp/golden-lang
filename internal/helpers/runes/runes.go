@@ -23,6 +23,11 @@ func IsLetter(r rune) bool {
 // Alias for IsLetter
 var IsAlpha = IsLetter
 
+// Check if a rune is a newline
+func IsNewline(r rune) bool {
+	return r == '\n'
+}
+
 // Check if a rune is a whitespace (space, tab, newline or carriage return)
 func IsWhitespace(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
@@ -44,7 +49,7 @@ func IsAlphaNumeric(r rune) bool {
 }
 
 // Check if a rune is any of the runes in the given slice
-func IsOneOf(r rune, runes []rune) bool {
+func IsOneOf(r rune, runes ...rune) bool {
 	return slices.Contains(runes, r)
 }
 

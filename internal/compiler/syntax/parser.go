@@ -2,54 +2,47 @@ package syntax
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
-	"github.com/renatopp/golden/internal/compiler/tokens"
+	"github.com/renatopp/golden/internal/compiler/token"
 	"github.com/renatopp/golden/internal/helpers/errors"
-	"github.com/renatopp/golden/lang"
 )
 
-func Parse(tokens []*lang.Token, modulePath string) (*ast.Module, error) {
-	scanner := lang.NewTokenScanner(tokens)
-	parser := &parser{
-		ModulePath:  modulePath,
-		Parser:      lang.NewParser(scanner),
-		ValueSolver: lang.NewPrattSolver[ast.Node](),
-		TypeSolver:  lang.NewPrattSolver[ast.Node](),
+type Parser struct {
+	*BaseParser
+}
+
+func NewParser(tokens []token.Token) *Parser {
+	p := &Parser{
+		BaseParser: NewBaseParser(tokens),
 	}
 
-	parser.ValueSolver.SetPrecedenceFn(parser.valuePrecedence)
-	parser.TypeSolver.SetPrecedenceFn(parser.typePrecedence)
-	parser.registerValueExpressions()
-	parser.registerTypeExpressions()
+	// p.TypeSolver.RegisterInfixFn(token.TAssign, nil)
+	// p.ValueSolver.RegisterInfixFn(token.T)
 
-	return parser.Parse()
+	return p
 }
 
-type parser struct {
-	*lang.Parser
-	ModulePath  string
-	ValueSolver *lang.PrattSolver[ast.Node]
-	TypeSolver  *lang.PrattSolver[ast.Node]
-}
-
-func (p *parser) Parse() (a *ast.Module, err error) {
+func (p *Parser) Parse() (res ast.Node, err error) {
 	err = errors.WithRecovery(func() {
-		a = p.parseModule()
+		res = p.parse()
 	})
-	return a, err
+	return res, err
 }
 
-func (p *parser) ExpectTokens(kinds ...string) {
-	if !p.IsNextTokens(kinds...) {
-		errors.ThrowAtToken(p.PeekToken(), errors.ParserError, "expected token '%s', got '%s'", kinds, p.PeekToken().Kind)
-	}
+func (p *Parser) parse() ast.Node {
+	//
+	return nil
 }
 
-func (p *parser) SkipNewlines() {
-	p.Skip(tokens.TNewline)
-}
+// func (p *Parser) parseModule() ast.Module {}
 
-func (p *parser) SkipSeparator(kind ...string) {
-	p.SkipNewlines()
-	p.SkipN(1, kind...)
-	p.SkipNewlines()
-}
+// func (p *Parser) parseInt() ast.Int {}
+// func (p *Parser) parseHex() ast.Int {}
+// func (p *Parser) parseOctal() ast.Int {}
+// func (p *Parser) parseBin() ast.Int {}
+// func (p *Parser) parseFloat() ast.Float {}
+// func (p *Parser) parseString() ast.String {}
+// func (p *Parser) parseBool() ast.Bool {}
+// func (p *Parser) parseLeftBrace() ast.Block {}
+// func (p *Parser) parseUnaryOp() ast.UnaryOp {}
+
+// func (p *Parser) parseBinOp(left ast.Node) ast.BinOp {}
