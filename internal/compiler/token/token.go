@@ -60,9 +60,9 @@ const (
 )
 
 type Token struct {
-	Kind  TokenKind
-	Loc   Span
-	Value string
+	Kind    TokenKind
+	Loc     Span
+	Literal string
 }
 
 func (t Token) Display() string {

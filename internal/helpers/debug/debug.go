@@ -16,7 +16,7 @@ func Escape(s string) string {
 func PrettyPrintTokens(file *builder.File, tokens []token.Token) {
 	fmt.Printf("Tokens for module %s:\n", file.Path)
 	for _, token := range tokens {
-		fmt.Printf("- [%s] (%s)\n", token.Display(), Escape(token.Value))
+		fmt.Printf("- [%s] (%s)\n", token.Display(), Escape(token.Literal))
 	}
 	println()
 }

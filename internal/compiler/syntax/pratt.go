@@ -3,6 +3,7 @@ package syntax
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/token"
+	"github.com/renatopp/golden/internal/helpers/safe"
 )
 
 type peekFn func() token.Token
@@ -49,14 +50,14 @@ func (p *PrattSolver) SetPrecedenceFn(fn precedenceFn) *PrattSolver {
 	return p
 }
 
-func (p *PrattSolver) SolveExpression(precedence int) ast.Node {
+func (p *PrattSolver) SolveExpression(precedence int) safe.Optional[ast.Node] {
 	prefix := p.prefixFns[p.peek().Kind]
 	if prefix == nil {
-		return nil
+		return safe.None[ast.Node]()
 	}
 	left := prefix()
 	if left == nil {
-		return nil
+		return safe.None[ast.Node]()
 	}
 
 	cur := p.peek()
@@ -90,5 +91,5 @@ func (p *PrattSolver) SolveExpression(precedence int) ast.Node {
 		}
 	}
 
-	return left
+	return safe.Some(left)
 }

@@ -69,7 +69,7 @@ func (p *BaseParser) IsNext(kinds ...token.TokenKind) bool {
 func (p *BaseParser) IsNextLiteral(literals ...string) bool {
 	next := p.Peek()
 	for _, literal := range literals {
-		if next.Value == literal {
+		if next.Literal == literal {
 			return true
 		}
 	}
@@ -86,6 +86,11 @@ func (p *BaseParser) Expect(kinds ...token.TokenKind) {
 		tok := p.Peek()
 		errors.ThrowAtToken(tok, errors.ParserError, "expected token '%s', got '%s'", list, tok.Display())
 	}
+}
+
+func (p *BaseParser) ExpectAndEat(kinds ...token.TokenKind) token.Token {
+	p.Expect(kinds...)
+	return p.Eat()
 }
 
 func (p *BaseParser) ValuePrecedence(t token.Token) int {

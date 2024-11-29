@@ -19,49 +19,36 @@ type Visitor interface {
 	VisitBlock(Block) Node
 }
 
-type ReplacerVisitor struct {
+// Use it to replace nodes in the AST.
+type Replacer struct {
 }
 
-func (v *ReplacerVisitor) VisitModule(node Module) Node {
-	node.Consts = iter.Map(node.Consts, func(e Const) Const { return e.Visit(v).(Const) })
+func (v *Replacer) VisitModule(node Module) Node {
+	node.Exprs = iter.Map(node.Exprs, func(e Node) Node { return e.Visit(v) })
 	return node
 }
-func (v *ReplacerVisitor) VisitConst(node Const) Node {
+func (v *Replacer) VisitConst(node Const) Node {
 	node.Name = node.Name.Visit(v).(VarIdent)
-	if node.TypeExpr.Has() {
-		node.TypeExpr = safe.Some(node.TypeExpr.Unwrap().Visit(v))
-	}
+	node.TypeExpr = safe.Map(node.TypeExpr, func(n Node) Node { return n.Visit(v) })
 	node.ValueExpr = node.ValueExpr.Visit(v)
 	return node
 }
-func (v *ReplacerVisitor) VisitInt(node Int) Node {
+func (v *Replacer) VisitInt(node Int) Node             { return node }
+func (v *Replacer) VisitFloat(node Float) Node         { return node }
+func (v *Replacer) VisitString(node String) Node       { return node }
+func (v *Replacer) VisitBool(node Bool) Node           { return node }
+func (v *Replacer) VisitVarIdent(node VarIdent) Node   { return node }
+func (v *Replacer) VisitTypeIdent(node TypeIdent) Node { return node }
+func (v *Replacer) VisitBinOp(node BinOp) Node {
+	node.LeftExpr = node.LeftExpr.Visit(v)
+	node.RightExpr = node.RightExpr.Visit(v)
 	return node
 }
-func (v *ReplacerVisitor) VisitFloat(node Float) Node {
+func (v *Replacer) VisitUnaryOp(node UnaryOp) Node {
+	node.RightExpr = node.RightExpr.Visit(v)
 	return node
 }
-func (v *ReplacerVisitor) VisitString(node String) Node {
-	return node
-}
-func (v *ReplacerVisitor) VisitBool(node Bool) Node {
-	return node
-}
-func (v *ReplacerVisitor) VisitVarIdent(node VarIdent) Node {
-	return node
-}
-func (v *ReplacerVisitor) VisitTypeIdent(node TypeIdent) Node {
-	return node
-}
-func (v *ReplacerVisitor) VisitBinOp(node BinOp) Node {
-	node.Left = node.Left.Visit(v)
-	node.Right = node.Right.Visit(v)
-	return node
-}
-func (v *ReplacerVisitor) VisitUnaryOp(node UnaryOp) Node {
-	node.Right = node.Right.Visit(v)
-	return node
-}
-func (v *ReplacerVisitor) VisitBlock(node Block) Node {
-	node.Expressions = iter.Map(node.Expressions, func(e Node) Node { return e.Visit(v) })
+func (v *Replacer) VisitBlock(node Block) Node {
+	node.Exprs = iter.Map(node.Exprs, func(e Node) Node { return e.Visit(v) })
 	return node
 }

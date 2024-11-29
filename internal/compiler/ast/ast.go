@@ -6,134 +6,179 @@ import (
 )
 
 type Node interface {
-	GetNotes() Annotations
 	GetToken() token.Token
+	GetType() safe.Optional[Type]
 	Visit(Visitor) Node
 }
 
-type Type interface{}
-
-type Annotations struct {
-	Type safe.Optional[Type]
+type Type interface {
+	Signature() string
+	Compatible(Type) bool
 }
 
-func (a Annotations) WithType(t Type) Annotations { a.Type = safe.Some(t); return a }
+//
+//
+//
+
+var _nodeId = uint64(0)
+
+type BaseNode struct {
+	Id    uint64
+	Token token.Token
+	Type  safe.Optional[Type]
+}
+
+func NewBaseNode(tok token.Token) BaseNode {
+	_nodeId++
+	return BaseNode{
+		Id:    _nodeId,
+		Token: tok,
+		Type:  safe.None[Type](),
+	}
+}
+
+func (n BaseNode) GetToken() token.Token        { return n.Token }
+func (n BaseNode) GetType() safe.Optional[Type] { return n.Type }
 
 //
 //
 //
 
 type Module struct {
-	Token  token.Token
-	Notes  Annotations
-	Consts []Const
+	BaseNode
+	Exprs []Node
 }
 
-func (n Module) GetNotes() Annotations { return n.Notes }
-func (n Module) GetToken() token.Token { return n.Token }
-func (n Module) Visit(v Visitor) Node  { return v.VisitModule(n) }
+func NewModule(tok token.Token, exprs []Node) Module { return Module{NewBaseNode(tok), exprs} }
+func (n Module) Visit(v Visitor) Node                { return v.VisitModule(n) }
+
+//
+//
+//
 
 type Const struct {
-	Token     token.Token
-	Notes     Annotations
+	BaseNode
 	Name      VarIdent
 	TypeExpr  safe.Optional[Node]
 	ValueExpr Node
 }
 
-func (n Const) GetNotes() Annotations { return n.Notes }
-func (n Const) GetToken() token.Token { return n.Token }
-func (n Const) Visit(v Visitor) Node  { return v.VisitConst(n) }
+func NewConst(tok token.Token, name VarIdent, tpexpr safe.Optional[Node], valexpr Node) Const {
+	return Const{NewBaseNode(tok), name, tpexpr, valexpr}
+}
+func (n Const) Visit(v Visitor) Node { return v.VisitConst(n) }
+
+//
+//
+//
 
 type Int struct {
-	Token token.Token
-	Notes Annotations
+	BaseNode
 	Value int64
 }
 
-func (n Int) GetNotes() Annotations { return n.Notes }
-func (n Int) GetToken() token.Token { return n.Token }
-func (n Int) Visit(v Visitor) Node  { return v.VisitInt(n) }
+func NewInt(tok token.Token, val int64) Int { return Int{NewBaseNode(tok), val} }
+func (n Int) Visit(v Visitor) Node          { return v.VisitInt(n) }
+
+//
+//
+//
 
 type Float struct {
-	Token token.Token
-	Notes Annotations
+	BaseNode
 	Value float64
 }
 
-func (n Float) GetNotes() Annotations { return n.Notes }
-func (n Float) GetToken() token.Token { return n.Token }
-func (n Float) Visit(v Visitor) Node  { return v.VisitFloat(n) }
+func NewFloat(tok token.Token, val float64) Float { return Float{NewBaseNode(tok), val} }
+func (n Float) Visit(v Visitor) Node              { return v.VisitFloat(n) }
+
+//
+//
+//
 
 type String struct {
-	Token token.Token
-	Notes Annotations
+	BaseNode
 	Value string
 }
 
-func (n String) GetNotes() Annotations { return n.Notes }
-func (n String) GetToken() token.Token { return n.Token }
-func (n String) Visit(v Visitor) Node  { return v.VisitString(n) }
+func NewString(tok token.Token, val string) String { return String{NewBaseNode(tok), val} }
+func (n String) Visit(v Visitor) Node              { return v.VisitString(n) }
+
+//
+//
+//
 
 type Bool struct {
-	Token token.Token
-	Notes Annotations
+	BaseNode
 	Value bool
 }
 
-func (n Bool) GetNotes() Annotations { return n.Notes }
-func (n Bool) GetToken() token.Token { return n.Token }
-func (n Bool) Visit(v Visitor) Node  { return v.VisitBool(n) }
+func NewBool(tok token.Token, val bool) Bool { return Bool{NewBaseNode(tok), val} }
+func (n Bool) Visit(v Visitor) Node          { return v.VisitBool(n) }
+
+//
+//
+//
 
 type VarIdent struct {
-	Token token.Token
-	Notes Annotations
+	BaseNode
 	Value string
 }
 
-func (n VarIdent) GetNotes() Annotations { return n.Notes }
-func (n VarIdent) GetToken() token.Token { return n.Token }
-func (n VarIdent) Visit(v Visitor) Node  { return v.VisitVarIdent(n) }
+func NewVarIdent(tok token.Token, val string) VarIdent { return VarIdent{NewBaseNode(tok), val} }
+func (n VarIdent) Visit(v Visitor) Node                { return v.VisitVarIdent(n) }
+
+//
+//
+//
 
 type TypeIdent struct {
-	Token token.Token
-	Notes Annotations
+	BaseNode
 	Value string
 }
 
-func (n TypeIdent) GetNotes() Annotations { return n.Notes }
-func (n TypeIdent) GetToken() token.Token { return n.Token }
-func (n TypeIdent) Visit(v Visitor) Node  { return v.VisitTypeIdent(n) }
+func NewTypeIdent(tok token.Token, val string) TypeIdent { return TypeIdent{NewBaseNode(tok), val} }
+func (n TypeIdent) Visit(v Visitor) Node                 { return v.VisitTypeIdent(n) }
+
+//
+//
+//
 
 type BinOp struct {
-	Token token.Token
-	Notes Annotations
-	Op    string
-	Left  Node
-	Right Node
+	BaseNode
+	Op        string
+	LeftExpr  Node
+	RightExpr Node
 }
 
-func (n BinOp) GetNotes() Annotations { return n.Notes }
-func (n BinOp) GetToken() token.Token { return n.Token }
-func (n BinOp) Visit(v Visitor) Node  { return v.VisitBinOp(n) }
+func NewBinOp(tok token.Token, op string, left, right Node) BinOp {
+	return BinOp{NewBaseNode(tok), op, left, right}
+}
+func (n BinOp) Visit(v Visitor) Node { return v.VisitBinOp(n) }
+
+//
+//
+//
 
 type UnaryOp struct {
-	Token token.Token
-	Notes Annotations
-	Op    string
-	Right Node
+	BaseNode
+	Op        string
+	RightExpr Node
 }
 
-func (n UnaryOp) GetNotes() Annotations { return n.Notes }
-func (n UnaryOp) GetToken() token.Token { return n.Token }
-func (n UnaryOp) Visit(v Visitor) Node  { return v.VisitUnaryOp(n) }
+func NewUnaryOp(tok token.Token, op string, right Node) UnaryOp {
+	return UnaryOp{NewBaseNode(tok), op, right}
+}
+func (n UnaryOp) Visit(v Visitor) Node { return v.VisitUnaryOp(n) }
+
+//
+//
+//
 
 type Block struct {
-	Token       token.Token
-	Notes       Annotations
-	Expressions []Node
+	BaseNode
+	Exprs []Node
 }
 
-func (n Block) GetNotes() Annotations { return n.Notes }
-func (n Block) GetToken() token.Token { return n.Token }
-func (n Block) Visit(v Visitor) Node  { return v.VisitBlock(n) }
+func NewBlock(tok token.Token, exprs []Node) Block { return Block{NewBaseNode(tok), exprs} }
+func (n Block) Visit(v Visitor) Node               { return v.VisitBlock(n) }

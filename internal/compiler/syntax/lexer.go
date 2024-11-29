@@ -73,17 +73,17 @@ func (l *Lexer) next() (token.Token, bool) {
 		// Newlines
 		case runes.IsNewline(c0):
 			return token.Token{
-				Kind:  token.TNewline,
-				Value: l.eatNewlines(),
-				Loc:   l.span(),
+				Kind:    token.TNewline,
+				Literal: l.eatNewlines(),
+				Loc:     l.span(),
 			}, true
 
 		// Comments
 		case s2 == "--":
 			return token.Token{
-				Kind:  token.TComment,
-				Value: l.eatComment(),
-				Loc:   l.span(),
+				Kind:    token.TComment,
+				Literal: l.eatComment(),
+				Loc:     l.span(),
 			}, true
 
 		// Alpha literals, identifiers and keywords
@@ -93,24 +93,24 @@ func (l *Lexer) next() (token.Token, bool) {
 			// Keywords or constants
 			if kind := token.LiteralToKind(identifier); kind != token.TUnknown {
 				return token.Token{
-					Kind:  kind,
-					Value: identifier,
-					Loc:   l.span(),
+					Kind:    kind,
+					Literal: identifier,
+					Loc:     l.span(),
 				}, true
 			}
 
 			if naming.IsTypeName(identifier) {
 				return token.Token{
-					Kind:  token.TTypeIdent,
-					Value: identifier,
-					Loc:   l.span(),
+					Kind:    token.TTypeIdent,
+					Literal: identifier,
+					Loc:     l.span(),
 				}, true
 			}
 
 			return token.Token{
-				Kind:  token.TVarIdent,
-				Value: identifier,
-				Loc:   l.span(),
+				Kind:    token.TVarIdent,
+				Literal: identifier,
+				Loc:     l.span(),
 			}, true
 
 		// Numeric literals
@@ -119,25 +119,25 @@ func (l *Lexer) next() (token.Token, bool) {
 			// Hex
 			case runes.IsOneOf(c1, 'x', 'X'):
 				return token.Token{
-					Kind:  token.THex,
-					Value: l.eatHexadecimal(),
-					Loc:   l.span(),
+					Kind:    token.THex,
+					Literal: l.eatHexadecimal(),
+					Loc:     l.span(),
 				}, true
 
 			// Octal
 			case runes.IsOneOf(c1, 'o', 'O'):
 				return token.Token{
-					Kind:  token.TOctal,
-					Value: l.eatOctal(),
-					Loc:   l.span(),
+					Kind:    token.TOctal,
+					Literal: l.eatOctal(),
+					Loc:     l.span(),
 				}, true
 
 			// Binary
 			case runes.IsOneOf(c1, 'b', 'B'):
 				return token.Token{
-					Kind:  token.TBinary,
-					Value: l.eatBinary(),
-					Loc:   l.span(),
+					Kind:    token.TBinary,
+					Literal: l.eatBinary(),
+					Loc:     l.span(),
 				}, true
 
 			// Float or integer
@@ -145,25 +145,25 @@ func (l *Lexer) next() (token.Token, bool) {
 				num := l.eatNumber()
 				if strings.Contains(num, ".") || strings.Contains(num, "e") {
 					return token.Token{
-						Kind:  token.TFloat,
-						Value: num,
-						Loc:   l.span(),
+						Kind:    token.TFloat,
+						Literal: num,
+						Loc:     l.span(),
 					}, true
 				}
 
 				return token.Token{
-					Kind:  token.TInt,
-					Value: num,
-					Loc:   l.span(),
+					Kind:    token.TInt,
+					Literal: num,
+					Loc:     l.span(),
 				}, true
 			}
 
 		// Strings
 		case runes.IsOneOf(c0, '\''):
 			return token.Token{
-				Kind:  token.TString,
-				Value: l.eatRawString(),
-				Loc:   l.span(),
+				Kind:    token.TString,
+				Literal: l.eatRawString(),
+				Loc:     l.span(),
 			}, true
 
 		// Operators
@@ -174,9 +174,9 @@ func (l *Lexer) next() (token.Token, bool) {
 				l.eat()
 				l.eat()
 				return token.Token{
-					Kind:  tok,
-					Value: s3,
-					Loc:   l.span(),
+					Kind:    tok,
+					Literal: s3,
+					Loc:     l.span(),
 				}, true
 			}
 
@@ -185,9 +185,9 @@ func (l *Lexer) next() (token.Token, bool) {
 				l.eat()
 				l.eat()
 				return token.Token{
-					Kind:  tok,
-					Value: s2,
-					Loc:   l.span(),
+					Kind:    tok,
+					Literal: s2,
+					Loc:     l.span(),
 				}, true
 			}
 
@@ -195,9 +195,9 @@ func (l *Lexer) next() (token.Token, bool) {
 			if tok := token.LiteralToKind(s1); tok != token.TUnknown {
 				l.eat()
 				return token.Token{
-					Kind:  tok,
-					Value: s1,
-					Loc:   l.span(),
+					Kind:    tok,
+					Literal: s1,
+					Loc:     l.span(),
 				}, true
 			}
 

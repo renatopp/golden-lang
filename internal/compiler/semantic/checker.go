@@ -8,12 +8,14 @@ import (
 var _ ast.Visitor = &Checker{}
 
 type Checker struct {
+	*BaseChecker
 	root ast.Module
 }
 
 func NewChecker(root ast.Module) *Checker {
 	return &Checker{
-		root: root,
+		BaseChecker: NewBaseChecker(),
+		root:        root,
 	}
 }
 
@@ -25,14 +27,6 @@ func (c *Checker) Check() (res ast.Module, err error) {
 }
 
 func (c *Checker) VisitModule(node ast.Module) ast.Node {
-	// consts := []ast.Const{}
-	// for _, c := range c.root.Consts {
-	// 	consts = append(consts, c.Visit(c))
-	// }
-	// return ast.Module{
-	// 	Token:  c.root.Token,
-	// 	Consts: consts,
-	// }
 	return node
 }
 
