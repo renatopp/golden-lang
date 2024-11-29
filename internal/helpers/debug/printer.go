@@ -101,7 +101,7 @@ func (p *AstPrinter) VisitTypeIdent(node ast.TypeIdent) ast.Node {
 func (p *AstPrinter) VisitBinOp(node ast.BinOp) ast.Node {
 	p.inc()
 	defer p.dec()
-	p.print("[bin-op:%s]\n", node.Op.Display())
+	p.print("[bin-op:%s]\n", node.Op)
 	node.Left.Visit(p)
 	node.Right.Visit(p)
 	return node
@@ -110,7 +110,7 @@ func (p *AstPrinter) VisitBinOp(node ast.BinOp) ast.Node {
 func (p *AstPrinter) VisitUnaryOp(node ast.UnaryOp) ast.Node {
 	p.inc()
 	defer p.dec()
-	p.print("[unary-op:%s]\n", node.Op.Display())
+	p.print("[unary-op:%s]\n", node.Op)
 	node.Right.Visit(p)
 	return node
 }

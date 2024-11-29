@@ -2,6 +2,7 @@ package builder
 
 import (
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	// "github.com/renatopp/golden/internal/compiler/semantic"
 	// "github.com/renatopp/golden/internal/compiler/types"
 
+	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -135,48 +137,44 @@ func (b *Builder) loadModules() {
 
 func (b *Builder) checkEntries() {
 	modulePath := b.ctx.Options.EntryFilePath
-	// packagePath := fs.ModulePath2PackagePath(modulePath)
 	b.ctx.EntryModule, _ = b.ctx.ModuleRegistry.Get(modulePath)
-	// b.ctx.EntryPackage, _ = b.ctx.PackageRegistry.Get(packagePath)
 }
 
 func (b *Builder) buildDependencyGraph() {
-	// 	registry := b.ctx.PackageRegistry.Items()
-	// 	entry := b.ctx.EntryPackage.Path
+	registry := b.ctx.ModuleRegistry.Items()
+	entry := b.ctx.EntryModule.Path
 
-	// 	visited := map[string]bool{}
-	// 	stack := map[string]bool{}
-	// 	order := []*Package{}
-	// 	pkg := registry[entry]
-	// 	b.ctx.DependencyOrder = b.buildDependencyGraphLoop(registry, pkg, visited, stack, order)
-	// 	b.ctx.Options.OnDependencyGraphReady.Emit(b.ctx.DependencyOrder)
-
-	b.ctx.DependencyOrder = []*File{}
+	visited := map[string]bool{}
+	stack := map[string]bool{}
+	order := []*File{}
+	pkg := registry[entry]
+	b.ctx.DependencyOrder = b.buildDependencyGraphLoop(registry, pkg, visited, stack, order)
+	b.ctx.Options.OnDependencyGraphReady.Emit(b.ctx.DependencyOrder)
 }
 
-// func (b *Builder) buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
-// 	visited[pkg.Path] = true
-// 	stack[pkg.Path] = true
-// 	for _, dep := range pkg.Imports.Values() {
-// 		if !visited[dep] {
-// 			p := registry[dep]
-// 			order = b.buildDependencyGraphLoop(registry, p, visited, stack, order)
+func (b *Builder) buildDependencyGraphLoop(registry map[string]*File, file *File, visited, stack map[string]bool, order []*File) []*File {
+	visited[file.Path] = true
+	stack[file.Path] = true
+	for _, dep := range []string{} { // TODO: file.Imports.Values() {
+		if !visited[dep] {
+			p := registry[dep]
+			order = b.buildDependencyGraphLoop(registry, p, visited, stack, order)
 
-// 		} else if stack[dep] {
-// 			names := []string{}
-// 			for k := range stack {
-// 				names = append(names, k)
-// 			}
-// 			deps := strings.Join(names, "\n- ")
-// 			errors.Throw(errors.CircularReferenceError, "cyclic dependency detected importing packages: \n- %s", deps)
-// 		}
-// 	}
-// 	stack[pkg.Path] = false
-// 	return append(order, pkg)
-// }
+		} else if stack[dep] {
+			names := []string{}
+			for k := range stack {
+				names = append(names, k)
+			}
+			deps := strings.Join(names, "\n- ")
+			errors.Throw(errors.CircularReferenceError, "cyclic dependency detected importing packages: \n- %s", deps)
+		}
+	}
+	stack[file.Path] = false
+	return append(order, file)
+}
 
 func (b *Builder) buildGlobalScope() {
-	// b.ctx.GlobalScope = env.NewScope()
+	b.ctx.GlobalScope = env.NewScope()
 	// b.ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
 	// b.ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
 	// b.ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))

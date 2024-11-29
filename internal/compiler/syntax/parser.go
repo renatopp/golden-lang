@@ -195,19 +195,21 @@ func (p *Parser) parseBool() ast.Node {
 }
 
 func (p *Parser) parseUnaryOp() ast.Node {
-	op := p.Eat()
+	tok := p.Eat()
 	right := p.parseValueExpression(0)
 	return ast.UnaryOp{
-		Op:    op,
+		Token: tok,
+		Op:    tok.Value,
 		Right: right,
 	}
 }
 
 func (p *Parser) parseBinOp(left ast.Node) ast.Node {
-	op := p.Eat()
-	right := p.parseValueExpression(p.ValuePrecedence(op))
+	tok := p.Eat()
+	right := p.parseValueExpression(p.ValuePrecedence(tok))
 	return ast.BinOp{
-		Op:    op,
+		Token: tok,
+		Op:    tok.Value,
 		Left:  left,
 		Right: right,
 	}

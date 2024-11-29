@@ -82,3 +82,30 @@ a.position.y = 1
 In the example above, I show a sideeffect of this system. Even though the variable a is immutable, the value it points contain a mutable field. Thus, allowing changing it's nested properties.
 
 Mutable capability gives permission to the complete subtree. This seems bad, but when you combine this system with private fields and pure functions, event though a subfield from a mutable reference could be changed, you still need to use the immutable patterns. This looks like a good balance.
+
+## Mutability and async
+
+There are three main elements in the mutability vs immutability discussion:
+
+1. Immutability patterns fit pipe expressions
+2. Mutability introduce race conditions
+3. Mutability can introduce logic errors
+
+Point 2 is the main concern, and there are some possibilities to handle it. Point 3 is important but the rules applied to point 2 will help point 3.
+
+There are multiple options to handle race conditions:
+
+- Affine types where you can have only one reference to a value at a given type.
+- Mutex/RWMutex
+- STM (software transactional memory)
+- CAS (compare-and-swap)
+...
+
+My idea is to provide a concurrency control on language level and check at compile time the validity of asynchronous routines.
+
+- immutable: globally safe, value never changes 
+- readable: locally safe, value may change if points to mutable
+- mutable: locally safe
+- shared(?): globally safe, can only be used when temporarily converted to readable/writable, which may happen using locks, stms, cas...
+
+

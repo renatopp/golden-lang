@@ -17,9 +17,9 @@ type BuildOptions struct {
 	GlobalTargetPath string // Absolute path of the global target directory for storing transpiled files
 
 	// Events
-	OnTokensReady *events.Signal2[*File, []token.Token]
-	OnAstReady    *events.Signal2[*File, ast.Module]
-	// OnDependencyGraphReady *events.Signal1[[]*Package]
+	OnTokensReady          *events.Signal2[*File, []token.Token]
+	OnAstReady             *events.Signal2[*File, ast.Module]
+	OnDependencyGraphReady *events.Signal1[[]*File]
 	// OnTypeCheckReady       *events.Signal3[*File, *ast.Module, *env.Scope]
 }
 
@@ -33,9 +33,9 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		LocalTargetPath:  fs.JoinProjectPath(".target"),
 		GlobalTargetPath: fs.JoinLangPath("target"),
 
-		OnTokensReady: events.NewSignal2[*File, []token.Token](),
-		OnAstReady:    events.NewSignal2[*File, ast.Module](),
-		// OnDependencyGraphReady: events.NewSignal1[[]*Package](),
+		OnTokensReady:          events.NewSignal2[*File, []token.Token](),
+		OnAstReady:             events.NewSignal2[*File, ast.Module](),
+		OnDependencyGraphReady: events.NewSignal1[[]*File](),
 		// OnTypeCheckReady:       events.NewSignal3[*File, *ast.Module, *env.Scope](),
 	}
 }
