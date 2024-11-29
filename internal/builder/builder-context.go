@@ -6,11 +6,11 @@ import (
 )
 
 type BuildContext struct {
-	Options        *BuildOptions
-	ModuleRegistry *ds.SyncMap[string, *File]
-	EntryModule    *File
+	Options         *BuildOptions
+	ModuleRegistry  *ds.SyncMap[string, *File]
+	EntryModule     *File
+	DependencyOrder []*File
 	// PackageRegistry *ds.SyncMap[string, *Package]
 	// EntryPackage    *Package
-	// DependencyOrder []*Package
 	// GlobalScope     *env.Scope
 }

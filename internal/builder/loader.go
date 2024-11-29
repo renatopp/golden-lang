@@ -60,9 +60,8 @@ func (l *loader) loadModule(modulePath string) {
 	file.Root = safe.Some(root)
 	l.ctx.Options.OnAstReady.Emit(file, root)
 
-	// // Add the module to the package
-	// pkg.Modules.Add(module)
-	// l.ctx.ModuleRegistry.Set(modulePath, module)
+	// Add the module to the package
+	l.ctx.ModuleRegistry.Set(modulePath, file)
 
 	// // Discover imports
 	// for _, a := range root.Imports {

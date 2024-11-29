@@ -57,10 +57,10 @@ func (b *Builder) build() *BuildResult {
 	b.validateEntry()
 	b.checkCacheFolders()
 	b.loadModules()
-	// b.checkEntries()
-	// b.buildDependencyGraph()
-	// b.buildGlobalScope()
-	// b.semanticAnalysis()
+	b.checkEntries()
+	b.buildDependencyGraph()
+	b.buildGlobalScope()
+	b.semanticAnalysis()
 	// b.checkMain()
 	// b.generateCode()
 
@@ -133,24 +133,26 @@ func (b *Builder) loadModules() {
 	}
 }
 
-// func (b *Builder) checkEntries() {
-// 	modulePath := b.ctx.Options.EntryFilePath
-// 	packagePath := fs.ModulePath2PackagePath(modulePath)
-// 	b.ctx.EntryModule, _ = b.ctx.ModuleRegistry.Get(modulePath)
-// 	b.ctx.EntryPackage, _ = b.ctx.PackageRegistry.Get(packagePath)
-// }
+func (b *Builder) checkEntries() {
+	modulePath := b.ctx.Options.EntryFilePath
+	// packagePath := fs.ModulePath2PackagePath(modulePath)
+	b.ctx.EntryModule, _ = b.ctx.ModuleRegistry.Get(modulePath)
+	// b.ctx.EntryPackage, _ = b.ctx.PackageRegistry.Get(packagePath)
+}
 
-// func (b *Builder) buildDependencyGraph() {
-// 	registry := b.ctx.PackageRegistry.Items()
-// 	entry := b.ctx.EntryPackage.Path
+func (b *Builder) buildDependencyGraph() {
+	// 	registry := b.ctx.PackageRegistry.Items()
+	// 	entry := b.ctx.EntryPackage.Path
 
-// 	visited := map[string]bool{}
-// 	stack := map[string]bool{}
-// 	order := []*Package{}
-// 	pkg := registry[entry]
-// 	b.ctx.DependencyOrder = b.buildDependencyGraphLoop(registry, pkg, visited, stack, order)
-// 	b.ctx.Options.OnDependencyGraphReady.Emit(b.ctx.DependencyOrder)
-// }
+	// 	visited := map[string]bool{}
+	// 	stack := map[string]bool{}
+	// 	order := []*Package{}
+	// 	pkg := registry[entry]
+	// 	b.ctx.DependencyOrder = b.buildDependencyGraphLoop(registry, pkg, visited, stack, order)
+	// 	b.ctx.Options.OnDependencyGraphReady.Emit(b.ctx.DependencyOrder)
+
+	b.ctx.DependencyOrder = []*File{}
+}
 
 // func (b *Builder) buildDependencyGraphLoop(registry map[string]*Package, pkg *Package, visited, stack map[string]bool, order []*Package) []*Package {
 // 	visited[pkg.Path] = true
@@ -173,54 +175,54 @@ func (b *Builder) loadModules() {
 // 	return append(order, pkg)
 // }
 
-// func (b *Builder) buildGlobalScope() {
-// 	b.ctx.GlobalScope = env.NewScope()
-// 	b.ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
-// 	b.ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
-// 	b.ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
-// 	b.ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
-// 	b.ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
-// }
+func (b *Builder) buildGlobalScope() {
+	// b.ctx.GlobalScope = env.NewScope()
+	// b.ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
+	// b.ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
+	// b.ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
+	// b.ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
+	// b.ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
+}
 
-// func (b *Builder) semanticAnalysis() {
-// 	checker := semantic.NewTypeChecker()
+func (b *Builder) semanticAnalysis() {
+	// checker := semantic.NewTypeChecker()
 
-// 	for _, pkg := range b.ctx.DependencyOrder {
-// 		mods := pkg.Modules.Values()
+	// for _, pkg := range b.ctx.DependencyOrder {
+	// 	mods := pkg.Modules.Values()
 
-// 		// create type instances for all modules
-// 		for _, mod := range mods {
-// 			scope := b.ctx.GlobalScope.New()
-// 			scope.IsModule = true
-// 			mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
-// 		}
+	// 	// create type instances for all modules
+	// 	for _, mod := range mods {
+	// 		scope := b.ctx.GlobalScope.New()
+	// 		scope.IsModule = true
+	// 		mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
+	// 	}
 
-// 		// attach type instances to the module scopes
-// 		for _, mod := range mods {
-// 			modType := mod.Root.Type().(*types.Module)
+	// 	// attach type instances to the module scopes
+	// 	for _, mod := range mods {
+	// 		modType := mod.Root.Type().(*types.Module)
 
-// 			for _, other := range mods {
-// 				if mod == other {
-// 					continue
-// 				}
+	// 		for _, other := range mods {
+	// 			if mod == other {
+	// 				continue
+	// 			}
 
-// 				alias := fs.ModulePath2ModuleName(other.Path)
-// 				modType.Scope.Values.Set(alias, env.B(other.Root.Type()))
-// 			}
-// 		}
+	// 			alias := fs.ModulePath2ModuleName(other.Path)
+	// 			modType.Scope.Values.Set(alias, env.B(other.Root.Type()))
+	// 		}
+	// 	}
 
-// 		// pre-resolve all types, functions and module variables
-// 		for _, mod := range mods {
-// 			checker.PreResolve(mod.Root)
-// 		}
+	// 	// pre-resolve all types, functions and module variables
+	// 	for _, mod := range mods {
+	// 		checker.PreResolve(mod.Root)
+	// 	}
 
-// 		// resolve everything
-// 		for _, mod := range mods {
-// 			checker.Resolve(mod.Root)
-// 			b.ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
-// 		}
-// 	}
-// }
+	// 	// resolve everything
+	// 	for _, mod := range mods {
+	// 		checker.Resolve(mod.Root)
+	// 		b.ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
+	// 	}
+	// }
+}
 
 // func (b *Builder) checkMain() {
 // 	main := b.ctx.EntryModule.Scope().Values.Get("main")
