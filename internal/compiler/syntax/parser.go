@@ -18,6 +18,7 @@ func NewParser(tokens []*token.Token) *Parser {
 		BaseParser: NewBaseParser(tokens),
 	}
 
+	p.ValueSolver.RegisterPrefixFn(token.TVarIdent, p.parseVarIdent)
 	p.ValueSolver.RegisterPrefixFn(token.TInt, p.parseInt)
 	p.ValueSolver.RegisterPrefixFn(token.THex, p.parseHex)
 	p.ValueSolver.RegisterPrefixFn(token.TOctal, p.parseOctal)
@@ -77,8 +78,8 @@ func (p *Parser) parseModule() *ast.Module {
 
 // const <var-ident> <type-expr>? = <value-expr>
 func (p *Parser) parseConst() *ast.Const {
-	tok := p.ExpectAndEat(token.TConst) // const
-	name := p.parseVarIdent()           // var-ident
+	tok := p.ExpectAndEat(token.TConst)       // const
+	name := p.parseVarIdent().(*ast.VarIdent) // var-ident
 	// TODO: add type expression parsing // type-expr
 	assign := p.ExpectAndEat(token.TAssign) // =
 	val := p.parseValueExpression(0)        // value-expr
@@ -89,7 +90,7 @@ func (p *Parser) parseConst() *ast.Const {
 }
 
 // foo, bar, _bar, _1, a_1, ...
-func (p *Parser) parseVarIdent() *ast.VarIdent {
+func (p *Parser) parseVarIdent() ast.Node {
 	tok := p.ExpectAndEat(token.TVarIdent)
 	return ast.NewVarIdent(tok, tok.Literal)
 }

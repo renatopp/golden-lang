@@ -25,14 +25,12 @@ var _ ast.Visitor = &Checker{}
 type Checker struct {
 	scopeStack          *ds.Stack[*env.Scope]
 	initializationStack *ds.Stack[ast.Node]
-	root                *ast.Module
 }
 
-func NewChecker(root *ast.Module) *Checker {
+func NewChecker() *Checker {
 	return &Checker{
 		scopeStack:          ds.NewStack[*env.Scope](),
 		initializationStack: ds.NewStack[ast.Node](),
-		root:                root,
 	}
 }
 
@@ -54,17 +52,18 @@ func (c *Checker) scope() *env.Scope {
 	return scope
 }
 
-func (c *Checker) declare(name string, node ast.Node, tp ast.Type) {
+func (c *Checker) declare(name ast.Node, node ast.Node, tp ast.Type) {
 	scope := c.scope().Values
-	bind := scope.GetLocal(name, nil)
+	lit := name.GetToken().Literal
+	bind := scope.GetLocal(lit, nil)
 	if bind != nil && bind.IsSolved() {
-		errors.ThrowAtNode(node, errors.NameAlreadyDefined, "name '%s' already defined", name)
+		errors.ThrowAtNode(name, errors.NameAlreadyDefined, "name '%s' already defined", lit)
 	}
 
 	if bind != nil {
 		bind.Type = tp
 	} else {
-		scope.Set(name, env.VB(node, tp))
+		scope.Set(lit, env.VB(node, tp))
 	}
 }
 
@@ -131,26 +130,29 @@ func (c *Checker) expectCompatibleNodeTypes(a, b ast.Node) {
 
 // Interface
 
-func (c *Checker) Check() (res *ast.Module, err error) {
-	err = errors.WithRecovery(func() {
-		c.preCheck()
-		res = c.VisitModule(c.root).(*ast.Module)
-	})
-	return res, err
-}
-
-func (c *Checker) preCheck() {
-	tp := c.root.GetType().Unwrap().(*types.Module)
+func (c *Checker) PreCheck(root *ast.Module) {
+	tp := root.GetType().Unwrap().(*types.Module)
 	c.pushScope(tp.Scope)
 	defer c.popScope()
 
-	for _, e := range c.root.Exprs {
+	for _, e := range root.Exprs {
 		switch n := e.(type) {
 		case *ast.Const:
 			v := n.Name.Value
 			c.scope().Values.Set(v, env.VB(n, nil))
 		}
 	}
+}
+
+func (c *Checker) Check(root *ast.Module) (res *ast.Module, err error) {
+	tp := root.GetType().Unwrap().(*types.Module)
+	c.pushScope(tp.Scope)
+	defer c.popScope()
+
+	err = errors.WithRecovery(func() {
+		res = c.VisitModule(root).(*ast.Module)
+	})
+	return res, err
 }
 
 func (c *Checker) VisitModule(node *ast.Module) ast.Node {
@@ -172,28 +174,29 @@ func (c *Checker) VisitConst(node *ast.Const) ast.Node {
 	}
 
 	tp := node.ValueExpr.GetType().Unwrap()
-	node.BaseNode = ast.SetType(node.BaseNode, tp)
-	c.declare(node.Name.Value, node, tp)
+	node.SetType(tp)
+	node.Name.SetType(tp)
+	c.declare(node.Name, node, tp)
 	return node
 }
 
 func (c *Checker) VisitInt(node *ast.Int) ast.Node {
-	node.BaseNode = ast.SetType(node.BaseNode, types.Int)
+	node.SetType(types.Int)
 	return node
 }
 
 func (c *Checker) VisitFloat(node *ast.Float) ast.Node {
-	node.BaseNode = ast.SetType(node.BaseNode, types.Float)
+	node.SetType(types.Float)
 	return node
 }
 
 func (c *Checker) VisitString(node *ast.String) ast.Node {
-	node.BaseNode = ast.SetType(node.BaseNode, types.String)
+	node.SetType(types.String)
 	return node
 }
 
 func (c *Checker) VisitBool(node *ast.Bool) ast.Node {
-	node.BaseNode = ast.SetType(node.BaseNode, types.Bool)
+	node.SetType(types.Bool)
 	return node
 }
 
@@ -203,8 +206,11 @@ func (c *Checker) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	if bind == nil {
 		errors.ThrowAtNode(node, errors.NameNotFound, "variable '%s' not defined", name)
 	}
-	// if !bind.IsSolved() {
-	// TODO: how to mutate the node outside the node structure?
+	if !bind.IsSolved() {
+		bind.LastNode.Visit(c)
+		bind.Type = bind.LastNode.GetType().Unwrap()
+	}
+	node.SetType(bind.Type)
 
 	return node
 }
@@ -214,13 +220,73 @@ func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
 }
 
 func (c *Checker) VisitBinOp(node *ast.BinOp) ast.Node {
+	node.LeftExpr.Visit(c)
+	node.RightExpr.Visit(c)
+
+	switch node.Op {
+	case "+":
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
+		node.SetType(node.LeftExpr.GetType().Unwrap())
+
+	case "-", "*", "/":
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Int, types.Float)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
+		node.SetType(node.LeftExpr.GetType().Unwrap())
+
+	case "==", "!=":
+		node.SetType(types.Bool)
+
+	case ">", "<", ">=", "<=":
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Int, types.Float)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
+		node.SetType(types.Bool)
+
+	case "<=>":
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Int, types.Float)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
+		node.SetType(types.Int)
+
+	case "and", "or", "xor":
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Bool)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Bool)
+		node.SetType(types.Bool)
+
+	default:
+		errors.ThrowAtNode(node, errors.NotImplemented, "binary operator '%s' not implemented.", node.Op)
+	}
+
 	return node
 }
 
 func (c *Checker) VisitUnaryOp(node *ast.UnaryOp) ast.Node {
+	node.RightExpr.Visit(c)
+
+	switch node.Op {
+	case "-", "+":
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+	case "!":
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Bool)
+	default:
+		errors.ThrowAtNode(node, errors.NotImplemented, "unary operator '%s' not implemented.", node.Op)
+	}
+
+	node.SetType(node.RightExpr.GetType().Unwrap())
 	return node
 }
 
 func (c *Checker) VisitBlock(node *ast.Block) ast.Node {
+	c.pushScope(c.scope().New())
+	defer c.popScope()
+
+	var tp ast.Type = types.Void
+	for _, exp := range node.Exprs {
+		exp.Visit(c)
+		tp = exp.GetType().Unwrap()
+	}
+	node.SetType(tp)
+
 	return node
 }

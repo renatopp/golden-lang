@@ -8,7 +8,9 @@ import (
 type Node interface {
 	IsEqual(n Node) bool
 	GetId() uint64
+	SetToken(tok *token.Token)
 	GetToken() *token.Token
+	SetType(Type)
 	GetType() safe.Optional[Type]
 	Visit(Visitor) Node
 }
@@ -19,11 +21,6 @@ type Type interface {
 	GetSignature() string
 	GetDefault() (Node, error)
 	IsCompatible(Type) bool
-}
-
-func SetType(n BaseNode, tp Type) BaseNode {
-	n.Type = safe.Some(tp)
-	return n
 }
 
 //
@@ -49,7 +46,9 @@ func NewBaseNode(tok *token.Token) BaseNode {
 
 func (n *BaseNode) IsEqual(other Node) bool      { return n.Id == other.GetId() }
 func (n *BaseNode) GetId() uint64                { return n.Id }
+func (n *BaseNode) SetToken(tok *token.Token)    { n.Token = tok }
 func (n *BaseNode) GetToken() *token.Token       { return n.Token }
+func (n *BaseNode) SetType(tp Type)              { n.Type = safe.Some(tp) }
 func (n *BaseNode) GetType() safe.Optional[Type] { return n.Type }
 func (n *BaseNode) Visit(v Visitor) Node {
 	panic("base node does not have visitor")

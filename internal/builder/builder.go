@@ -12,6 +12,8 @@ import (
 	// "github.com/renatopp/golden/internal/compiler/types"
 
 	"github.com/renatopp/golden/internal/compiler/env"
+	"github.com/renatopp/golden/internal/compiler/semantic"
+	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -183,55 +185,59 @@ func (b *Builder) buildGlobalScope() {
 }
 
 func (b *Builder) semanticAnalysis() {
-	// checker := semantic.NewTypeChecker()
+	checker := semantic.NewChecker()
+	mods := b.ctx.DependencyOrder
+	// create type instances for all modules
+	for _, mod := range mods {
+		root := mod.Root.Unwrap()
+		scope := b.ctx.GlobalScope.New()
+		scope.IsModule = true
+		mod.Root.Unwrap().SetType(types.NewModule(root, mod.Path, scope))
+	}
 
-	// for _, pkg := range b.ctx.DependencyOrder {
-	// 	mods := pkg.Modules.Values()
+	// attach type instances to the module scopes
+	for _, mod := range mods {
+		root := mod.Root.Unwrap()
+		modType := root.GetType().Unwrap().(*types.Module)
 
-	// 	// create type instances for all modules
-	// 	for _, mod := range mods {
-	// 		scope := b.ctx.GlobalScope.New()
-	// 		scope.IsModule = true
-	// 		mod.Root.SetType(types.NewModule(mod.Root, mod.Path, scope))
-	// 	}
+		for _, other := range mods {
+			if mod == other {
+				continue
+			}
 
-	// 	// attach type instances to the module scopes
-	// 	for _, mod := range mods {
-	// 		modType := mod.Root.Type().(*types.Module)
+			alias := fs.ModulePath2ModuleName(other.Path)
+			otherRoot := other.Root.Unwrap()
+			modType.Scope.Values.Set(alias, env.VB(otherRoot, otherRoot.GetType().Unwrap()))
+		}
+	}
 
-	// 		for _, other := range mods {
-	// 			if mod == other {
-	// 				continue
-	// 			}
+	// pre-resolve all types, functions and module variables
+	for _, mod := range mods {
+		root := mod.Root.Unwrap()
+		checker.PreCheck(root)
+	}
 
-	// 			alias := fs.ModulePath2ModuleName(other.Path)
-	// 			modType.Scope.Values.Set(alias, env.B(other.Root.Type()))
-	// 		}
-	// 	}
-
-	// 	// pre-resolve all types, functions and module variables
-	// 	for _, mod := range mods {
-	// 		checker.PreResolve(mod.Root)
-	// 	}
-
-	// 	// resolve everything
-	// 	for _, mod := range mods {
-	// 		checker.Resolve(mod.Root)
-	// 		b.ctx.Options.OnTypeCheckReady.Emit(mod, mod.Root, mod.Root.Type().(*types.Module).Scope)
-	// 	}
-	// }
+	// resolve everything
+	for _, mod := range b.ctx.DependencyOrder {
+		root := mod.Root.Unwrap()
+		_, err := checker.Check(root)
+		if err != nil {
+			errors.Rethrow(err)
+		}
+		b.ctx.Options.OnTypeCheckReady.Emit(mod, root, root.GetType().Unwrap().(*types.Module).Scope)
+	}
 }
 
-// func (b *Builder) checkMain() {
-// 	main := b.ctx.EntryModule.Scope().Values.Get("main")
-// 	if main == nil {
-// 		errors.Throw(errors.InvalidEntryFile, "entry module '%s' does not contain a 'main' function", b.ctx.EntryModule.Path)
-// 	}
+func (b *Builder) checkMain() {
+	main := b.ctx.EntryModule.Scope().Values.Get("main", nil)
+	if main == nil {
+		errors.Throw(errors.InvalidEntryFile, "entry module '%s' does not contain a 'main' function", b.ctx.EntryModule.Path)
+	}
 
-// 	if !types.NoopFn.Compatible(main.Type) {
-// 		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", b.ctx.EntryModule.Path)
-// 	}
-// }
+	if !types.NoopFn.IsCompatible(main.Type) {
+		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", b.ctx.EntryModule.Path)
+	}
+}
 
 // func (b *Builder) generateCode() {
 // 	cg := codegen.NewCodegen(b.opts.LocalTargetPath)

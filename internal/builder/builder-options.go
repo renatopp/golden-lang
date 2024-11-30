@@ -2,6 +2,7 @@ package builder
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/compiler/token"
 	"github.com/renatopp/golden/internal/helpers/events"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -20,7 +21,7 @@ type BuildOptions struct {
 	OnTokensReady          *events.Signal2[*File, []*token.Token]
 	OnAstReady             *events.Signal2[*File, *ast.Module]
 	OnDependencyGraphReady *events.Signal1[[]*File]
-	// OnTypeCheckReady       *events.Signal3[*File, *ast.Module, *env.Scope]
+	OnTypeCheckReady       *events.Signal3[*File, *ast.Module, *env.Scope]
 }
 
 func NewBuildOptions(fileName string) *BuildOptions {
@@ -36,6 +37,6 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		OnTokensReady:          events.NewSignal2[*File, []*token.Token](),
 		OnAstReady:             events.NewSignal2[*File, *ast.Module](),
 		OnDependencyGraphReady: events.NewSignal1[[]*File](),
-		// OnTypeCheckReady:       events.NewSignal3[*File, *ast.Module, *env.Scope](),
+		OnTypeCheckReady:       events.NewSignal3[*File, *ast.Module, *env.Scope](),
 	}
 }

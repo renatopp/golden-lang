@@ -6,6 +6,7 @@ import (
 
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/compiler/token"
 )
 
@@ -21,39 +22,39 @@ func PrettyPrintTokens(file *builder.File, tokens []*token.Token) {
 	println()
 }
 
-func PrettyPrintAst(file *builder.File, root ast.Module) {
+func PrettyPrintAst(file *builder.File, root *ast.Module) {
 	fmt.Printf("AST for module %s:\n", file.Path)
 	root.Visit(NewAstPrinter())
 	println()
 }
 
-// func PrettyPrintScope(scope *env.Scope) {
-// 	if scope == nil {
-// 		return
-// 	}
+func PrettyPrintScope(scope *env.Scope) {
+	if scope == nil {
+		return
+	}
 
-// 	println("Scope:")
-// 	for k, v := range scope.Types.Bindings {
-// 		if v.Type == nil {
-// 			fmt.Printf("- (T) %s → %s\n", k, "<nil>")
-// 		} else {
-// 			fmt.Printf("- (T) %s → %s\n", k, v.Type.GetSignature())
-// 		}
-// 	}
-// 	for k, v := range scope.Values.Bindings {
-// 		if v.Type == nil {
-// 			fmt.Printf("- (V) %s → %s\n", k, "<nil>")
-// 		} else {
-// 			fmt.Printf("- (V) %s → %s\n", k, v.Type.GetSignature())
-// 			// n := reflect.TypeOf(v.Node).String()
-// 			// fmt.Printf("- (V) %s:%s → %s\n", k, n, v.Type.GetSignature())
-// 		}
-// 	}
+	println("Scope:")
+	for k, v := range scope.Types.Bindings {
+		if v.Type == nil {
+			fmt.Printf("- (T) %s → %s\n", k, "<nil>")
+		} else {
+			fmt.Printf("- (T) %s → %s\n", k, v.Type.GetSignature())
+		}
+	}
+	for k, v := range scope.Values.Bindings {
+		if v.Type == nil {
+			fmt.Printf("- (V) %s → %s\n", k, "<nil>")
+		} else {
+			fmt.Printf("- (V) %s → %s\n", k, v.Type.GetSignature())
+			// n := reflect.TypeOf(v.Node).String()
+			// fmt.Printf("- (V) %s:%s → %s\n", k, n, v.Type.GetSignature())
+		}
+	}
 
-// 	if scope.Parent != nil {
-// 		print("\nParent ")
-// 		PrettyPrintScope(scope.Parent)
-// 	}
+	if scope.Parent != nil {
+		print("\nParent ")
+		PrettyPrintScope(scope.Parent)
+	}
 
-// 	println()
-// }
+	println()
+}

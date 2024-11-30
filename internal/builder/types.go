@@ -2,6 +2,8 @@ package builder
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/env"
+	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/safe"
 )
 
@@ -43,9 +45,9 @@ func NewFile(name, path, fileName string) *File {
 	}
 }
 
-// func (m *File) Scope() *env.Scope {
-// 	return m.Root.Type().(*types.Module).Scope
-// }
+func (m *File) Scope() *env.Scope {
+	return m.Root.Unwrap().GetType().Unwrap().(*types.Module).Scope
+}
 
 // Represents the import from one module to another.
 type ModuleImport struct {

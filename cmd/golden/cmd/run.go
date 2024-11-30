@@ -3,8 +3,12 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/renatopp/golden/internal/builder"
+	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/env"
+
 	// "github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/helpers/debug"
 	"github.com/renatopp/golden/internal/helpers/errors"
@@ -43,8 +47,8 @@ func (c *Run) Run() error {
 	if *flagDebug {
 		opts.OnTokensReady.Subscribe(debug.PrettyPrintTokens)
 		opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
-		// opts.OnDependencyGraphReady.Subscribe(printDependencyGraph)
-		// opts.OnTypeCheckReady.Subscribe(printTypedAst)
+		opts.OnDependencyGraphReady.Subscribe(printDependencyGraph)
+		opts.OnTypeCheckReady.Subscribe(printTypedAst)
 	}
 
 	if flagWorkingDir != nil {
@@ -63,17 +67,17 @@ func (c *Run) Run() error {
 	return nil
 }
 
-// func printDependencyGraph(order []*builder.Package) {
-// 	deps := []string{}
-// 	for _, p := range order {
-// 		deps = append(deps, p.Path)
-// 	}
-// 	names := strings.Join(deps, "\n- ")
-// 	fmt.Printf("Order of dependencies:\n- %s\n", names)
-// 	println()
-// }
+func printDependencyGraph(order []*builder.File) {
+	deps := []string{}
+	for _, p := range order {
+		deps = append(deps, p.Path)
+	}
+	names := strings.Join(deps, "\n- ")
+	fmt.Printf("Order of dependencies:\n- %s\n", names)
+	println()
+}
 
-// func printTypedAst(mod *builder.File, a *ast.Module, scope *env.Scope) {
-// 	debug.PrettyPrintAst(mod, a)
-// 	debug.PrettyPrintScope(scope)
-// }
+func printTypedAst(mod *builder.File, a *ast.Module, scope *env.Scope) {
+	debug.PrettyPrintAst(mod, a)
+	debug.PrettyPrintScope(scope)
+}

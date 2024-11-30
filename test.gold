@@ -2,12 +2,13 @@ const unary1 = -1
 const unary2 = +1
 const unary3 = !false
 const a = 1 + 1
-const a = 1 * { 1 + 2 } 
-const b = 1.0
-const c = true
-const d = 'asd
+const b = 1 * { 1 + 2 } 
+const c = 1.0
+const d = true
+const e = 'asd
 fas
 dfasdfasdf'
 
-const e = false or true
+const f = false or true
+const g = a > b
 -- const f = 
