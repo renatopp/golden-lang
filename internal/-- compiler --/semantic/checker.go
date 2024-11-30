@@ -69,20 +69,20 @@ func (c *TypeChecker) expectType(node ast.Node, types ...ast.Type) {
 	}
 
 	if len(types) == 1 {
-		errors.ThrowAtNode(node, errors.TypeError, "expected type '%s', but got '%s'", types[0].Signature(), node.Type().Signature())
+		errors.ThrowAtNode(node, errors.TypeError, "expected type '%s', but got '%s'", types[0].GetSignature(), node.Type().GetSignature())
 	}
 
 	tps := []string{}
 	for _, t := range types {
-		tps = append(tps, fmt.Sprintf("'%s'", t.Signature()))
+		tps = append(tps, fmt.Sprintf("'%s'", t.GetSignature()))
 	}
 	names := strings.Join(tps[:len(tps)-1], ", ") + " or " + tps[len(tps)-1]
-	errors.ThrowAtNode(node, errors.TypeError, "expected type %s, but got '%s'", names, node.Type().Signature())
+	errors.ThrowAtNode(node, errors.TypeError, "expected type %s, but got '%s'", names, node.Type().GetSignature())
 }
 
 func (c *TypeChecker) expectCompatible(a, b ast.Node) {
 	if !a.Type().Compatible(b.Type()) {
-		errors.ThrowAtNode(a, errors.TypeError, "mismatching types '%s' and '%s'", a.Type().Signature(), b.Type().Signature())
+		errors.ThrowAtNode(a, errors.TypeError, "mismatching types '%s' and '%s'", a.Type().GetSignature(), b.Type().GetSignature())
 	}
 }
 
@@ -190,7 +190,7 @@ func (c *TypeChecker) VisitVarDecl(node *ast.VarDecl) {
 	val.Accept(c)
 	if node.TypeExpr.Has() {
 		if !val.Type().Compatible(tp.Type()) {
-			errors.ThrowAtNode(node, errors.TypeError, "cannot assign type '%s' into a '%s' variable", val.Type().Signature(), tp.Type().Signature())
+			errors.ThrowAtNode(node, errors.TypeError, "cannot assign type '%s' into a '%s' variable", val.Type().GetSignature(), tp.Type().GetSignature())
 		}
 	}
 	node.SetType(types.Void)
@@ -327,7 +327,7 @@ func (c *TypeChecker) VisitFuncDecl(node *ast.FuncDecl) {
 
 	node.Body.Accept(c)
 	if !ret.Compatible(node.Body.Type()) {
-		errors.ThrowAtNode(node, errors.TypeError, "function return type '%s' does not match body type '%s'", ret.Signature(), node.Body.Type().Signature())
+		errors.ThrowAtNode(node, errors.TypeError, "function return type '%s' does not match body type '%s'", ret.GetSignature(), node.Body.Type().GetSignature())
 	}
 	c.popScope()
 
@@ -369,7 +369,7 @@ func (c *TypeChecker) VisitAppl(node *ast.Appl) {
 		errors.ThrowAtNode(node, errors.InternalError, "target type is nil")
 
 	default:
-		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not applicable", node.Target.Type().Signature())
+		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not applicable", node.Target.Type().GetSignature())
 	}
 }
 
@@ -386,7 +386,7 @@ func (c *TypeChecker) applFunction(node *ast.Appl, fn *types.Function) {
 		arg.ValueExpr.Accept(c)
 		arg.SetType(arg.ValueExpr.Type())
 		if !fn.Params[i].Compatible(arg.Type()) {
-			errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not compatible with '%s'", arg.Type().Signature(), fn.Params[i].Signature())
+			errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not compatible with '%s'", arg.Type().GetSignature(), fn.Params[i].GetSignature())
 		}
 	}
 
@@ -404,7 +404,7 @@ func (c *TypeChecker) VisitAccess(node *ast.Access) {
 		errors.ThrowAtNode(node, errors.InternalError, "target type is nil")
 
 	default:
-		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not accessible", node.Target.Type().Signature())
+		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not accessible", node.Target.Type().GetSignature())
 	}
 }
 

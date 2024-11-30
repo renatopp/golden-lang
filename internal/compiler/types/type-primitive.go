@@ -2,16 +2,17 @@ package types
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/compiler/token"
 )
 
 var (
-	Zero        *ast.Int
-	One         *ast.Int
-	FZero       *ast.Float
-	FOne        *ast.Float
-	False       *ast.Bool
-	True        *ast.Bool
-	EmptyString *ast.String
+	Zero        ast.Int
+	One         ast.Int
+	FZero       ast.Float
+	FOne        ast.Float
+	False       ast.Bool
+	True        ast.Bool
+	EmptyString ast.String
 
 	Int    *Primitive
 	Float  *Primitive
@@ -20,13 +21,13 @@ var (
 )
 
 func init() {
-	Zero = ast.NewInt(nil, 0)
-	One = ast.NewInt(nil, 1)
-	FZero = ast.NewFloat(nil, 0)
-	FOne = ast.NewFloat(nil, 1)
-	False = ast.NewBool(nil, false)
-	True = ast.NewBool(nil, true)
-	EmptyString = ast.NewString(nil, "")
+	Zero = ast.NewInt(token.Token{}, 0)
+	One = ast.NewInt(token.Token{}, 1)
+	FZero = ast.NewFloat(token.Token{}, 0)
+	FOne = ast.NewFloat(token.Token{}, 1)
+	False = ast.NewBool(token.Token{}, false)
+	True = ast.NewBool(token.Token{}, true)
+	EmptyString = ast.NewString(token.Token{}, "")
 
 	Int = NewPrimitive("Int", func() (ast.Node, error) { return Zero, nil })
 	Float = NewPrimitive("Float", func() (ast.Node, error) { return FZero, nil })
@@ -54,14 +55,8 @@ func NewPrimitive(name string, fn func() (ast.Node, error)) *Primitive {
 	}
 }
 
-func (p *Primitive) Signature() string {
-	return p.Name
-}
-
-func (p *Primitive) Compatible(other ast.Type) bool {
-	return other != nil && p.Id() == other.Id()
-}
-
-func (p *Primitive) Default() (ast.Node, error) {
-	return p.DefaultFn()
+func (p *Primitive) GetSignature() string          { return p.Name }
+func (p *Primitive) GetDefault() (ast.Node, error) { return p.DefaultFn() }
+func (p *Primitive) IsCompatible(other ast.Type) bool {
+	return other != nil && p.GetId() == other.GetId()
 }

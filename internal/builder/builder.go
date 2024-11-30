@@ -175,11 +175,11 @@ func (b *Builder) buildDependencyGraphLoop(registry map[string]*File, file *File
 
 func (b *Builder) buildGlobalScope() {
 	b.ctx.GlobalScope = env.NewScope()
-	// b.ctx.GlobalScope.Types.Set(types.Int.Signature(), env.B(types.Int))
-	// b.ctx.GlobalScope.Types.Set(types.Float.Signature(), env.B(types.Float))
-	// b.ctx.GlobalScope.Types.Set(types.Bool.Signature(), env.B(types.Bool))
-	// b.ctx.GlobalScope.Types.Set(types.String.Signature(), env.B(types.String))
-	// b.ctx.GlobalScope.Types.Set(types.Void.Signature(), env.B(types.Void))
+	// b.ctx.GlobalScope.Types.Set(types.Int.GetSignature(), env.B(types.Int))
+	// b.ctx.GlobalScope.Types.Set(types.Float.GetSignature(), env.B(types.Float))
+	// b.ctx.GlobalScope.Types.Set(types.Bool.GetSignature(), env.B(types.Bool))
+	// b.ctx.GlobalScope.Types.Set(types.String.GetSignature(), env.B(types.String))
+	// b.ctx.GlobalScope.Types.Set(types.Void.GetSignature(), env.B(types.Void))
 }
 
 func (b *Builder) semanticAnalysis() {

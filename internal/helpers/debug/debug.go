@@ -37,16 +37,16 @@ func PrettyPrintAst(file *builder.File, root ast.Module) {
 // 		if v.Type == nil {
 // 			fmt.Printf("- (T) %s → %s\n", k, "<nil>")
 // 		} else {
-// 			fmt.Printf("- (T) %s → %s\n", k, v.Type.Signature())
+// 			fmt.Printf("- (T) %s → %s\n", k, v.Type.GetSignature())
 // 		}
 // 	}
 // 	for k, v := range scope.Values.Bindings {
 // 		if v.Type == nil {
 // 			fmt.Printf("- (V) %s → %s\n", k, "<nil>")
 // 		} else {
-// 			fmt.Printf("- (V) %s → %s\n", k, v.Type.Signature())
+// 			fmt.Printf("- (V) %s → %s\n", k, v.Type.GetSignature())
 // 			// n := reflect.TypeOf(v.Node).String()
-// 			// fmt.Printf("- (V) %s:%s → %s\n", k, n, v.Type.Signature())
+// 			// fmt.Printf("- (V) %s:%s → %s\n", k, n, v.Type.GetSignature())
 // 		}
 // 	}
 
