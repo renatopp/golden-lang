@@ -1,23 +1,54 @@
 package ast
 
+import (
+	"github.com/renatopp/golden/internal/helpers/iter"
+	"github.com/renatopp/golden/internal/helpers/safe"
+)
+
 type Visitor interface {
-	VisitModule(*Module)
-	VisitImport(*Import)
-	VisitInt(*Int)
-	VisitFloat(*Float)
-	VisitBool(*Bool)
-	VisitString(*String)
-	VisitVarIdent(*VarIdent)
-	VisitVarDecl(*VarDecl)
-	VisitBlock(*Block)
-	VisitUnaryOp(*UnaryOp)
-	VisitBinaryOp(*BinaryOp)
-	VisitAccess(*Access)
-	VisitTypeIdent(*TypeIdent)
-	VisitFuncType(*FuncType)
-	VisitFuncTypeParam(*FuncTypeParam)
-	VisitFuncDecl(*FuncDecl)
-	VisitFuncDeclParam(*FuncDeclParam)
-	VisitAppl(*Appl)
-	VisitApplArg(*ApplArg)
+	VisitModule(*Module) Node
+	VisitConst(*Const) Node
+	VisitInt(*Int) Node
+	VisitFloat(*Float) Node
+	VisitString(*String) Node
+	VisitBool(*Bool) Node
+	VisitVarIdent(*VarIdent) Node
+	VisitTypeIdent(*TypeIdent) Node
+	VisitBinOp(*BinOp) Node
+	VisitUnaryOp(*UnaryOp) Node
+	VisitBlock(*Block) Node
+}
+
+// Use it to replace nodes in the AST.
+type Replacer struct {
+}
+
+func (v *Replacer) VisitModule(node *Module) Node {
+	node.Exprs = iter.Map(node.Exprs, func(e Node) Node { return e.Visit(v) })
+	return node
+}
+func (v *Replacer) VisitConst(node *Const) Node {
+	node.Name = node.Name.Visit(v).(*VarIdent)
+	node.TypeExpr = safe.Map(node.TypeExpr, func(n Node) Node { return n.Visit(v) })
+	node.ValueExpr = node.ValueExpr.Visit(v)
+	return node
+}
+func (v *Replacer) VisitInt(node *Int) Node             { return node }
+func (v *Replacer) VisitFloat(node *Float) Node         { return node }
+func (v *Replacer) VisitString(node *String) Node       { return node }
+func (v *Replacer) VisitBool(node *Bool) Node           { return node }
+func (v *Replacer) VisitVarIdent(node *VarIdent) Node   { return node }
+func (v *Replacer) VisitTypeIdent(node *TypeIdent) Node { return node }
+func (v *Replacer) VisitBinOp(node *BinOp) Node {
+	node.LeftExpr = node.LeftExpr.Visit(v)
+	node.RightExpr = node.RightExpr.Visit(v)
+	return node
+}
+func (v *Replacer) VisitUnaryOp(node *UnaryOp) Node {
+	node.RightExpr = node.RightExpr.Visit(v)
+	return node
+}
+func (v *Replacer) VisitBlock(node *Block) Node {
+	node.Exprs = iter.Map(node.Exprs, func(e Node) Node { return e.Visit(v) })
+	return node
 }

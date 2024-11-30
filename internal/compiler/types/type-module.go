@@ -7,6 +7,8 @@ import (
 	"github.com/renatopp/golden/internal/compiler/env"
 )
 
+var _ ast.Type = &Module{}
+
 type Module struct {
 	*BaseType
 	Path  string
@@ -21,14 +23,14 @@ func NewModule(node *ast.Module, path string, scope *env.Scope) *Module {
 	}
 }
 
-func (m *Module) Signature() string {
+func (m *Module) GetSignature() string {
 	return fmt.Sprintf("Module('%s')", m.Path)
 }
 
-func (m *Module) Compatible(other ast.Type) bool {
-	return other != nil && m.Id() == other.Id()
+func (m *Module) GetDefault() (ast.Node, error) {
+	return nil, fmt.Errorf("module type does not have a default value")
 }
 
-func (m *Module) Default() (ast.Node, error) {
-	return nil, fmt.Errorf("module type does not have a default value")
+func (m *Module) IsCompatible(other ast.Type) bool {
+	return other != nil && m.GetId() == other.GetId()
 }

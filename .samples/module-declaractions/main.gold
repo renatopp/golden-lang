@@ -1,5 +1,0 @@
-let twopies = utils.pi*2.0
--- let onepi = utils.pi
-let onepi = 3.14159
-
-fn main() {  }

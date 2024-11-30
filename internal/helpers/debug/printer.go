@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/renatopp/golden/internal/compiler/ast"
+	"github.com/renatopp/golden/internal/helpers/iter"
+	"github.com/renatopp/golden/internal/helpers/str"
 )
 
 var _ ast.Visitor = &AstPrinter{}
@@ -19,212 +21,101 @@ func NewAstPrinter() *AstPrinter {
 	}
 }
 
-func (p *AstPrinter) inc() { p.depth++ }
-func (p *AstPrinter) dec() { p.depth-- }
-func (p *AstPrinter) indent() string {
-	return strings.Repeat("  ", p.depth-1)
-}
-
-func (p *AstPrinter) print(s string, args ...any) {
-	fmt.Printf(p.indent()+s, args...)
-}
-
-func (p *AstPrinter) printType(node ast.Node) {
-	if tp := node.Type(); tp != nil {
-		fmt.Printf(" → %s", tp.Signature())
-	}
-	println()
-}
-
-func (p *AstPrinter) VisitModule(node *ast.Module) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [module %s]", node.Path)
-	p.printType(node)
-	for _, stmt := range node.Imports {
-		stmt.Accept(p)
-	}
-	for _, stmt := range node.Functions {
-		stmt.Accept(p)
-	}
-	for _, stmt := range node.Variables {
-		stmt.Accept(p)
-	}
-}
-
-func (p *AstPrinter) VisitImport(node *ast.Import) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [import]")
-	p.printType(node)
-	node.Path.Accept(p)
-	node.Alias.If(func(alias *ast.VarIdent) {
-		alias.Accept(p)
+func (p *AstPrinter) inc()           { p.depth++ }
+func (p *AstPrinter) dec()           { p.depth-- }
+func (p *AstPrinter) indent() string { return strings.Repeat("  ", p.depth-1) }
+func (p *AstPrinter) print(n ast.Node, s string, args ...any) {
+	first := fmt.Sprintf(p.indent()+s, args...)
+	fmt.Print(first)
+	n.GetType().IfElse(func(tp ast.Type) {
+		second := fmt.Sprintf(" → %s", tp.GetSignature())
+		println(str.Repeat(" ", 50-len(first)), second)
+	}, func() {
+		println()
 	})
 }
 
-func (p *AstPrinter) VisitInt(node *ast.Int) {
+func (p *AstPrinter) VisitModule(node *ast.Module) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [int %d]", node.Literal)
-	p.printType(node)
+	p.print(node, "[module]")
+	iter.Each(node.Exprs, func(e ast.Node) { e.Visit(p) })
+	return node
 }
 
-func (p *AstPrinter) VisitFloat(node *ast.Float) {
+func (p *AstPrinter) VisitConst(node *ast.Const) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [float %f]", node.Literal)
-	p.printType(node)
+	p.print(node, "[const]")
+	node.Name.Visit(p)
+	node.TypeExpr.If(func(n ast.Node) { n.Visit(p) })
+	node.ValueExpr.Visit(p)
+	return node
 }
 
-func (p *AstPrinter) VisitString(node *ast.String) {
+func (p *AstPrinter) VisitInt(node *ast.Int) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [string %s]", node.Literal)
-	p.printType(node)
+	p.print(node, "[int:%d]", node.Value)
+	return node
 }
 
-func (p *AstPrinter) VisitBool(node *ast.Bool) {
+func (p *AstPrinter) VisitFloat(node *ast.Float) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [bool %t]", node.Literal)
-	p.printType(node)
+	p.print(node, "[float:%f]", node.Value)
+	return node
 }
 
-func (p *AstPrinter) VisitVarIdent(node *ast.VarIdent) {
+func (p *AstPrinter) VisitString(node *ast.String) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [var-ident %s]", node.Literal)
-	p.printType(node)
+	p.print(node, "[string:'%s']", Escape(node.Value))
+	return node
 }
 
-func (p *AstPrinter) VisitVarDecl(node *ast.VarDecl) {
+func (p *AstPrinter) VisitBool(node *ast.Bool) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [var-decl]")
-	p.printType(node)
-	node.Name.Accept(p)
-	node.TypeExpr.If(func(expr ast.Node) { expr.Accept(p) })
-	node.ValueExpr.If(func(expr ast.Node) { expr.Accept(p) })
+	p.print(node, "[bool:%t]", node.Value)
+	return node
 }
 
-func (p *AstPrinter) VisitBlock(node *ast.Block) {
+func (p *AstPrinter) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [block]")
-	p.printType(node)
-	for _, stmt := range node.Expressions {
-		stmt.Accept(p)
-	}
+	p.print(node, "[var-ident:%s]", node.Value)
+	return node
 }
 
-func (p *AstPrinter) VisitUnaryOp(node *ast.UnaryOp) {
+func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [unary-op %s]", node.Operator)
-	p.printType(node)
-	node.Right.Accept(p)
+	p.print(node, "[type-ident:%s]", node.Value)
+	return node
 }
 
-func (p *AstPrinter) VisitBinaryOp(node *ast.BinaryOp) {
+func (p *AstPrinter) VisitBinOp(node *ast.BinOp) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [binary-op %s]", node.Operator)
-	p.printType(node)
-	node.Left.Accept(p)
-	node.Right.Accept(p)
+	p.print(node, "[bin-op:%s]", node.Op)
+	node.LeftExpr.Visit(p)
+	node.RightExpr.Visit(p)
+	return node
 }
 
-func (p *AstPrinter) VisitAccess(node *ast.Access) {
+func (p *AstPrinter) VisitUnaryOp(node *ast.UnaryOp) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [access]")
-	p.printType(node)
-	node.Target.Accept(p)
-	node.Accessor.Accept(p)
+	p.print(node, "[unary-op:%s]", node.Op)
+	node.RightExpr.Visit(p)
+	return node
 }
 
-func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) {
+func (p *AstPrinter) VisitBlock(node *ast.Block) ast.Node {
 	p.inc()
 	defer p.dec()
-
-	p.print("- [type-ident %s]", node.Literal)
-	p.printType(node)
-}
-
-func (p *AstPrinter) VisitFuncType(node *ast.FuncType) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [func-type]")
-	p.printType(node)
-	for _, param := range node.Params {
-		param.Accept(p)
-	}
-	node.Return.If(func(expr ast.Node) { expr.Accept(p) })
-}
-
-func (p *AstPrinter) VisitFuncTypeParam(node *ast.FuncTypeParam) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [func-type-param %d]", node.Index)
-	p.printType(node)
-	node.TypeExpr.Accept(p)
-}
-
-func (p *AstPrinter) VisitFuncDecl(node *ast.FuncDecl) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [func-decl]")
-	p.printType(node)
-	node.Name.If(func(name *ast.VarIdent) { name.Accept(p) })
-	for _, param := range node.Params {
-		param.Accept(p)
-	}
-	node.Return.If(func(expr ast.Node) { expr.Accept(p) })
-	node.Body.Accept(p)
-}
-
-func (p *AstPrinter) VisitFuncDeclParam(node *ast.FuncDeclParam) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [func-decl-param %d %s]", node.Index, node.Name.Literal)
-	p.printType(node)
-	node.TypeExpr.Accept(p)
-}
-
-func (p *AstPrinter) VisitAppl(node *ast.Appl) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [appl]")
-	p.printType(node)
-	node.Target.Accept(p)
-	for _, arg := range node.Args {
-		arg.Accept(p)
-	}
-}
-
-func (p *AstPrinter) VisitApplArg(node *ast.ApplArg) {
-	p.inc()
-	defer p.dec()
-
-	p.print("- [appl-arg %d]", node.Index)
-	p.printType(node)
-	node.ValueExpr.Accept(p)
+	p.print(node, "[block]")
+	iter.Each(node.Exprs, func(e ast.Node) { e.Visit(p) })
+	return node
 }

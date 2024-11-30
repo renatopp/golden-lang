@@ -1,52 +1,33 @@
 package env
 
-import "github.com/renatopp/golden/internal/compiler/ast"
-
-type Binding struct {
-	Node ast.Node // The node that the binding refers to
-	Type ast.Type // The type of the binding
+type scopeMap[T any] struct {
+	Parent   *scopeMap[T]
+	Bindings map[string]T
 }
 
-func NewBinding(t ast.Type, n ast.Node) *Binding {
-	return &Binding{Node: n, Type: t}
-}
-
-func NewSimpleBinding(t ast.Type) *Binding {
-	return &Binding{Type: t}
-}
-
-var B = NewSimpleBinding
-var BN = NewBinding
-
-//
-//
-//
-
-type ScopeMap struct {
-	Parent   *ScopeMap
-	Bindings map[string]*Binding
-}
-
-func (s *ScopeMap) Get(key string) *Binding {
+func (s *scopeMap[T]) Get(key string, or T) T {
 	if binding, ok := s.Bindings[key]; ok {
 		return binding
 	}
 	if s.Parent != nil {
-		return s.Parent.Get(key)
+		return s.Parent.Get(key, or)
 	}
-	return nil
+	return or
 }
 
-func (s *ScopeMap) GetLocal(key string) *Binding {
-	return s.Bindings[key]
+func (s *scopeMap[T]) GetLocal(key string, or T) T {
+	if binding, ok := s.Bindings[key]; ok {
+		return binding
+	}
+	return or
 }
 
-func (s *ScopeMap) Set(key string, binding *Binding) {
+func (s *scopeMap[T]) Set(key string, binding T) {
 	s.Bindings[key] = binding
 }
 
-func (s *ScopeMap) Clear() {
-	s.Bindings = map[string]*Binding{}
+func (s *scopeMap[T]) Clear() {
+	s.Bindings = map[string]T{}
 }
 
 //
@@ -57,16 +38,16 @@ type Scope struct {
 	Depth    int
 	IsModule bool
 	Parent   *Scope
-	Types    *ScopeMap
-	Values   *ScopeMap
+	Types    *scopeMap[*TypeBinding]
+	Values   *scopeMap[*ValueBinding]
 }
 
 func NewScope() *Scope {
 	return &Scope{
 		Depth:  0,
 		Parent: nil,
-		Types:  &ScopeMap{Bindings: map[string]*Binding{}},
-		Values: &ScopeMap{Bindings: map[string]*Binding{}},
+		Types:  &scopeMap[*TypeBinding]{Bindings: map[string]*TypeBinding{}},
+		Values: &scopeMap[*ValueBinding]{Bindings: map[string]*ValueBinding{}},
 	}
 }
 
@@ -74,7 +55,7 @@ func (s *Scope) New() *Scope {
 	return &Scope{
 		Depth:  s.Depth + 1,
 		Parent: s,
-		Types:  &ScopeMap{Parent: s.Types, Bindings: map[string]*Binding{}},
-		Values: &ScopeMap{Parent: s.Values, Bindings: map[string]*Binding{}},
+		Types:  &scopeMap[*TypeBinding]{Parent: s.Types, Bindings: map[string]*TypeBinding{}},
+		Values: &scopeMap[*ValueBinding]{Parent: s.Values, Bindings: map[string]*ValueBinding{}},
 	}
 }

@@ -2,20 +2,20 @@ package types
 
 import "github.com/renatopp/golden/internal/compiler/ast"
 
-var _baseTypeId uint64
+var _typeId uint64
 
 type BaseType struct {
-	id         uint64
-	definition ast.Node
+	Id         uint64
+	Definition ast.Node
 }
 
 func NewBaseType(def ast.Node) *BaseType {
-	_baseTypeId++
+	_typeId++
 	return &BaseType{
-		id:         _baseTypeId,
-		definition: def,
+		Id:         _typeId,
+		Definition: def,
 	}
 }
 
-func (t *BaseType) Id() uint64           { return t.id }
-func (t *BaseType) Definition() ast.Node { return t.definition }
+func (t *BaseType) GetId() uint64           { return t.Id }
+func (t *BaseType) GetDefinition() ast.Node { return t.Definition }

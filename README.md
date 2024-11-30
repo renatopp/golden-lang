@@ -35,8 +35,8 @@ classDef stable fill:#2cba00,color:white,stroke-width:0
 build[Build]:::partial
 lexer[Lexer]:::stable
 parser[Parser]:::stable
-semantic[Semantics]:::experiment
-ir[IR]:::notstarted
+semantic[Semantics]:::stable
+ir[IR]:::experiment
 opt[Optimizations]:::notstarted
 backend[Backend]:::notstarted
 
@@ -57,17 +57,18 @@ Legend:
 | Step          | Description                                                  |
 |---------------|--------------------------------------------------------------|
 | Build         | Package loading, module loading, caching, etc.               |
-| Lexer         | Convertion of source code into tokens.                       |
-| Parser        | Convertion of the tokens into AST .                          |
+| Lexer         | Conversion of source code into tokens.                       |
+| Parser        | Conversion of the tokens into AST .                          |
 | Semantics     | Type check, inference, and other coding analysis and checks. |
-| IR            | Convertion of the AST into an intermediate representation.   |
+| IR            | Conversion of the AST into an intermediate representation.   |
 | Optimizations | Optimizations over the IR.                                   |
 | Backend       | Code Generation or interpretation.                           |
 
 ### Language
 
-- Modules, Packages and Imports
-- Primitive Types: `Int`, `String`, `Float`, `Bool`
-- Immutable Variables; `let`
-- Functions: `Fn` type, functions declaration, closure
+[x] Modules
+[x] Constants `const`
+[x] Primitive Types: `Int`, `String`, `Float`, `Bool`
+[ ] Imports
+[ ] Functions: `Fn` type, functions declaration
 

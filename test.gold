@@ -1,2 +1,14 @@
-let x = 2
-fn main() Int { 2}
+const unary1 = -1
+const unary2 = +1
+const unary3 = !false
+const a = 1 + 1
+const b = 1 * { 1 + 2 } 
+const c = 1.0
+const d = true
+const e = 'asd
+fas
+dfasdfasdf'
+
+const f = false or true
+const g = a > b
+-- const f = 

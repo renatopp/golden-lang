@@ -5,27 +5,35 @@ type Optional[T any] struct {
 	present bool
 }
 
-func (o *Optional[T]) Or(v T) T {
+func (o Optional[T]) Or(v T) T {
 	if o.present {
 		return o.value
 	}
 	return v
 }
 
-func (o *Optional[T]) Has() bool {
+func (o Optional[T]) Has() bool {
 	return o.present
 }
 
-func (o *Optional[T]) Unwrap() T {
+func (o Optional[T]) Unwrap() T {
 	if !o.present {
 		panic("unwrap of None")
 	}
 	return o.value
 }
 
-func (o *Optional[T]) If(fn func(T)) {
+func (o Optional[T]) If(fn func(T)) {
 	if o.present {
 		fn(o.value)
+	}
+}
+
+func (o Optional[T]) IfElse(fn func(T), elseFn func()) {
+	if o.present {
+		fn(o.value)
+	} else {
+		elseFn()
 	}
 }
 
@@ -37,4 +45,11 @@ func None[T any]() Optional[T] {
 	return Optional[T]{
 		present: false,
 	}
+}
+
+func Map[A, B any](o Optional[A], fn func(A) B) Optional[B] {
+	if o.present {
+		return Some(fn(o.value))
+	}
+	return None[B]()
 }

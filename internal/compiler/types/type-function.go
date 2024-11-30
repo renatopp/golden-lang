@@ -25,22 +25,26 @@ func NewFunction(def ast.Node, parameters []ast.Type, returnType ast.Type) *Func
 	}
 }
 
-func (f *Function) Signature() string {
+func (f *Function) GetSignature() string {
 	params := make([]string, len(f.Params))
 	for i, p := range f.Params {
-		params[i] = p.Signature()
+		params[i] = p.GetSignature()
 	}
 	p := strings.Join(params, ", ")
 
 	ret := ""
 	if f.Return != nil {
-		ret = " " + f.Return.Signature()
+		ret = " " + f.Return.GetSignature()
 	}
 
 	return fmt.Sprintf("Fn (%s)%s", p, ret)
 }
 
-func (f *Function) Compatible(t ast.Type) bool {
+func (f *Function) GetDefault() (ast.Node, error) {
+	return nil, fmt.Errorf("functions cannot have default values")
+}
+
+func (f *Function) IsCompatible(t ast.Type) bool {
 	fn, ok := t.(*Function)
 	if !ok {
 		return false
@@ -51,18 +55,14 @@ func (f *Function) Compatible(t ast.Type) bool {
 	}
 
 	for i, p := range f.Params {
-		if !p.Compatible(fn.Params[i]) {
+		if !p.IsCompatible(fn.Params[i]) {
 			return false
 		}
 	}
 
 	if f.Return != nil && fn.Return != nil {
-		return f.Return.Compatible(fn.Return)
+		return f.Return.IsCompatible(fn.Return)
 	}
 
 	return true
-}
-
-func (f *Function) Default() (ast.Node, error) {
-	return nil, fmt.Errorf("functions cannot have default values")
 }

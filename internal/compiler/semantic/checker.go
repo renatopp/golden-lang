@@ -2,419 +2,291 @@ package semantic
 
 import (
 	"fmt"
-	"slices"
-	"strings"
 
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
+	"github.com/renatopp/golden/internal/helpers/iter"
+	"github.com/renatopp/golden/internal/helpers/safe"
+	"github.com/renatopp/golden/internal/helpers/str"
 )
 
-var _ ast.Visitor = &TypeChecker{}
+var _ ast.Visitor = &Checker{}
 
-type TypeChecker struct {
-	scopeStack          *ds.Stack[env.Scope]
-	initializationStack []ast.Node
+// Initialization checker
+// Type checker
+// Type inference
+// Scope checker
+// Const checker
+// Const folding
+// Const propagation
+type Checker struct {
+	scopeStack          *ds.Stack[*env.Scope]
+	initializationStack *ds.Stack[ast.Node]
 }
 
-func NewTypeChecker() *TypeChecker {
-	return &TypeChecker{
-		scopeStack:          ds.NewStack[env.Scope](),
-		initializationStack: []ast.Node{},
+func NewChecker() *Checker {
+	return &Checker{
+		scopeStack:          ds.NewStack[*env.Scope](),
+		initializationStack: ds.NewStack[ast.Node](),
 	}
 }
 
-func (c *TypeChecker) pushScope(scope *env.Scope) {
+// Scoping
+
+func (c *Checker) pushScope(scope *env.Scope) {
 	c.scopeStack.Push(scope)
 }
 
-func (c *TypeChecker) popScope() *env.Scope {
-	return c.scopeStack.Pop()
+func (c *Checker) popScope() *env.Scope {
+	return c.scopeStack.Pop(nil)
 }
 
-func (c *TypeChecker) pushInitialization(node ast.Node) {
-	if slices.Contains(c.initializationStack, node) {
-		errors.ThrowAtNode(node, errors.CircularReferenceError, "circular initialization detected")
+func (c *Checker) scope() *env.Scope {
+	scope := c.scopeStack.Top(nil)
+	if scope == nil {
+		errors.Throw(errors.InternalError, "no scope found")
 	}
-	c.initializationStack = append(c.initializationStack, node)
+	return scope
 }
 
-func (c *TypeChecker) popInitialization() {
-	c.initializationStack = c.initializationStack[:len(c.initializationStack)-1]
-}
-
-func (c *TypeChecker) scope() *env.Scope {
-	return c.scopeStack.Top()
-}
-
-func (c *TypeChecker) expectTypeExpression(node ast.Node) {
-	if node.ExpressionKind() != ast.TypeExpressionKind {
-		errors.ThrowAtNode(node, errors.TypeError, "expected type expression")
+func (c *Checker) declare(name ast.Node, node ast.Node, tp ast.Type) {
+	scope := c.scope().Values
+	lit := name.GetToken().Literal
+	bind := scope.GetLocal(lit, nil)
+	if bind != nil && bind.IsSolved() {
+		errors.ThrowAtNode(name, errors.NameAlreadyDefined, "name '%s' already defined", lit)
 	}
-}
 
-func (c *TypeChecker) expectValueExpression(node ast.Node) {
-	if node.ExpressionKind() != ast.ValueExpressionKind {
-		errors.ThrowAtNode(node, errors.TypeError, "expected value expression")
+	if bind != nil {
+		bind.Type = tp
+	} else {
+		scope.Set(lit, env.VB(node, tp))
 	}
 }
 
-func (c *TypeChecker) expectType(node ast.Node, types ...ast.Type) {
+// Initialization Stack
+
+func (c *Checker) pushInitialization(node ast.Node) {
+	for _, e := range c.initializationStack.Iter() {
+		if e.IsEqual(node) {
+			// TODO: improve error message
+			errors.ThrowAtNode(node, errors.CircularReferenceError, "circular initialization detected")
+		}
+	}
+	c.initializationStack.Push(node)
+}
+
+func (c *Checker) popInitialization() ast.Node {
+	return c.initializationStack.Pop(nil)
+}
+
+// Checks
+
+func (c *Checker) expectNodeWithCompatibleType(node ast.Node, types ...ast.Type) {
+	wrappedType := node.GetType()
+	if !wrappedType.Has() {
+		errors.ThrowAtNode(node, errors.InternalError, "expected type '%s', but got 'unknown'", types[0].GetSignature())
+	}
+	tp := wrappedType.Unwrap()
+
 	for _, t := range types {
-		if node.Type() == t {
+		if t.IsCompatible(tp) {
 			return
 		}
 	}
 
 	if len(types) == 1 {
-		errors.ThrowAtNode(node, errors.TypeError, "expected type '%s', but got '%s'", types[0].Signature(), node.Type().Signature())
+		errors.ThrowAtNode(node, errors.TypeError, "expected type '%s', but got '%s'", types[0].GetSignature(), tp.GetSignature())
 	}
 
-	tps := []string{}
-	for _, t := range types {
-		tps = append(tps, fmt.Sprintf("'%s'", t.Signature()))
-	}
-	names := strings.Join(tps[:len(tps)-1], ", ") + " or " + tps[len(tps)-1]
-	errors.ThrowAtNode(node, errors.TypeError, "expected type %s, but got '%s'", names, node.Type().Signature())
+	names := str.MapHumanList(types, func(t ast.Type) string {
+		return fmt.Sprintf("'%s'", t.GetSignature())
+	}, "or")
+	errors.ThrowAtNode(node, errors.TypeError, "expected one of  %s, but got '%s'", names, tp.GetSignature())
 }
 
-func (c *TypeChecker) expectCompatible(a, b ast.Node) {
-	if !a.Type().Compatible(b.Type()) {
-		errors.ThrowAtNode(a, errors.TypeError, "mismatching types '%s' and '%s'", a.Type().Signature(), b.Type().Signature())
+func (c *Checker) expectCompatibleNodeTypes(a, b ast.Node) {
+	aWrappedType := a.GetType()
+	bWrappedType := b.GetType()
+
+	if !aWrappedType.Has() {
+		errors.ThrowAtNode(a, errors.InternalError, "expression has 'unknown' type")
+	}
+
+	if !bWrappedType.Has() {
+		errors.ThrowAtNode(b, errors.InternalError, "expression has 'unknown' type")
+	}
+
+	aType := aWrappedType.Unwrap()
+	bType := bWrappedType.Unwrap()
+
+	if !aType.IsCompatible(bType) {
+		errors.ThrowAtNode(a, errors.TypeError, "expected type '%s', but got '%s'", bType.GetSignature(), aType.GetSignature())
 	}
 }
 
-func (c *TypeChecker) declare(name string, node ast.Node, type_ ast.Type) {
-	if bind := c.scope().Values.GetLocal(name); bind != nil && bind.Type != nil {
-		errors.ThrowAtNode(node, errors.NameAlreadyDefined, "name '%s' already defined", name)
-	}
+// Interface
 
-	c.scope().Values.Set(name, env.BN(type_, node))
-}
-
-func (c *TypeChecker) PreResolve(node *ast.Module) {
-	c.pushScope(node.Type().(*types.Module).Scope)
+func (c *Checker) PreCheck(root *ast.Module) {
+	tp := root.GetType().Unwrap().(*types.Module)
+	c.pushScope(tp.Scope)
 	defer c.popScope()
 
-	for _, fn := range node.Functions {
-		c.scope().Values.Set(fn.Name.Unwrap().Literal, env.BN(nil, fn))
-	}
-
-	for _, v := range node.Variables {
-		c.scope().Values.Set(v.Name.Literal, env.BN(nil, v))
+	for _, e := range root.Exprs {
+		switch n := e.(type) {
+		case *ast.Const:
+			v := n.Name.Value
+			c.scope().Values.Set(v, env.VB(n, nil))
+		}
 	}
 }
 
-func (c *TypeChecker) Resolve(node *ast.Module) {
-	c.pushScope(node.Type().(*types.Module).Scope)
+func (c *Checker) Check(root *ast.Module) (res *ast.Module, err error) {
+	tp := root.GetType().Unwrap().(*types.Module)
+	c.pushScope(tp.Scope)
 	defer c.popScope()
 
-	for _, fn := range node.Functions {
-		fn.Accept(c)
+	err = errors.WithRecovery(func() {
+		res = c.VisitModule(root).(*ast.Module)
+	})
+	return res, err
+}
+
+func (c *Checker) VisitModule(node *ast.Module) ast.Node {
+	node.Exprs = iter.Map(node.Exprs, func(e ast.Node) ast.Node { return e.Visit(c) })
+	return node
+}
+
+func (c *Checker) VisitConst(node *ast.Const) ast.Node {
+	if node.Type.Has() {
+		return node
 	}
-
-	for _, v := range node.Variables {
-		v.Accept(c)
-	}
-}
-
-func (c *TypeChecker) VisitModule(node *ast.Module) {
-	errors.Throw(errors.NotImplemented, "VisitModule not implemented.")
-}
-
-func (c *TypeChecker) VisitImport(node *ast.Import) {
-	errors.Throw(errors.NotImplemented, "VisitImport not implemented.")
-}
-
-func (c *TypeChecker) VisitInt(node *ast.Int) {
-	node.SetType(types.Int)
-}
-
-func (c *TypeChecker) VisitFloat(node *ast.Float) {
-	node.SetType(types.Float)
-}
-
-func (c *TypeChecker) VisitString(node *ast.String) {
-	node.SetType(types.String)
-}
-
-func (c *TypeChecker) VisitBool(node *ast.Bool) {
-	node.SetType(types.Bool)
-}
-
-func (c *TypeChecker) VisitVarIdent(node *ast.VarIdent) {
-	var name = node.Literal
-	var binding = c.scope().Values.Get(name)
-	if binding == nil {
-		errors.ThrowAtNode(node, errors.NameNotFound, "variable '%s' not defined", name)
-	}
-
-	// Pre solved
-	if binding.Type == nil {
-		binding.Node.Accept(c)
-		binding = c.scope().Values.Get(name)
-	}
-
-	node.SetType(binding.Type)
-}
-
-func (c *TypeChecker) VisitVarDecl(node *ast.VarDecl) {
-	if node.Type() != nil {
-		return
-	}
-
 	c.pushInitialization(node)
 	defer c.popInitialization()
 
-	var tp = node.TypeExpr.Or(nil)
-	var val = node.ValueExpr.Or(nil)
-	var err error
-
-	node.TypeExpr.If(func(ast.Node) { tp.Accept(c) })
-
-	// Get default value if type is defined and value is not
-	if node.TypeExpr.Has() && !node.ValueExpr.Has() {
-		val, err = tp.Type().Default()
-		if err != nil {
-			errors.ThrowAtNode(tp, errors.TypeError, "%s", err.Error())
-		}
-	}
-
-	// Infer type from value
-	val.Accept(c)
+	node.TypeExpr = safe.Map(node.TypeExpr, func(e ast.Node) ast.Node { return e.Visit(c) })
+	node.ValueExpr = node.ValueExpr.Visit(c)
 	if node.TypeExpr.Has() {
-		if !val.Type().Compatible(tp.Type()) {
-			errors.ThrowAtNode(node, errors.TypeError, "cannot assign type '%s' into a '%s' variable", val.Type().Signature(), tp.Type().Signature())
-		}
+		c.expectCompatibleNodeTypes(node.TypeExpr.Unwrap(), node.ValueExpr)
 	}
-	node.SetType(types.Void)
-	node.Name.SetType(val.Type())
 
-	// Add to scope
-	c.declare(node.Name.Literal, val, val.Type())
-}
-
-func (c *TypeChecker) VisitBlock(node *ast.Block) {
-	c.pushScope(c.scope().New())
-	defer c.popScope()
-
-	var tp ast.Type = types.Void
-	for _, exp := range node.Expressions {
-		exp.Accept(c)
-		tp = exp.Type()
-	}
+	tp := node.ValueExpr.GetType().Unwrap()
 	node.SetType(tp)
+	node.Name.SetType(tp)
+	c.declare(node.Name, node, tp)
+	return node
 }
 
-func (c *TypeChecker) VisitUnaryOp(node *ast.UnaryOp) {
-	node.Right.Accept(c)
+func (c *Checker) VisitInt(node *ast.Int) ast.Node {
+	node.SetType(types.Int)
+	return node
+}
 
-	switch node.Operator {
-	case "-", "+":
-		c.expectType(node.Right, types.Int, types.Float)
-	case "!":
-		c.expectType(node.Right, types.Bool)
-	default:
-		errors.ThrowAtNode(node, errors.NotImplemented, "unary operator '%s' not implemented.", node.Operator)
+func (c *Checker) VisitFloat(node *ast.Float) ast.Node {
+	node.SetType(types.Float)
+	return node
+}
+
+func (c *Checker) VisitString(node *ast.String) ast.Node {
+	node.SetType(types.String)
+	return node
+}
+
+func (c *Checker) VisitBool(node *ast.Bool) ast.Node {
+	node.SetType(types.Bool)
+	return node
+}
+
+func (c *Checker) VisitVarIdent(node *ast.VarIdent) ast.Node {
+	name := node.Value
+	bind := c.scope().Values.Get(name, nil)
+	if bind == nil {
+		errors.ThrowAtNode(node, errors.NameNotFound, "variable '%s' not defined", name)
 	}
+	if !bind.IsSolved() {
+		bind.LastNode.Visit(c)
+		bind.Type = bind.LastNode.GetType().Unwrap()
+	}
+	node.SetType(bind.Type)
 
-	node.SetType(node.Right.Type())
+	return node
 }
 
-func (c *TypeChecker) VisitBinaryOp(node *ast.BinaryOp) {
-	node.Left.Accept(c)
-	node.Right.Accept(c)
+func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
+	return node
+}
 
-	switch node.Operator {
+func (c *Checker) VisitBinOp(node *ast.BinOp) ast.Node {
+	node.LeftExpr.Visit(c)
+	node.RightExpr.Visit(c)
+
+	switch node.Op {
 	case "+":
-		c.expectType(node.Left, types.Int, types.Float, types.String)
-		c.expectType(node.Right, types.Int, types.Float, types.String)
-		c.expectCompatible(node.Left, node.Right)
-		node.SetType(node.Left.Type())
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
+		node.SetType(node.LeftExpr.GetType().Unwrap())
 
 	case "-", "*", "/":
-		c.expectType(node.Left, types.Int, types.Float)
-		c.expectType(node.Right, types.Int, types.Float)
-		c.expectCompatible(node.Left, node.Right)
-		node.SetType(node.Left.Type())
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Int, types.Float)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
+		node.SetType(node.LeftExpr.GetType().Unwrap())
 
 	case "==", "!=":
 		node.SetType(types.Bool)
 
 	case ">", "<", ">=", "<=":
-		c.expectType(node.Left, types.Int, types.Float)
-		c.expectType(node.Right, types.Int, types.Float)
-		c.expectCompatible(node.Left, node.Right)
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Int, types.Float)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
 		node.SetType(types.Bool)
 
 	case "<=>":
-		c.expectType(node.Left, types.Int, types.Float)
-		c.expectType(node.Right, types.Int, types.Float)
-		c.expectCompatible(node.Left, node.Right)
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Int, types.Float)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+		c.expectCompatibleNodeTypes(node.LeftExpr, node.RightExpr)
 		node.SetType(types.Int)
 
 	case "and", "or", "xor":
-		c.expectType(node.Left, types.Bool)
-		c.expectType(node.Right, types.Bool)
+		c.expectNodeWithCompatibleType(node.LeftExpr, types.Bool)
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Bool)
 		node.SetType(types.Bool)
 
 	default:
-		errors.ThrowAtNode(node, errors.NotImplemented, "binary operator '%s' not implemented.", node.Operator)
+		errors.ThrowAtNode(node, errors.NotImplemented, "binary operator '%s' not implemented.", node.Op)
 	}
+
+	return node
 }
 
-func (c *TypeChecker) VisitTypeIdent(node *ast.TypeIdent) {
-	if node.ExpressionKind() == ast.TypeExpressionKind {
-		binding := c.scope().Types.Get(node.Literal)
-		if binding == nil {
-			errors.ThrowAtNode(node, errors.NameNotFound, "type '%s' not defined", node.Literal)
-		}
-		node.SetType(binding.Type)
-		return
-	}
+func (c *Checker) VisitUnaryOp(node *ast.UnaryOp) ast.Node {
+	node.RightExpr.Visit(c)
 
-	errors.Throw(errors.NotImplemented, "VisitTypeIdent as value not implemented.")
-}
-
-func (c *TypeChecker) VisitFuncType(node *ast.FuncType) {
-	params := []ast.Type{}
-	for _, param := range node.Params {
-		param.Accept(c)
-		params = append(params, param.Type())
-	}
-
-	var ret ast.Type = types.Void
-	if node.Return.Has() {
-		r := node.Return.Unwrap()
-		r.Accept(c)
-		ret = r.Type()
-	}
-
-	node.SetType(types.NewFunction(node, params, ret))
-}
-
-func (c *TypeChecker) VisitFuncTypeParam(node *ast.FuncTypeParam) {
-	node.TypeExpr.Accept(c)
-	node.SetType(node.TypeExpr.Type())
-}
-
-func (c *TypeChecker) VisitFuncDecl(node *ast.FuncDecl) {
-	if node.Type() != nil {
-		return
-	}
-
-	c.pushInitialization(node)
-	defer c.popInitialization()
-
-	scope := c.scope().New()
-	c.pushScope(scope)
-	params := []ast.Type{}
-	for _, param := range node.Params {
-		param.Accept(c)
-		params = append(params, param.Type())
-	}
-
-	var ret ast.Type = types.Void
-	if node.Return.Has() {
-		r := node.Return.Unwrap()
-		r.Accept(c)
-		ret = r.Type()
-	}
-
-	node.Body.Accept(c)
-	if !ret.Compatible(node.Body.Type()) {
-		errors.ThrowAtNode(node, errors.TypeError, "function return type '%s' does not match body type '%s'", ret.Signature(), node.Body.Type().Signature())
-	}
-	c.popScope()
-
-	fn := types.NewFunction(node, params, ret)
-	if !c.scope().IsModule {
-		errors.ThrowAtNode(node, errors.TemporaryImplementationError, "closures are temporarily disabled")
-	}
-	if node.Name.Has() {
-		node.Name.Unwrap().SetType(fn)
-		node.SetType(types.Void)
-		c.declare(node.Name.Unwrap().Literal, node, fn)
-
-	} else {
-		node.SetType(fn)
-	}
-}
-
-func (c *TypeChecker) VisitFuncDeclParam(node *ast.FuncDeclParam) {
-	name := node.Name.Literal
-	if c.scope().Values.GetLocal(name) != nil {
-		errors.ThrowAtNode(node, errors.NameAlreadyDefined, "parameter '%s' already defined", name)
-	}
-	node.TypeExpr.Accept(c)
-	tp := node.TypeExpr.Type()
-	node.Name.SetType(tp)
-	node.SetType(tp)
-
-	c.scope().Values.Set(name, env.BN(tp, node))
-}
-
-func (c *TypeChecker) VisitAppl(node *ast.Appl) {
-	node.Target.Accept(c)
-
-	switch target := node.Target.Type().(type) {
-	case *types.Function:
-		c.applFunction(node, target)
-
-	case nil:
-		errors.ThrowAtNode(node, errors.InternalError, "target type is nil")
-
+	switch node.Op {
+	case "-", "+":
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Int, types.Float)
+	case "!":
+		c.expectNodeWithCompatibleType(node.RightExpr, types.Bool)
 	default:
-		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not applicable", node.Target.Type().Signature())
-	}
-}
-
-func (c *TypeChecker) VisitApplArg(node *ast.ApplArg) {
-	errors.Throw(errors.NotImplemented, "VisitApplArg not implemented.")
-}
-
-func (c *TypeChecker) applFunction(node *ast.Appl, fn *types.Function) {
-	if len(node.Args) != len(fn.Params) {
-		errors.ThrowAtNode(node, errors.TypeError, "expected %d arguments, but got %d", len(fn.Params), len(node.Args))
+		errors.ThrowAtNode(node, errors.NotImplemented, "unary operator '%s' not implemented.", node.Op)
 	}
 
-	for i, arg := range node.Args {
-		arg.ValueExpr.Accept(c)
-		arg.SetType(arg.ValueExpr.Type())
-		if !fn.Params[i].Compatible(arg.Type()) {
-			errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not compatible with '%s'", arg.Type().Signature(), fn.Params[i].Signature())
-		}
-	}
-
-	node.SetType(fn.Return)
+	node.SetType(node.RightExpr.GetType().Unwrap())
+	return node
 }
 
-func (c *TypeChecker) VisitAccess(node *ast.Access) {
-	node.Target.Accept(c)
-
-	switch target := node.Target.Type().(type) {
-	case *types.Module:
-		c.accessModule(node, target)
-
-	case nil:
-		errors.ThrowAtNode(node, errors.InternalError, "target type is nil")
-
-	default:
-		errors.ThrowAtNode(node, errors.TypeError, "type '%s' is not accessible", node.Target.Type().Signature())
-	}
-}
-
-func (c *TypeChecker) accessModule(node *ast.Access, mod *types.Module) {
-	c.pushScope(mod.Scope)
+func (c *Checker) VisitBlock(node *ast.Block) ast.Node {
+	c.pushScope(c.scope().New())
 	defer c.popScope()
 
-	if node.ExpressionKind() == ast.ValueExpressionKind {
-		node.Accessor.Accept(c)
-		node.SetType(node.Accessor.Type())
-		return
+	var tp ast.Type = types.Void
+	for _, exp := range node.Exprs {
+		exp.Visit(c)
+		tp = exp.GetType().Unwrap()
 	}
+	node.SetType(tp)
 
-	errors.Throw(errors.NotImplemented, "access module for types is not implemented.")
+	return node
 }

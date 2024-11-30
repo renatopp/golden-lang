@@ -8,6 +8,8 @@ import (
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/env"
+
+	// "github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/helpers/debug"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
@@ -65,7 +67,7 @@ func (c *Run) Run() error {
 	return nil
 }
 
-func printDependencyGraph(order []*builder.Package) {
+func printDependencyGraph(order []*builder.File) {
 	deps := []string{}
 	for _, p := range order {
 		deps = append(deps, p.Path)
@@ -75,7 +77,7 @@ func printDependencyGraph(order []*builder.Package) {
 	println()
 }
 
-func printTypedAst(mod *builder.Module, a *ast.Module, scope *env.Scope) {
+func printTypedAst(mod *builder.File, a *ast.Module, scope *env.Scope) {
 	debug.PrettyPrintAst(mod, a)
 	debug.PrettyPrintScope(scope)
 }
