@@ -30,7 +30,7 @@ func (p *AstPrinter) printType(tp safe.Optional[ast.Type]) {
 	println()
 }
 
-func (p *AstPrinter) VisitModule(node ast.Module) ast.Node {
+func (p *AstPrinter) VisitModule(node *ast.Module) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[module]\n")
@@ -38,7 +38,7 @@ func (p *AstPrinter) VisitModule(node ast.Module) ast.Node {
 	return node
 }
 
-func (p *AstPrinter) VisitConst(node ast.Const) ast.Node {
+func (p *AstPrinter) VisitConst(node *ast.Const) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[const]\n")
@@ -48,49 +48,49 @@ func (p *AstPrinter) VisitConst(node ast.Const) ast.Node {
 	return node
 }
 
-func (p *AstPrinter) VisitInt(node ast.Int) ast.Node {
+func (p *AstPrinter) VisitInt(node *ast.Int) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[int:%d]\n", node.Value)
 	return node
 }
 
-func (p *AstPrinter) VisitFloat(node ast.Float) ast.Node {
+func (p *AstPrinter) VisitFloat(node *ast.Float) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[float:%f]\n", node.Value)
 	return node
 }
 
-func (p *AstPrinter) VisitString(node ast.String) ast.Node {
+func (p *AstPrinter) VisitString(node *ast.String) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[string:'%s']\n", Escape(node.Value))
 	return node
 }
 
-func (p *AstPrinter) VisitBool(node ast.Bool) ast.Node {
+func (p *AstPrinter) VisitBool(node *ast.Bool) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[bool:%t]\n", node.Value)
 	return node
 }
 
-func (p *AstPrinter) VisitVarIdent(node ast.VarIdent) ast.Node {
+func (p *AstPrinter) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[var-ident:%s]\n", node.Value)
 	return node
 }
 
-func (p *AstPrinter) VisitTypeIdent(node ast.TypeIdent) ast.Node {
+func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[type-ident:%s]\n", node.Value)
 	return node
 }
 
-func (p *AstPrinter) VisitBinOp(node ast.BinOp) ast.Node {
+func (p *AstPrinter) VisitBinOp(node *ast.BinOp) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[bin-op:%s]\n", node.Op)
@@ -99,7 +99,7 @@ func (p *AstPrinter) VisitBinOp(node ast.BinOp) ast.Node {
 	return node
 }
 
-func (p *AstPrinter) VisitUnaryOp(node ast.UnaryOp) ast.Node {
+func (p *AstPrinter) VisitUnaryOp(node *ast.UnaryOp) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[unary-op:%s]\n", node.Op)
@@ -107,7 +107,7 @@ func (p *AstPrinter) VisitUnaryOp(node ast.UnaryOp) ast.Node {
 	return node
 }
 
-func (p *AstPrinter) VisitBlock(node ast.Block) ast.Node {
+func (p *AstPrinter) VisitBlock(node *ast.Block) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print("[block]\n")

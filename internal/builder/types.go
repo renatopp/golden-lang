@@ -24,10 +24,10 @@ import (
 
 // Represents a .gold file.
 type File struct {
-	Name     string                    // Name of the module, ex: `hello`
-	Path     string                    // Absolute path of the module in the file system, ex: `/d/project/foo/bar/hello.gold`
-	FileName string                    // Name of the file, ex: `hello.gold`
-	Root     safe.Optional[ast.Module] // Root node of the module, type is `ast.Module`
+	Name     string                     // Name of the module, ex: `hello`
+	Path     string                     // Absolute path of the module in the file system, ex: `/d/project/foo/bar/hello.gold`
+	FileName string                     // Name of the file, ex: `hello.gold`
+	Root     safe.Optional[*ast.Module] // Root node of the module, type is `ast.Module`
 	// Package  *Package        // Package that contains the module
 	// Imports []*ModuleImport // Modules that this module imports
 }
@@ -37,7 +37,7 @@ func NewFile(name, path, fileName string) *File {
 		Name:     name,
 		Path:     path,
 		FileName: fileName,
-		Root:     safe.None[ast.Module](),
+		Root:     safe.None[*ast.Module](),
 		// Package:  pkg,
 		// Imports: make([]*ModuleImport, 0),
 	}

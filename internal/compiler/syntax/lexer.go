@@ -28,15 +28,15 @@ func NewLexer(filename string, source []byte) *Lexer {
 	}
 }
 
-func (l *Lexer) Lex() (res []token.Token, err error) {
+func (l *Lexer) Lex() (res []*token.Token, err error) {
 	err = errors.WithRecovery(func() {
 		res = l.lex()
 	})
 	return res, err
 }
 
-func (l *Lexer) lex() []token.Token {
-	tokens := []token.Token{}
+func (l *Lexer) lex() []*token.Token {
+	tokens := []*token.Token{}
 	for {
 		token, ok := l.next()
 		if !ok {
@@ -47,7 +47,7 @@ func (l *Lexer) lex() []token.Token {
 	return tokens
 }
 
-func (l *Lexer) next() (token.Token, bool) {
+func (l *Lexer) next() (*token.Token, bool) {
 	for !l.scanner.IsFinished() {
 		l.fromLine = l.line
 		l.fromColumn = l.column
@@ -63,7 +63,7 @@ func (l *Lexer) next() (token.Token, bool) {
 		switch {
 		// EOF
 		case runes.IsEof(c0):
-			return token.Token{}, false
+			return &token.Token{}, false
 
 		// Spaces
 		case runes.IsSpace(c0):
@@ -72,7 +72,7 @@ func (l *Lexer) next() (token.Token, bool) {
 
 		// Newlines
 		case runes.IsNewline(c0):
-			return token.Token{
+			return &token.Token{
 				Kind:    token.TNewline,
 				Literal: l.eatNewlines(),
 				Loc:     l.span(),
@@ -80,7 +80,7 @@ func (l *Lexer) next() (token.Token, bool) {
 
 		// Comments
 		case s2 == "--":
-			return token.Token{
+			return &token.Token{
 				Kind:    token.TComment,
 				Literal: l.eatComment(),
 				Loc:     l.span(),
@@ -92,7 +92,7 @@ func (l *Lexer) next() (token.Token, bool) {
 
 			// Keywords or constants
 			if kind := token.LiteralToKind(identifier); kind != token.TUnknown {
-				return token.Token{
+				return &token.Token{
 					Kind:    kind,
 					Literal: identifier,
 					Loc:     l.span(),
@@ -100,14 +100,14 @@ func (l *Lexer) next() (token.Token, bool) {
 			}
 
 			if naming.IsTypeName(identifier) {
-				return token.Token{
+				return &token.Token{
 					Kind:    token.TTypeIdent,
 					Literal: identifier,
 					Loc:     l.span(),
 				}, true
 			}
 
-			return token.Token{
+			return &token.Token{
 				Kind:    token.TVarIdent,
 				Literal: identifier,
 				Loc:     l.span(),
@@ -118,7 +118,7 @@ func (l *Lexer) next() (token.Token, bool) {
 			switch {
 			// Hex
 			case runes.IsOneOf(c1, 'x', 'X'):
-				return token.Token{
+				return &token.Token{
 					Kind:    token.THex,
 					Literal: l.eatHexadecimal(),
 					Loc:     l.span(),
@@ -126,7 +126,7 @@ func (l *Lexer) next() (token.Token, bool) {
 
 			// Octal
 			case runes.IsOneOf(c1, 'o', 'O'):
-				return token.Token{
+				return &token.Token{
 					Kind:    token.TOctal,
 					Literal: l.eatOctal(),
 					Loc:     l.span(),
@@ -134,7 +134,7 @@ func (l *Lexer) next() (token.Token, bool) {
 
 			// Binary
 			case runes.IsOneOf(c1, 'b', 'B'):
-				return token.Token{
+				return &token.Token{
 					Kind:    token.TBinary,
 					Literal: l.eatBinary(),
 					Loc:     l.span(),
@@ -144,14 +144,14 @@ func (l *Lexer) next() (token.Token, bool) {
 			default:
 				num := l.eatNumber()
 				if strings.Contains(num, ".") || strings.Contains(num, "e") {
-					return token.Token{
+					return &token.Token{
 						Kind:    token.TFloat,
 						Literal: num,
 						Loc:     l.span(),
 					}, true
 				}
 
-				return token.Token{
+				return &token.Token{
 					Kind:    token.TInt,
 					Literal: num,
 					Loc:     l.span(),
@@ -160,7 +160,7 @@ func (l *Lexer) next() (token.Token, bool) {
 
 		// Strings
 		case runes.IsOneOf(c0, '\''):
-			return token.Token{
+			return &token.Token{
 				Kind:    token.TString,
 				Literal: l.eatRawString(),
 				Loc:     l.span(),
@@ -173,7 +173,7 @@ func (l *Lexer) next() (token.Token, bool) {
 				l.eat()
 				l.eat()
 				l.eat()
-				return token.Token{
+				return &token.Token{
 					Kind:    tok,
 					Literal: s3,
 					Loc:     l.span(),
@@ -184,7 +184,7 @@ func (l *Lexer) next() (token.Token, bool) {
 			if tok := token.LiteralToKind(s2); tok != token.TUnknown {
 				l.eat()
 				l.eat()
-				return token.Token{
+				return &token.Token{
 					Kind:    tok,
 					Literal: s2,
 					Loc:     l.span(),
@@ -194,7 +194,7 @@ func (l *Lexer) next() (token.Token, bool) {
 			// 1-char operators
 			if tok := token.LiteralToKind(s1); tok != token.TUnknown {
 				l.eat()
-				return token.Token{
+				return &token.Token{
 					Kind:    tok,
 					Literal: s1,
 					Loc:     l.span(),
@@ -206,11 +206,11 @@ func (l *Lexer) next() (token.Token, bool) {
 			errors.ThrowAtLocation(l.span(), errors.ParserError, "unexpected character: %s", s1)
 		}
 	}
-	return token.Token{}, false
+	return &token.Token{}, false
 }
 
-func (l *Lexer) span() token.Span {
-	return token.Span{
+func (l *Lexer) span() *token.Span {
+	return &token.Span{
 		Filename:   l.filename,
 		FromLine:   l.fromLine,
 		FromColumn: l.fromColumn,

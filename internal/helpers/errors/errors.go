@@ -47,8 +47,8 @@ var codeToName = map[ErrorCode]string{
 
 // GoldenError is a custom error type that contains information about the error
 type GoldenError struct {
-	Loc   safe.Optional[token.Span]
-	Token safe.Optional[token.Token]
+	Loc   safe.Optional[*token.Span]
+	Token safe.Optional[*token.Token]
 	Node  safe.Optional[ast.Node]
 	Code  ErrorCode
 	Msg   string
@@ -64,12 +64,12 @@ func NewError(code ErrorCode, msg string, args ...any) GoldenError {
 
 func (e GoldenError) Error() string { return e.Msg }
 
-func (e GoldenError) WithLoc(loc token.Span) GoldenError {
+func (e GoldenError) WithLoc(loc *token.Span) GoldenError {
 	e.Loc = safe.Some(loc)
 	return e
 }
 
-func (e GoldenError) WithToken(token token.Token) GoldenError {
+func (e GoldenError) WithToken(token *token.Token) GoldenError {
 	e.Loc = safe.Some(token.Loc)
 	e.Token = safe.Some(token)
 	return e
@@ -131,11 +131,11 @@ func Rethrow(e error) {
 	panic(e)
 }
 
-func ThrowAtLocation(loc token.Span, code ErrorCode, msg string, args ...any) {
+func ThrowAtLocation(loc *token.Span, code ErrorCode, msg string, args ...any) {
 	panic(NewError(code, msg, args...).WithLoc(loc))
 }
 
-func ThrowAtToken(token token.Token, code ErrorCode, msg string, args ...any) {
+func ThrowAtToken(token *token.Token, code ErrorCode, msg string, args ...any) {
 	panic(NewError(code, msg, args...).WithToken(token))
 }
 

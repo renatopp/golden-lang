@@ -61,15 +61,15 @@ const (
 
 type Token struct {
 	Kind    TokenKind
-	Loc     Span
+	Loc     *Span
 	Literal string
 }
 
-func (t Token) Display() string {
+func (t *Token) Display() string {
 	return KindToLiteral(t.Kind)
 }
 
-func (t Token) Is(kind ...TokenKind) bool {
+func (t *Token) Is(kind ...TokenKind) bool {
 	for _, k := range kind {
 		if t.Kind == k {
 			return true

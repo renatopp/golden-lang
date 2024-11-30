@@ -10,36 +10,36 @@ import (
 type BaseParser struct {
 	ValueSolver *PrattSolver
 	TypeSolver  *PrattSolver
-	Scanner     *Scanner[token.Token]
+	Scanner     *Scanner[*token.Token]
 }
 
-func NewBaseParser(tokens []token.Token) *BaseParser {
+func NewBaseParser(tokens []*token.Token) *BaseParser {
 	p := &BaseParser{
-		Scanner: NewScanner(tokens, token.Token{Kind: token.TEof}),
+		Scanner: NewScanner(tokens, &token.Token{Kind: token.TEof}),
 	}
 	p.ValueSolver = NewPrattSolver(p.Peek, p.ValuePrecedence)
 	p.TypeSolver = NewPrattSolver(p.Peek, p.TypePrecedence)
 	return p
 }
 
-func (p *BaseParser) Eat() token.Token { return p.Scanner.Eat() }
+func (p *BaseParser) Eat() *token.Token { return p.Scanner.Eat() }
 
-func (p *BaseParser) EatN(n int) []token.Token { return p.Scanner.EatN(n) }
+func (p *BaseParser) EatN(n int) []*token.Token { return p.Scanner.EatN(n) }
 
-func (p *BaseParser) Peek() token.Token { return p.Scanner.Peek() }
+func (p *BaseParser) Peek() *token.Token { return p.Scanner.Peek() }
 
-func (p *BaseParser) PeekN(n int) token.Token { return p.Scanner.PeekAt(n) }
+func (p *BaseParser) PeekN(n int) *token.Token { return p.Scanner.PeekAt(n) }
 
-func (p *BaseParser) Skip(kinds ...token.TokenKind) []token.Token {
-	res := []token.Token{}
+func (p *BaseParser) Skip(kinds ...token.TokenKind) []*token.Token {
+	res := []*token.Token{}
 	for p.IsNext(kinds...) {
 		res = append(res, p.Eat())
 	}
 	return res
 }
 
-func (p *BaseParser) SkipN(n int, kinds ...token.TokenKind) []token.Token {
-	res := []token.Token{}
+func (p *BaseParser) SkipN(n int, kinds ...token.TokenKind) []*token.Token {
+	res := []*token.Token{}
 	for i := 0; i < n && p.IsNext(kinds...); i++ {
 		res = append(res, p.Eat())
 	}
@@ -88,12 +88,12 @@ func (p *BaseParser) Expect(kinds ...token.TokenKind) {
 	}
 }
 
-func (p *BaseParser) ExpectAndEat(kinds ...token.TokenKind) token.Token {
+func (p *BaseParser) ExpectAndEat(kinds ...token.TokenKind) *token.Token {
 	p.Expect(kinds...)
 	return p.Eat()
 }
 
-func (p *BaseParser) ValuePrecedence(t token.Token) int {
+func (p *BaseParser) ValuePrecedence(t *token.Token) int {
 	switch {
 	case t.Is(token.TAssign):
 		return 10
@@ -125,6 +125,6 @@ func (p *BaseParser) ValuePrecedence(t token.Token) int {
 	return 0
 }
 
-func (p *BaseParser) TypePrecedence(t token.Token) int {
+func (p *BaseParser) TypePrecedence(t *token.Token) int {
 	return 0
 }

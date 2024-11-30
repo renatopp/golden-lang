@@ -25,10 +25,10 @@ var _ ast.Visitor = &Checker{}
 type Checker struct {
 	scopeStack          *ds.Stack[*env.Scope]
 	initializationStack *ds.Stack[ast.Node]
-	root                ast.Module
+	root                *ast.Module
 }
 
-func NewChecker(root ast.Module) *Checker {
+func NewChecker(root *ast.Module) *Checker {
 	return &Checker{
 		scopeStack:          ds.NewStack[*env.Scope](),
 		initializationStack: ds.NewStack[ast.Node](),
@@ -131,10 +131,10 @@ func (c *Checker) expectCompatibleNodeTypes(a, b ast.Node) {
 
 // Interface
 
-func (c *Checker) Check() (res ast.Module, err error) {
+func (c *Checker) Check() (res *ast.Module, err error) {
 	err = errors.WithRecovery(func() {
 		c.preCheck()
-		res = c.VisitModule(c.root).(ast.Module)
+		res = c.VisitModule(c.root).(*ast.Module)
 	})
 	return res, err
 }
@@ -146,20 +146,19 @@ func (c *Checker) preCheck() {
 
 	for _, e := range c.root.Exprs {
 		switch n := e.(type) {
-		case ast.Const:
+		case *ast.Const:
 			v := n.Name.Value
 			c.scope().Values.Set(v, env.VB(n, nil))
 		}
 	}
-
 }
 
-func (c *Checker) VisitModule(node ast.Module) ast.Node {
+func (c *Checker) VisitModule(node *ast.Module) ast.Node {
 	node.Exprs = iter.Map(node.Exprs, func(e ast.Node) ast.Node { return e.Visit(c) })
 	return node
 }
 
-func (c *Checker) VisitConst(node ast.Const) ast.Node {
+func (c *Checker) VisitConst(node *ast.Const) ast.Node {
 	if node.Type.Has() {
 		return node
 	}
@@ -178,27 +177,27 @@ func (c *Checker) VisitConst(node ast.Const) ast.Node {
 	return node
 }
 
-func (c *Checker) VisitInt(node ast.Int) ast.Node {
+func (c *Checker) VisitInt(node *ast.Int) ast.Node {
 	node.BaseNode = ast.SetType(node.BaseNode, types.Int)
 	return node
 }
 
-func (c *Checker) VisitFloat(node ast.Float) ast.Node {
+func (c *Checker) VisitFloat(node *ast.Float) ast.Node {
 	node.BaseNode = ast.SetType(node.BaseNode, types.Float)
 	return node
 }
 
-func (c *Checker) VisitString(node ast.String) ast.Node {
+func (c *Checker) VisitString(node *ast.String) ast.Node {
 	node.BaseNode = ast.SetType(node.BaseNode, types.String)
 	return node
 }
 
-func (c *Checker) VisitBool(node ast.Bool) ast.Node {
+func (c *Checker) VisitBool(node *ast.Bool) ast.Node {
 	node.BaseNode = ast.SetType(node.BaseNode, types.Bool)
 	return node
 }
 
-func (c *Checker) VisitVarIdent(node ast.VarIdent) ast.Node {
+func (c *Checker) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	name := node.Value
 	bind := c.scope().Values.Get(name, nil)
 	if bind == nil {
@@ -210,18 +209,18 @@ func (c *Checker) VisitVarIdent(node ast.VarIdent) ast.Node {
 	return node
 }
 
-func (c *Checker) VisitTypeIdent(node ast.TypeIdent) ast.Node {
+func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
 	return node
 }
 
-func (c *Checker) VisitBinOp(node ast.BinOp) ast.Node {
+func (c *Checker) VisitBinOp(node *ast.BinOp) ast.Node {
 	return node
 }
 
-func (c *Checker) VisitUnaryOp(node ast.UnaryOp) ast.Node {
+func (c *Checker) VisitUnaryOp(node *ast.UnaryOp) ast.Node {
 	return node
 }
 
-func (c *Checker) VisitBlock(node ast.Block) ast.Node {
+func (c *Checker) VisitBlock(node *ast.Block) ast.Node {
 	return node
 }

@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	Zero        ast.Int
-	One         ast.Int
-	FZero       ast.Float
-	FOne        ast.Float
-	False       ast.Bool
-	True        ast.Bool
-	EmptyString ast.String
+	Zero        *ast.Int
+	One         *ast.Int
+	FZero       *ast.Float
+	FOne        *ast.Float
+	False       *ast.Bool
+	True        *ast.Bool
+	EmptyString *ast.String
 
 	Int    *Primitive
 	Float  *Primitive
@@ -21,13 +21,13 @@ var (
 )
 
 func init() {
-	Zero = ast.NewInt(token.Token{}, 0)
-	One = ast.NewInt(token.Token{}, 1)
-	FZero = ast.NewFloat(token.Token{}, 0)
-	FOne = ast.NewFloat(token.Token{}, 1)
-	False = ast.NewBool(token.Token{}, false)
-	True = ast.NewBool(token.Token{}, true)
-	EmptyString = ast.NewString(token.Token{}, "")
+	Zero = ast.NewInt(&token.Token{}, 0)
+	One = ast.NewInt(&token.Token{}, 1)
+	FZero = ast.NewFloat(&token.Token{}, 0)
+	FOne = ast.NewFloat(&token.Token{}, 1)
+	False = ast.NewBool(&token.Token{}, false)
+	True = ast.NewBool(&token.Token{}, true)
+	EmptyString = ast.NewString(&token.Token{}, "")
 
 	Int = NewPrimitive("Int", func() (ast.Node, error) { return Zero, nil })
 	Float = NewPrimitive("Float", func() (ast.Node, error) { return FZero, nil })

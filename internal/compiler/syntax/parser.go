@@ -13,7 +13,7 @@ type Parser struct {
 	*BaseParser
 }
 
-func NewParser(tokens []token.Token) *Parser {
+func NewParser(tokens []*token.Token) *Parser {
 	p := &Parser{
 		BaseParser: NewBaseParser(tokens),
 	}
@@ -50,7 +50,7 @@ func NewParser(tokens []token.Token) *Parser {
 	return p
 }
 
-func (p *Parser) Parse() (res ast.Module, err error) {
+func (p *Parser) Parse() (res *ast.Module, err error) {
 	err = errors.WithRecovery(func() {
 		res = p.parseModule()
 	})
@@ -62,7 +62,7 @@ func (p *Parser) parseValueExpression(prec int) safe.Optional[ast.Node] {
 }
 
 // file
-func (p *Parser) parseModule() ast.Module {
+func (p *Parser) parseModule() *ast.Module {
 	exprs := []ast.Node{}
 	first := p.Peek()
 	for {
@@ -76,7 +76,7 @@ func (p *Parser) parseModule() ast.Module {
 }
 
 // const <var-ident> <type-expr>? = <value-expr>
-func (p *Parser) parseConst() ast.Const {
+func (p *Parser) parseConst() *ast.Const {
 	tok := p.ExpectAndEat(token.TConst) // const
 	name := p.parseVarIdent()           // var-ident
 	// TODO: add type expression parsing // type-expr
@@ -89,7 +89,7 @@ func (p *Parser) parseConst() ast.Const {
 }
 
 // foo, bar, _bar, _1, a_1, ...
-func (p *Parser) parseVarIdent() ast.VarIdent {
+func (p *Parser) parseVarIdent() *ast.VarIdent {
 	tok := p.ExpectAndEat(token.TVarIdent)
 	return ast.NewVarIdent(tok, tok.Literal)
 }

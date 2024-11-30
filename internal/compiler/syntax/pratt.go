@@ -6,8 +6,8 @@ import (
 	"github.com/renatopp/golden/internal/helpers/safe"
 )
 
-type peekFn func() token.Token
-type precedenceFn func(token.Token) int
+type peekFn func() *token.Token
+type precedenceFn func(*token.Token) int
 type prefixFn func() ast.Node
 type infixFn func(ast.Node) ast.Node
 type postfixFn func(ast.Node) ast.Node
