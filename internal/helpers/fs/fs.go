@@ -76,6 +76,10 @@ func IsModuleNameValid(moduleName string) bool {
 	return validModuleName.MatchString(moduleName)
 }
 
+func IsProjectPath(path string) bool {
+	return strings.HasPrefix(path, WorkingDir)
+}
+
 // General Utilities ----------------------------------------------------------
 func GetWorkingDir() string {
 	return WorkingDir
@@ -116,6 +120,11 @@ func GuaranteeDirectoryExists(path string) error {
 // From a generic path, returns the absolute path
 func GetAbsolutePath(path string) (string, error) {
 	return filepath.Abs(path)
+}
+
+// Get the relative path of a file from the project root
+func GetProjectRelativePath(path string) string {
+	return strings.TrimPrefix(path, WorkingDir)
 }
 
 // From a generic file path, returns the file extension (with dot)

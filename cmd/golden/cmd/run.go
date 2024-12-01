@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/renatopp/golden/internal/backend"
+	"github.com/renatopp/golden/internal/backend/golang"
+	"github.com/renatopp/golden/internal/backend/javascript"
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/env"
@@ -34,6 +37,7 @@ func (c *Run) Run() error {
 	flagDebug := flag.Bool("debug", false, "enable debug information")
 	flagLevel := flag.String("log-level", "error", "log level")
 	flagWorkingDir := flag.String("working-dir", ".", "working directory")
+	flagTargets := flag.String("targets", "go", "output backends, separated by comma")
 	flag.Parse()
 
 	args := flag.Args()
@@ -51,6 +55,25 @@ func (c *Run) Run() error {
 		opts.OnTypeCheckReady.Subscribe(printTypedAst)
 	}
 
+	if flagTargets != nil {
+		opts.OutputTargets = []backend.Backend{}
+		registered := map[string]bool{}
+		for _, o := range strings.Split(*flagTargets, ",") {
+			if registered[o] {
+				continue
+			}
+			registered[o] = true
+			switch o {
+			case "go":
+				opts.OutputTargets = append(opts.OutputTargets, golang.NewBackend())
+			case "js":
+				opts.OutputTargets = append(opts.OutputTargets, javascript.NewBackend())
+			default:
+				return fmt.Errorf("unknown backend: %s", o)
+			}
+		}
+	}
+
 	if flagWorkingDir != nil {
 		abs, _ := fs.GetAbsolutePath(*flagWorkingDir)
 		opts.WorkingDir = abs
@@ -62,8 +85,13 @@ func (c *Run) Run() error {
 		errors.PrettyPrint(err)
 		return nil
 	}
-
 	fmt.Println("Build completed in", res.Elapsed)
+
+	if err := b.Run(); err != nil {
+		errors.PrettyPrint(err)
+		return nil
+	}
+
 	return nil
 }
 

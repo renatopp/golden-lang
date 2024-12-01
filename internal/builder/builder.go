@@ -1,14 +1,10 @@
 package builder
 
 import (
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
-
-	// "github.com/renatopp/golden/internal/compiler/codegen"
-	// "github.com/renatopp/golden/internal/compiler/env"
-	// "github.com/renatopp/golden/internal/compiler/semantic"
-	// "github.com/renatopp/golden/internal/compiler/types"
 
 	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/compiler/semantic"
@@ -48,6 +44,10 @@ func (b *Builder) Build() (res *BuildResult, err error) {
 	return res, err
 }
 
+func (b *Builder) Run() error {
+	return errors.WithRecovery(b.run)
+}
+
 func (b *Builder) build() *BuildResult {
 	res := &BuildResult{}
 	b.ctx = &BuildContext{
@@ -65,9 +65,13 @@ func (b *Builder) build() *BuildResult {
 	b.buildGlobalScope()
 	b.semanticAnalysis()
 	// b.checkMain()
-	// b.generateCode()
+	b.generateCode()
 
 	return res
+}
+
+func (b *Builder) run() {
+	b.runCode()
 }
 
 func (b *Builder) validateEntry() {
@@ -103,22 +107,22 @@ func (b *Builder) validateEntry() {
 }
 
 func (b *Builder) checkCacheFolders() {
-	// if err := fs.GuaranteeDirectoryExists(b.opts.GlobalCachePath); err != nil {
-	// 	errors.Throw(errors.InternalError, "could not create global cache path")
-	// }
-	// if err := fs.GuaranteeDirectoryExists(b.opts.GlobalTargetPath); err != nil {
-	// 	errors.Throw(errors.InternalError, "could not create global target path")
-	// }
-	// if err := fs.GuaranteeDirectoryExists(b.opts.LocalCachePath); err != nil {
-	// 	errors.Throw(errors.InternalError, "could not create local cache path")
-	// }
-	// if err := fs.GuaranteeDirectoryExists(b.opts.LocalTargetPath); err != nil {
-	// 	errors.Throw(errors.InternalError, "could not create local target path")
-	// }
-	// outputDir := filepath.Dir(b.opts.OutputFilePath)
-	// if err := fs.GuaranteeDirectoryExists(outputDir); err != nil {
-	// 	errors.Throw(errors.InternalError, "could not create output file path")
-	// }
+	if err := fs.GuaranteeDirectoryExists(b.opts.GlobalCachePath); err != nil {
+		errors.Throw(errors.InternalError, "could not create global cache path")
+	}
+	if err := fs.GuaranteeDirectoryExists(b.opts.GlobalTargetPath); err != nil {
+		errors.Throw(errors.InternalError, "could not create global target path")
+	}
+	if err := fs.GuaranteeDirectoryExists(b.opts.LocalCachePath); err != nil {
+		errors.Throw(errors.InternalError, "could not create local cache path")
+	}
+	if err := fs.GuaranteeDirectoryExists(b.opts.LocalTargetPath); err != nil {
+		errors.Throw(errors.InternalError, "could not create local target path")
+	}
+	outputDir := filepath.Dir(b.opts.OutputFilePath)
+	if err := fs.GuaranteeDirectoryExists(outputDir); err != nil {
+		errors.Throw(errors.InternalError, "could not create output file path")
+	}
 }
 
 func (b *Builder) loadModules() {
@@ -238,18 +242,22 @@ func (b *Builder) checkMain() {
 	}
 }
 
-// func (b *Builder) generateCode() {
-// 	cg := codegen.NewCodegen(b.opts.LocalTargetPath)
+func (b *Builder) generateCode() {
+	for _, backend := range b.opts.OutputTargets {
+		backend.Initialize(b.opts.LocalTargetPath)
 
-// 	cg.StartGeneration()
-// 	for _, pkg := range b.ctx.DependencyOrder {
-// 		imports := pkg.Imports.Values()
-// 		cg.StartPackage(pkg.Path, imports)
-// 		mods := pkg.Modules.Values()
-// 		for _, mod := range mods {
-// 			mod.Root.Accept(cg)
-// 		}
-// 		cg.EndPackage()
-// 	}
-// 	cg.EndGeneration()
-// }
+		backend.BeforeCodeGeneration()
+		for _, mod := range b.ctx.DependencyOrder {
+			backend.GenerateCode(mod.Path, mod.Root.Unwrap(), mod == b.ctx.EntryModule)
+		}
+		backend.AfterCodeGeneration()
+
+		backend.Finalize()
+	}
+}
+
+func (b *Builder) runCode() {
+	for _, backend := range b.opts.OutputTargets {
+		backend.Run()
+	}
+}

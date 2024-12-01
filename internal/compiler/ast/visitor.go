@@ -20,35 +20,35 @@ type Visitor interface {
 }
 
 // Use it to replace nodes in the AST.
-type Replacer struct {
+type Visiter struct {
 }
 
-func (v *Replacer) VisitModule(node *Module) Node {
+func (v *Visiter) VisitModule(node *Module) Node {
 	node.Exprs = iter.Map(node.Exprs, func(e Node) Node { return e.Visit(v) })
 	return node
 }
-func (v *Replacer) VisitConst(node *Const) Node {
+func (v *Visiter) VisitConst(node *Const) Node {
 	node.Name = node.Name.Visit(v).(*VarIdent)
 	node.TypeExpr = safe.Map(node.TypeExpr, func(n Node) Node { return n.Visit(v) })
 	node.ValueExpr = node.ValueExpr.Visit(v)
 	return node
 }
-func (v *Replacer) VisitInt(node *Int) Node             { return node }
-func (v *Replacer) VisitFloat(node *Float) Node         { return node }
-func (v *Replacer) VisitString(node *String) Node       { return node }
-func (v *Replacer) VisitBool(node *Bool) Node           { return node }
-func (v *Replacer) VisitVarIdent(node *VarIdent) Node   { return node }
-func (v *Replacer) VisitTypeIdent(node *TypeIdent) Node { return node }
-func (v *Replacer) VisitBinOp(node *BinOp) Node {
+func (v *Visiter) VisitInt(node *Int) Node             { return node }
+func (v *Visiter) VisitFloat(node *Float) Node         { return node }
+func (v *Visiter) VisitString(node *String) Node       { return node }
+func (v *Visiter) VisitBool(node *Bool) Node           { return node }
+func (v *Visiter) VisitVarIdent(node *VarIdent) Node   { return node }
+func (v *Visiter) VisitTypeIdent(node *TypeIdent) Node { return node }
+func (v *Visiter) VisitBinOp(node *BinOp) Node {
 	node.LeftExpr = node.LeftExpr.Visit(v)
 	node.RightExpr = node.RightExpr.Visit(v)
 	return node
 }
-func (v *Replacer) VisitUnaryOp(node *UnaryOp) Node {
+func (v *Visiter) VisitUnaryOp(node *UnaryOp) Node {
 	node.RightExpr = node.RightExpr.Visit(v)
 	return node
 }
-func (v *Replacer) VisitBlock(node *Block) Node {
+func (v *Visiter) VisitBlock(node *Block) Node {
 	node.Exprs = iter.Map(node.Exprs, func(e Node) Node { return e.Visit(v) })
 	return node
 }

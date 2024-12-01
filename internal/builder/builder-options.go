@@ -1,6 +1,8 @@
 package builder
 
 import (
+	"github.com/renatopp/golden/internal/backend"
+	"github.com/renatopp/golden/internal/backend/golang"
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/env"
 	"github.com/renatopp/golden/internal/compiler/token"
@@ -16,6 +18,9 @@ type BuildOptions struct {
 	GlobalCachePath  string // Absolute path of the global cache directory for storing bundles and core ASTs
 	LocalTargetPath  string // Absolute path of the local target directory for storing transpiled files
 	GlobalTargetPath string // Absolute path of the global target directory for storing transpiled files
+
+	// Backend
+	OutputTargets []backend.Backend // Output targets for the backend
 
 	// Events
 	OnTokensReady          *events.Signal2[*File, []*token.Token]
@@ -33,6 +38,10 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		GlobalCachePath:  fs.JoinLangPath("cache"),
 		LocalTargetPath:  fs.JoinProjectPath(".golden/target"),
 		GlobalTargetPath: fs.JoinLangPath("target"),
+
+		OutputTargets: []backend.Backend{
+			&golang.Golang{},
+		},
 
 		OnTokensReady:          events.NewSignal2[*File, []*token.Token](),
 		OnAstReady:             events.NewSignal2[*File, *ast.Module](),
