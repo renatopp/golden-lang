@@ -40,7 +40,8 @@ func (b *Javascript) GenerateCode(goldenFilePath string, root *ast.Module, entry
 		b.entryRef = R(goldenFilePath, "main")
 	}
 	backendFilePath := BackendPath(goldenFilePath)
-	os.WriteFile(backendFilePath, []byte("export function main() { console.log('Hello, World from JS!') }"), 0644)
+	writer := NewWriter(b)
+	os.WriteFile(backendFilePath, []byte(writer.Generate(root)), 0644)
 }
 
 func (b *Javascript) AfterCodeGeneration() {
