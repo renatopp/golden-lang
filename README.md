@@ -36,14 +36,13 @@ build[Build]:::partial
 lexer[Lexer]:::stable
 parser[Parser]:::stable
 semantic[Semantics]:::stable
-ir[IR]:::experiment
-opt[Optimizations]:::notstarted
-backend[Backend]:::notstarted
+opt[Optimizations]:::experiment
+backend[Backend]:::experiment
 
 build --> lexer
 lexer --> parser
 parser --> semantic
-semantic --> ir --> opt --> backend
+semantic --> opt --> backend
 ```
 
 Legend:
@@ -66,9 +65,9 @@ Legend:
 
 ### Language
 
-[x] Modules
-[x] Constants `const`
-[x] Primitive Types: `Int`, `String`, `Float`, `Bool`
-[ ] Imports
-[ ] Functions: `Fn` type, functions declaration
+- [x] Modules
+- [x] Constants `const`
+- [x] Primitive Types: `Int`, `String`, `Float`, `Bool`
+- [ ] Imports
+- [ ] Functions: `Fn` type, functions declaration
 

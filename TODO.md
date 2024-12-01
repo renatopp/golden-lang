@@ -10,3 +10,7 @@
     - `let a = 1 + {2; 4}` => `let a = 1 + (:{ 2; 4 })() 
 
 [ ] Review string usage: change string from " to ' (?) and add automatic offset for multiline. Also add `` for raw string
+[ ] Review usage of consts in modules
+
+[ ] Implement module imports
+[ ] Implement functions
