@@ -115,7 +115,8 @@ func ToGoldenError(e any) GoldenError {
 func WithRecovery(f func()) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = ToGoldenError(r)
+			gerr := ToGoldenError(r)
+			err = gerr.WithStack(string(debug.Stack()))
 			// println(string(debug.Stack()))
 		}
 	}()

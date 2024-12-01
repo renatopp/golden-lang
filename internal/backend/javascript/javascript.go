@@ -18,7 +18,8 @@ var raw_template_main string
 var template_main, _ = template.New("main").Parse(raw_template_main)
 
 type Javascript struct {
-	entryRef *Ref
+	entryRef        *Ref
+	backendMainPath string
 }
 
 func NewBackend() *Javascript {
@@ -27,6 +28,7 @@ func NewBackend() *Javascript {
 
 func (b *Javascript) Initialize(targetPath string) {
 	targetDirectory = path.Join(targetPath, "javascript")
+	b.backendMainPath = path.Join(targetDirectory, "main.mjs")
 }
 
 func (b *Javascript) BeforeCodeGeneration() {
@@ -34,19 +36,21 @@ func (b *Javascript) BeforeCodeGeneration() {
 }
 
 func (b *Javascript) GenerateCode(goldenFilePath string, root *ast.Module, entry bool) {
+	if entry {
+		b.entryRef = R(goldenFilePath, "main")
+	}
 	backendFilePath := BackendPath(goldenFilePath)
-	os.WriteFile(backendFilePath, []byte("export function main() { console.log('hello, world!') }"), 0644)
+	os.WriteFile(backendFilePath, []byte("export function main() { console.log('Hello, World from JS!') }"), 0644)
 }
 
 func (b *Javascript) AfterCodeGeneration() {
-	fileName := path.Join(targetDirectory, "main.mjs")
-	os.WriteFile(fileName, tmpl.GenerateBytes(template_main, map[string]any{
+	os.WriteFile(b.backendMainPath, tmpl.GenerateBytes(template_main, map[string]any{
 		"EntryImport": b.entryRef.BackendImportPath,
 	}), 0644)
 }
 
 func (b *Javascript) Run() {
-	cmd := exec.Command("node", path.Join(targetDirectory, "main.mjs"))
+	cmd := exec.Command("node", b.backendMainPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

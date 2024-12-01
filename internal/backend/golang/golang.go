@@ -22,6 +22,9 @@ var raw_template_mod string
 var template_mod, _ = template.New("mod").Parse(raw_template_mod)
 
 type Golang struct {
+	backendProjectDirectory string
+	backendMainPath         string
+	backendGoModPath        string
 }
 
 func NewBackend() *Golang {
@@ -30,11 +33,14 @@ func NewBackend() *Golang {
 
 func (b *Golang) Initialize(targetPath string) {
 	targetDirectory = path.Join(targetPath, "golang")
+	b.backendProjectDirectory = path.Join(targetDirectory, "root")
+	b.backendMainPath = path.Join(targetDirectory, "main.go")
+	b.backendGoModPath = path.Join(targetDirectory, "go.mod")
 }
 
 func (b *Golang) BeforeCodeGeneration() {
 	fs.GuaranteeDirectoryExists(targetDirectory)
-	fs.GuaranteeDirectoryExists(path.Join(targetDirectory, "root"))
+	fs.GuaranteeDirectoryExists(b.backendProjectDirectory)
 }
 
 func (b *Golang) GenerateCode(goldenFilePath string, root *ast.Module, entry bool) {
@@ -43,15 +49,12 @@ func (b *Golang) GenerateCode(goldenFilePath string, root *ast.Module, entry boo
 }
 
 func (b *Golang) AfterCodeGeneration() {
-	fileName := path.Join(targetDirectory, "main.go")
-	os.WriteFile(fileName, tmpl.GenerateBytes(template_main, nil), 0644)
-
-	fileName = path.Join(targetDirectory, "go.mod")
-	os.WriteFile(fileName, tmpl.GenerateBytes(template_mod, nil), 0644)
+	os.WriteFile(b.backendMainPath, tmpl.GenerateBytes(template_main, nil), 0644)
+	os.WriteFile(b.backendGoModPath, tmpl.GenerateBytes(template_mod, nil), 0644)
 }
 
 func (b *Golang) Run() {
-	cmd := exec.Command("go", "run", path.Join(targetDirectory, "main.go"))
+	cmd := exec.Command("go", "run", b.backendMainPath)
 	cmd.Dir = targetDirectory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
