@@ -1,0 +1,49 @@
+load    : std/core from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core.kki
+load    : std/core/types from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_types.kki
+load    : std/core/undiv from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_undiv.kki
+load    : std/core/unsafe from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_unsafe.kki
+load    : std/core/hnd from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_hnd.kki
+load    : std/core/order from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_order.kki
+load    : std/core/exn from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_exn.kki
+load    : std/core/bool from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_bool.kki
+load    : std/core/int from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_int.kki
+load    : std/core/char from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_char.kki
+load    : std/core/vector from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_vector.kki
+load    : std/core/string from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_string.kki
+load    : std/core/list from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_list.kki
+load    : std/core/either from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_either.kki
+load    : std/core/maybe from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_maybe.kki
+load    : std/core/tuple from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_tuple.kki
+load    : std/core/sslice from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_sslice.kki
+load    : std/core/debug from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_debug.kki
+load    : std/core/show from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_show.kki
+load    : std/core/delayed from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_delayed.kki
+load    : std/core/console from: /usr/local/lib/koka/v3.1.2/gcc-debug/std_core_console.kki
+parse   : .../hello/koka/hello.kk
+check   : hello/koka/hello
+load    : std/core
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/exn
+load    : std/core/hnd
+load    : std/core/char
+load    : std/core/bool
+load    : std/core/order
+load    : std/core/undiv
+load    : std/core/string
+load    : std/core/int
+load    : std/core/vector
+load    : std/core/sslice
+load    : std/core/list
+load    : std/core/maybe
+load    : std/core/tuple
+load    : std/core/debug
+load    : std/core/show
+load    : std/core/console
+load    : std/core/either
+load    : std/core/delayed
+parse   : .../hello/koka/hello.kk
+check   : hello/koka/hello
+linking : hello/koka/hello/@main
+compile : kklib from: /usr/local/share/koka/v3.1.2/kklib
+created : .koka/v3.1.2/gcc-debug-a45c90/hello_koka_hello__main

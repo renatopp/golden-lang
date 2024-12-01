@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -104,22 +103,22 @@ func (b *Builder) validateEntry() {
 }
 
 func (b *Builder) checkCacheFolders() {
-	if err := fs.GuaranteeDirectoryExists(b.opts.GlobalCachePath); err != nil {
-		errors.Throw(errors.InternalError, "could not create global cache path")
-	}
-	if err := fs.GuaranteeDirectoryExists(b.opts.GlobalTargetPath); err != nil {
-		errors.Throw(errors.InternalError, "could not create global target path")
-	}
-	if err := fs.GuaranteeDirectoryExists(b.opts.LocalCachePath); err != nil {
-		errors.Throw(errors.InternalError, "could not create local cache path")
-	}
-	if err := fs.GuaranteeDirectoryExists(b.opts.LocalTargetPath); err != nil {
-		errors.Throw(errors.InternalError, "could not create local target path")
-	}
-	outputDir := filepath.Dir(b.opts.OutputFilePath)
-	if err := fs.GuaranteeDirectoryExists(outputDir); err != nil {
-		errors.Throw(errors.InternalError, "could not create output file path")
-	}
+	// if err := fs.GuaranteeDirectoryExists(b.opts.GlobalCachePath); err != nil {
+	// 	errors.Throw(errors.InternalError, "could not create global cache path")
+	// }
+	// if err := fs.GuaranteeDirectoryExists(b.opts.GlobalTargetPath); err != nil {
+	// 	errors.Throw(errors.InternalError, "could not create global target path")
+	// }
+	// if err := fs.GuaranteeDirectoryExists(b.opts.LocalCachePath); err != nil {
+	// 	errors.Throw(errors.InternalError, "could not create local cache path")
+	// }
+	// if err := fs.GuaranteeDirectoryExists(b.opts.LocalTargetPath); err != nil {
+	// 	errors.Throw(errors.InternalError, "could not create local target path")
+	// }
+	// outputDir := filepath.Dir(b.opts.OutputFilePath)
+	// if err := fs.GuaranteeDirectoryExists(outputDir); err != nil {
+	// 	errors.Throw(errors.InternalError, "could not create output file path")
+	// }
 }
 
 func (b *Builder) loadModules() {

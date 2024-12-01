@@ -29,9 +29,9 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		EntryFilePath:    fileName,
 		OutputFilePath:   fs.GetBinaryName(fileName),
 		WorkingDir:       fs.GetWorkingDir(),
-		LocalCachePath:   fs.JoinProjectPath(".cache"),
+		LocalCachePath:   fs.JoinProjectPath(".golden/cache"),
 		GlobalCachePath:  fs.JoinLangPath("cache"),
-		LocalTargetPath:  fs.JoinProjectPath(".target"),
+		LocalTargetPath:  fs.JoinProjectPath(".golden/target"),
 		GlobalTargetPath: fs.JoinLangPath("target"),
 
 		OnTokensReady:          events.NewSignal2[*File, []*token.Token](),

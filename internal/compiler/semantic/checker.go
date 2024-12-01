@@ -15,13 +15,14 @@ import (
 
 var _ ast.Visitor = &Checker{}
 
-// Initialization checker
-// Type checker
-// Type inference
-// Scope checker
-// Const checker
-// Const folding
-// Const propagation
+// Checker is the main semantic analysis component. It performs the following procedures:
+//
+// [x] Circular Initialization checker
+// [x] Type checker
+// [x] Type inference
+// [x] Scope checker
+// [ ] Const folding
+// [ ] Const propagation
 type Checker struct {
 	scopeStack          *ds.Stack[*env.Scope]
 	initializationStack *ds.Stack[ast.Node]
