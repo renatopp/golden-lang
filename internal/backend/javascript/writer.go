@@ -8,6 +8,7 @@ import (
 
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/token"
+	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/tmpl"
 )
 
@@ -129,8 +130,9 @@ func (w *Writer) VisitBinOp(node *ast.BinOp) ast.Node {
 	case token.KindToLiteral(token.TPercent):
 		op = "%"
 	case token.KindToLiteral(token.TSpaceShip):
-		term := fmt.Sprintf("((%s < %s) ? -1 : (%s > %s) ? 1 : 0)", left, right, left, right)
-		w.Push(term)
+		errors.ThrowAtNode(node, errors.NotImplemented, "Spaceship operator not implemented yet")
+		// term := fmt.Sprintf("((%s < %s) ? -1 : (%s > %s) ? 1 : 0)", left, right, left, right)
+		// w.Push(term)
 		return node
 	}
 
