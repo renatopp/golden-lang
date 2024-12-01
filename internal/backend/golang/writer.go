@@ -1,4 +1,4 @@
-package javascript
+package golang
 
 import (
 	_ "embed"
@@ -8,10 +8,11 @@ import (
 
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/token"
+	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/tmpl"
 )
 
-//go:embed templates/module.mjs.tmpl
+//go:embed templates/module.go.tmpl
 var raw_template_module string
 var template_module, _ = template.New("module").Parse(raw_template_module)
 
@@ -19,11 +20,11 @@ var _ ast.Visitor = &Writer{}
 
 type Writer struct {
 	*ast.Visiter
-	backend *Javascript
+	backend *Golang
 	stack   []string
 }
 
-func NewWriter(backend *Javascript) *Writer {
+func NewWriter(backend *Golang) *Writer {
 	return &Writer{
 		backend: backend,
 	}
@@ -39,10 +40,11 @@ func (w *Writer) Pop() string {
 	return s
 }
 
-func (w *Writer) Generate(root *ast.Module) string {
+func (w *Writer) Generate(packageName string, root *ast.Module) string {
 	root.Visit(w)
 	return tmpl.Generate(template_module, map[string]any{
-		"Exprs": w.Pop(),
+		"PackageName": packageName,
+		"Exprs":       w.Pop(),
 	})
 }
 
@@ -64,7 +66,7 @@ func (w *Writer) VisitConst(node *ast.Const) ast.Node {
 	node.ValueExpr = node.ValueExpr.Visit(w)
 	value := w.Pop()
 
-	w.Push("export const " + name + " = " + value)
+	w.Push("var " + name + " = " + value)
 	return node
 }
 
@@ -107,9 +109,9 @@ func (w *Writer) VisitBinOp(node *ast.BinOp) ast.Node {
 	case token.KindToLiteral(token.TOr):
 		op = "||"
 	case token.KindToLiteral(token.TEqual):
-		op = "==="
+		op = "=="
 	case token.KindToLiteral(token.TNotEqual):
-		op = "!=="
+		op = "!="
 	case token.KindToLiteral(token.TLess):
 		op = "<"
 	case token.KindToLiteral(token.TLessEqual):
@@ -129,8 +131,9 @@ func (w *Writer) VisitBinOp(node *ast.BinOp) ast.Node {
 	case token.KindToLiteral(token.TPercent):
 		op = "%"
 	case token.KindToLiteral(token.TSpaceShip):
-		term := fmt.Sprintf("((%s < %s) ? -1 : (%s > %s) ? 1 : 0)", left, right, left, right)
-		w.Push(term)
+		errors.ThrowAtNode(node, errors.NotImplemented, "Spaceship operator not implemented yet")
+		// term := fmt.Sprintf("((%s < %s) ? -1 : (%s > %s) ? 1 : 0)", left, right, left, right)
+		// w.Push(term)
 		return node
 	}
 

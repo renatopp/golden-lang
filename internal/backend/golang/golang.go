@@ -45,7 +45,8 @@ func (b *Golang) BeforeCodeGeneration() {
 
 func (b *Golang) GenerateCode(goldenFilePath string, root *ast.Module, entry bool) {
 	backendFilePath := BackendPath(goldenFilePath)
-	os.WriteFile(backendFilePath, []byte("package root\nfunc Main() { println(\"Hello, World from Go!\")}"), 0644)
+	writer := NewWriter(b)
+	os.WriteFile(backendFilePath, []byte(writer.Generate("root", root)), 0644)
 }
 
 func (b *Golang) AfterCodeGeneration() {

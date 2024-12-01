@@ -20,7 +20,7 @@ type BuildOptions struct {
 	GlobalTargetPath string // Absolute path of the global target directory for storing transpiled files
 
 	// Backend
-	OutputTargets []backend.Backend // Output targets for the backend
+	OutputTarget backend.Backend // Output targets for the backend
 
 	// Events
 	OnTokensReady          *events.Signal2[*File, []*token.Token]
@@ -39,9 +39,7 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		LocalTargetPath:  fs.JoinProjectPath(".golden/target"),
 		GlobalTargetPath: fs.JoinLangPath("target"),
 
-		OutputTargets: []backend.Backend{
-			&golang.Golang{},
-		},
+		OutputTarget: golang.NewBackend(),
 
 		OnTokensReady:          events.NewSignal2[*File, []*token.Token](),
 		OnAstReady:             events.NewSignal2[*File, *ast.Module](),

@@ -243,21 +243,19 @@ func (b *Builder) checkMain() {
 }
 
 func (b *Builder) generateCode() {
-	for _, backend := range b.opts.OutputTargets {
-		backend.Initialize(b.opts.LocalTargetPath)
+	backend := b.opts.OutputTarget
+	backend.Initialize(b.opts.LocalTargetPath)
 
-		backend.BeforeCodeGeneration()
-		for _, mod := range b.ctx.DependencyOrder {
-			backend.GenerateCode(mod.Path, mod.Root.Unwrap(), mod == b.ctx.EntryModule)
-		}
-		backend.AfterCodeGeneration()
-
-		backend.Finalize()
+	backend.BeforeCodeGeneration()
+	for _, mod := range b.ctx.DependencyOrder {
+		backend.GenerateCode(mod.Path, mod.Root.Unwrap(), mod == b.ctx.EntryModule)
 	}
+	backend.AfterCodeGeneration()
+
+	backend.Finalize()
 }
 
 func (b *Builder) runCode() {
-	for _, backend := range b.opts.OutputTargets {
-		backend.Run()
-	}
+	backend := b.opts.OutputTarget
+	backend.Run()
 }

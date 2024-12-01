@@ -1,16 +1,7 @@
 # TODO
 
-clear && golden run --debug --working-dir=.samples/imports-cyclic/ .samples/imports-cyclic/a/a.gold
-clear && golden run --debug --working-dir=.samples/imports-non-cyclic/ .samples/imports-non-cyclic/a/a.gold
+[ ] If the block contains more than 1 expression, and the block is within another expression (how to catch it?), the ast should convert the block into a lambda function with a direct call to it:
 
-[ ] try codegen to go
-  [x] builder must configure temp output directory
-  [ ] codegen must write the main file
-  [ ] builder must call go build/go run
-  [ ] builder must copy the binary to the final output
+    - `let a = 1 + {2; 4}` => `let a = 1 + (:{ 2; 4 })() 
 
-  [ ] codegen must create the package folder in the temp
-  [ ] codegen must create the package file in the temp
-  [ ] codegen must write the imports in the file
-  [ ] codegen must write the function declaration
-  ...
+[ ] Review string usage: change string from " to ' (?) and add automatic offset for multiline. Also add `` for raw string
