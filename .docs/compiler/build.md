@@ -1,7 +1,0 @@
-
-```
-project/
-  .cache/
-  build/
-  src/
-```

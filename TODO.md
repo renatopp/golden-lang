@@ -1,5 +1,6 @@
 # TODO
 
+[ ] Correct parse -- blocks
 [ ] Implement golden build command to generate the binary
 [ ] Convert <=> operator into a lambda function that is called inplace
 
