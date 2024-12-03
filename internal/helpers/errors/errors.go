@@ -174,6 +174,11 @@ func prettyGoldenError(e GoldenError) {
 	}
 
 	loc := e.Loc.Unwrap()
+	if loc == nil || loc.Filename == "" {
+		prettySimpleError(e)
+		return
+	}
+
 	filePath := loc.Filename
 	source, err := os.ReadFile(filePath)
 	if err != nil {
@@ -187,6 +192,13 @@ func prettyGoldenError(e GoldenError) {
 	// toLine := loc.ToLine
 	toColumn := loc.ToColumn
 	columnSpan := max(1, toColumn-fromColumn)
+
+	if fromLine < 1 {
+		fromLine = 1
+	}
+	if fromLine > len(lines) {
+		fromLine = len(lines)
+	}
 
 	targetLine := lines[fromLine-1]
 
