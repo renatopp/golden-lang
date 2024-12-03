@@ -40,12 +40,22 @@ func (b *Builder) Build() (res *BuildResult, err error) {
 		res = b.build()
 		res.Elapsed = time.Since(start)
 	})
-
+	if err == nil {
+		return res, errors.WithRecovery(b.generateOutput)
+	}
 	return res, err
 }
 
-func (b *Builder) Run() error {
-	return errors.WithRecovery(b.run)
+func (b *Builder) Run() (res *BuildResult, err error) {
+	err = errors.WithRecovery(func() {
+		start := time.Now()
+		res = b.build()
+		res.Elapsed = time.Since(start)
+	})
+	if err == nil {
+		return res, errors.WithRecovery(b.run)
+	}
+	return res, err
 }
 
 func (b *Builder) build() *BuildResult {
@@ -251,8 +261,12 @@ func (b *Builder) generateCode() {
 		backend.GenerateCode(mod.Path, mod.Root.Unwrap(), mod == b.ctx.EntryModule)
 	}
 	backend.AfterCodeGeneration()
-
 	backend.Finalize()
+}
+
+func (b *Builder) generateOutput() {
+	backend := b.opts.OutputTarget
+	backend.Build(b.opts.OutputFilePath)
 }
 
 func (b *Builder) runCode() {

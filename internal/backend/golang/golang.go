@@ -60,11 +60,19 @@ func (b *Golang) Run() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		log.Fatalf("failed to run node: %v", err)
+		log.Fatalf("failed to run go: %v", err)
 	}
 }
 
-func (b *Golang) Build() {}
+func (b *Golang) Build(outputPath string) {
+	cmd := exec.Command("go", "build", "-o", outputPath, b.backendMainPath)
+	cmd.Dir = targetDirectory
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("failed to run go: %v", err)
+	}
+}
 
 func (b *Golang) Finalize() {
 }

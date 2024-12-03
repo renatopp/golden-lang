@@ -80,11 +80,13 @@ func (l *Lexer) next() (*token.Token, bool) {
 
 		// Comments
 		case s2 == "--":
-			return &token.Token{
-				Kind:    token.TComment,
-				Literal: l.eatComment(),
-				Loc:     l.span(),
-			}, true
+			l.eatComment()
+			continue
+			// return &token.Token{
+			// 	Kind:    token.TComment,
+			// 	Literal: l.eatComment(),
+			// 	Loc:     l.span(),
+			// }, true
 
 		// Alpha literals, identifiers and keywords
 		case runes.IsAlpha(c0) || runes.IsOneOf(c0, '_'):
@@ -431,7 +433,6 @@ func (l *Lexer) eatRawString() string {
 	first := l.eat()
 	for {
 		c := l.scanner.Peek()
-		println(string(c))
 
 		if runes.IsOneOf(c, '\r') {
 			l.eat()

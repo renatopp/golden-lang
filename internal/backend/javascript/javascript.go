@@ -59,6 +59,8 @@ func (b *Javascript) Run() {
 	}
 }
 
-func (b *Javascript) Build() {}
+func (b *Javascript) Build(outputPath string) {
+
+}
 
 func (b *Javascript) Finalize() {}

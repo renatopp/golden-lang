@@ -8,6 +8,6 @@ type Backend interface {
 	GenerateCode(filePath string, root *ast.Module, entry bool)
 	AfterCodeGeneration()
 	Run()
-	Build()
+	Build(outputPath string)
 	Finalize()
 }

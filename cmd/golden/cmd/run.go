@@ -46,7 +46,8 @@ func (c *Run) Run() error {
 
 	logger.SetLevel(logger.LevelFromString(*flagLevel))
 
-	opts := builder.NewBuildOptions(args[0])
+	file, _ := fs.GetAbsolutePath(args[0])
+	opts := builder.NewBuildOptions(file)
 	if *flagDebug {
 		opts.OnTokensReady.Subscribe(debug.PrettyPrintTokens)
 		opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
@@ -71,17 +72,12 @@ func (c *Run) Run() error {
 	}
 
 	b := builder.NewBuilder(opts)
-	res, err := b.Build()
+	res, err := b.Run()
 	if err != nil {
 		errors.PrettyPrint(err)
 		return nil
 	}
-	fmt.Println("Build completed in", res.Elapsed)
-
-	if err := b.Run(); err != nil {
-		errors.PrettyPrint(err)
-		return nil
-	}
+	fmt.Println("Run completed in", res.Elapsed)
 
 	return nil
 }
