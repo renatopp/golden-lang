@@ -1,14 +1,26 @@
 # TODO
 
-[ ] Review string usage: change string from " to ' (?) and add automatic offset for multiline. Also add `` for raw string
 [ ] Implement functions
   [x] Implement function calls
-  [ ] Optimization: add return statement for auto returns
-  [ ] Implement function backend javascript
-    [ ] Functions signature
-    [ ] Value return
-  [ ] Implement function backend golang
+  [ ] Add return statement
+  [ ] Create pass structure
+  [ ] pass: add auto return
+  [ ] pass: add block to function
+  [ ] pass: add xor to function
+  [ ] pass: add <=> to function
+  [ ] Javascript:
+    [ ] Gen return
+    [ ] Gen function with blocks
+    [ ] Gen function call
+  [ ] Go:
+    [ ] Gen function signature
+    [ ] Gen type signature
+    [ ] Gen return
+    [ ] Gen functions with blocks
+    [ ]Gen function call
   [ ] Test closure
+
+[ ] Review string usage: change string from " to ' (?) and add automatic offset for multiline. Also add `` for raw string
 [ ] Check parse errors `fn(a, b`
 [ ] Implement module imports
 
