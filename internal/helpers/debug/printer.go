@@ -88,6 +88,13 @@ func (p *AstPrinter) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	return node
 }
 
+func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
+	p.inc()
+	defer p.dec()
+	p.print(node, "[type-ident:%s]", node.Value)
+	return node
+}
+
 func (p *AstPrinter) VisitBinOp(node *ast.BinOp) ast.Node {
 	p.inc()
 	defer p.dec()
@@ -118,7 +125,7 @@ func (p *AstPrinter) VisitFnDecl(node *ast.FnDecl) ast.Node {
 	defer p.dec()
 	p.print(node, "[fn-decl]")
 	node.Name.If(func(n *ast.VarIdent) { n.Visit(p) })
-	iter.Each(node.Parameters, func(n *ast.FnDeclParam) { n.Visit(p) })
+	iter.Each(node.Params, func(n *ast.FnDeclParam) { n.Visit(p) })
 	node.TypeExpr.Visit(p)
 	node.ValueExpr.Visit(p)
 	return node
@@ -133,18 +140,20 @@ func (p *AstPrinter) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
 	return node
 }
 
-func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
-	p.inc()
-	defer p.dec()
-	p.print(node, "[type-ident:%s]", node.Value)
-	return node
-}
-
 func (p *AstPrinter) VisitTypeFn(node *ast.TypeFn) ast.Node {
 	p.inc()
 	defer p.dec()
 	p.print(node, "[type-fn]")
 	iter.Each(node.Parameters, func(n ast.Node) { n.Visit(p) })
 	node.ReturnExpr.Visit(p)
+	return node
+}
+
+func (p *AstPrinter) VisitApplication(node *ast.Application) ast.Node {
+	p.inc()
+	defer p.dec()
+	p.print(node, "[application]")
+	node.Target.Visit(p)
+	iter.Each(node.Args, func(n ast.Node) { n.Visit(p) })
 	return node
 }

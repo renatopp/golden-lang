@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-func Generate(tmpl *template.Template, data any) string {
+func GenerateString(tmpl *template.Template, data any) string {
 	var buf bytes.Buffer
 	err := tmpl.Execute(&buf, data)
 	if err != nil {

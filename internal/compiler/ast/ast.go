@@ -54,9 +54,7 @@ func (n *BaseNode) Visit(v Visitor) Node {
 	panic("base node does not have visitor")
 }
 
-//
-//
-//
+// Expressions ----------------------------------------------------------------
 
 type Module struct {
 	BaseNode
@@ -65,10 +63,6 @@ type Module struct {
 
 func NewModule(tok *token.Token, exprs []Node) *Module { return &Module{NewBaseNode(tok), exprs} }
 func (n *Module) Visit(v Visitor) Node                 { return v.VisitModule(n) }
-
-//
-//
-//
 
 type VarDecl struct {
 	BaseNode
@@ -82,10 +76,6 @@ func NewVarDecl(tok *token.Token, name *VarIdent, tpexpr safe.Optional[Node], va
 }
 func (n *VarDecl) Visit(v Visitor) Node { return v.VisitVarDecl(n) }
 
-//
-//
-//
-
 type Int struct {
 	BaseNode
 	Value int64
@@ -93,10 +83,6 @@ type Int struct {
 
 func NewInt(tok *token.Token, val int64) *Int { return &Int{NewBaseNode(tok), val} }
 func (n *Int) Visit(v Visitor) Node           { return v.VisitInt(n) }
-
-//
-//
-//
 
 type Float struct {
 	BaseNode
@@ -106,10 +92,6 @@ type Float struct {
 func NewFloat(tok *token.Token, val float64) *Float { return &Float{NewBaseNode(tok), val} }
 func (n *Float) Visit(v Visitor) Node               { return v.VisitFloat(n) }
 
-//
-//
-//
-
 type String struct {
 	BaseNode
 	Value string
@@ -117,10 +99,6 @@ type String struct {
 
 func NewString(tok *token.Token, val string) *String { return &String{NewBaseNode(tok), val} }
 func (n *String) Visit(v Visitor) Node               { return v.VisitString(n) }
-
-//
-//
-//
 
 type Bool struct {
 	BaseNode
@@ -130,10 +108,6 @@ type Bool struct {
 func NewBool(tok *token.Token, val bool) *Bool { return &Bool{NewBaseNode(tok), val} }
 func (n *Bool) Visit(v Visitor) Node           { return v.VisitBool(n) }
 
-//
-//
-//
-
 type VarIdent struct {
 	BaseNode
 	Value string
@@ -142,10 +116,6 @@ type VarIdent struct {
 func NewVarIdent(tok *token.Token, val string) *VarIdent { return &VarIdent{NewBaseNode(tok), val} }
 func (n *VarIdent) Visit(v Visitor) Node                 { return v.VisitVarIdent(n) }
 
-//
-//
-//
-
 type TypeIdent struct {
 	BaseNode
 	Value string
@@ -153,10 +123,6 @@ type TypeIdent struct {
 
 func NewTypeIdent(tok *token.Token, val string) *TypeIdent { return &TypeIdent{NewBaseNode(tok), val} }
 func (n *TypeIdent) Visit(v Visitor) Node                  { return v.VisitTypeIdent(n) }
-
-//
-//
-//
 
 type BinOp struct {
 	BaseNode
@@ -170,10 +136,6 @@ func NewBinOp(tok *token.Token, op string, left, right Node) *BinOp {
 }
 func (n *BinOp) Visit(v Visitor) Node { return v.VisitBinOp(n) }
 
-//
-//
-//
-
 type UnaryOp struct {
 	BaseNode
 	Op        string
@@ -185,10 +147,6 @@ func NewUnaryOp(tok *token.Token, op string, right Node) *UnaryOp {
 }
 func (n *UnaryOp) Visit(v Visitor) Node { return v.VisitUnaryOp(n) }
 
-//
-//
-//
-
 type Block struct {
 	BaseNode
 	Exprs []Node
@@ -197,28 +155,23 @@ type Block struct {
 func NewBlock(tok *token.Token, exprs []Node) *Block { return &Block{NewBaseNode(tok), exprs} }
 func (n *Block) Visit(v Visitor) Node                { return v.VisitBlock(n) }
 
-//
-//
-//
-//
-//
-//
+// Functions ------------------------------------------------------------------
 
 type FnDecl struct {
 	BaseNode
-	Name       safe.Optional[*VarIdent]
-	Parameters []*FnDeclParam
-	TypeExpr   Node
-	ValueExpr  Node
+	Name      safe.Optional[*VarIdent]
+	Params    []*FnDeclParam
+	TypeExpr  Node
+	ValueExpr Node
 }
 
 func NewFnDecl(tok *token.Token, name safe.Optional[*VarIdent], params []*FnDeclParam, ret Node, val Node) *FnDecl {
 	return &FnDecl{
-		BaseNode:   NewBaseNode(tok),
-		Name:       name,
-		Parameters: params,
-		TypeExpr:   ret,
-		ValueExpr:  val,
+		BaseNode:  NewBaseNode(tok),
+		Name:      name,
+		Params:    params,
+		TypeExpr:  ret,
+		ValueExpr: val,
 	}
 }
 
@@ -239,10 +192,6 @@ func NewFnDeclParam(name *VarIdent, tp Node) *FnDeclParam {
 }
 func (n *FnDeclParam) Visit(v Visitor) Node { return v.VisitFnDeclParam(n) }
 
-//
-//
-//
-
 type TypeFn struct {
 	BaseNode
 	Parameters []Node
@@ -257,3 +206,19 @@ func NewTypeFn(tok *token.Token, params []Node, ret Node) *TypeFn {
 	}
 }
 func (n *TypeFn) Visit(v Visitor) Node { return v.VisitTypeFn(n) }
+
+type Application struct {
+	BaseNode
+	Target Node
+	Args   []Node
+}
+
+func NewApplication(tok *token.Token, target Node, args []Node) *Application {
+	return &Application{
+		BaseNode: NewBaseNode(tok),
+		Target:   target,
+		Args:     args,
+	}
+}
+
+func (n *Application) Visit(v Visitor) Node { return v.VisitApplication(n) }

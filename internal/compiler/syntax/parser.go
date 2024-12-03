@@ -48,6 +48,7 @@ func NewParser(tokens []*token.Token) *Parser {
 	p.ValueSolver.RegisterInfixFn(token.TAnd, p.parseBinOp)
 	p.ValueSolver.RegisterInfixFn(token.TOr, p.parseBinOp)
 	p.ValueSolver.RegisterInfixFn(token.TXor, p.parseBinOp)
+	p.ValueSolver.RegisterInfixFn(token.TLeftParen, p.parseApplication)
 
 	p.TypeSolver.RegisterPrefixFn(token.TTypeIdent, p.parseTypeIdentType)
 	p.TypeSolver.RegisterPrefixFn(token.TFN, p.parseFnType)
@@ -99,10 +100,10 @@ func (p *Parser) parseLet() *ast.VarDecl {
 	tok := p.ExpectAndEat(token.TLet)         // let
 	name := p.parseVarIdent().(*ast.VarIdent) // var-ident
 	// TODO: add type expression parsing // type-expr
-	assign := p.ExpectAndEat(token.TAssign) // =
-	val := p.parseValueExpression(0)        // value-expr
+	p.ExpectAndEat(token.TAssign)    // =
+	val := p.parseValueExpression(0) // value-expr
 	if !val.Has() {
-		errors.ThrowAtToken(assign, errors.ParserError, "expected value expression after assignment, but none was found")
+		p.ThrowExpectedValueExpression("after assignment")
 	}
 	return ast.NewVarDecl(tok, name, safe.None[ast.Node](), val.Unwrap())
 }
@@ -180,7 +181,7 @@ func (p *Parser) parseUnaryOp() ast.Node {
 	tok := p.Eat()
 	right := p.parseValueExpression(0)
 	if !right.Has() {
-		errors.ThrowAtToken(tok, errors.ParserError, "expected value expression after unary operator, but none was found")
+		p.ThrowExpectedValueExpression("after unary operator '%s'", tok.Literal)
 	}
 	return ast.NewUnaryOp(tok, tok.Literal, right.Unwrap())
 }
@@ -190,7 +191,7 @@ func (p *Parser) parseBinOp(left ast.Node) ast.Node {
 	tok := p.Eat()
 	right := p.parseValueExpression(p.ValuePrecedence(tok))
 	if !right.Has() {
-		errors.ThrowAtToken(tok, errors.ParserError, "expected value expression after binary operator, but none was found")
+		p.ThrowExpectedValueExpression("after binary operator '%s'", tok.Literal)
 	}
 	return ast.NewBinOp(tok, tok.Literal, left, right.Unwrap())
 }
@@ -203,7 +204,7 @@ func (p *Parser) parseBlock() ast.Node {
 	for !p.IsNext(token.TRightBrace) {
 		node := p.parseValueExpression(0)
 		if !node.Has() {
-			errors.ThrowAtToken(p.Peek(), errors.ParserError, "expected value expression inside the block, but none was found")
+			p.ThrowExpectedValueExpression("inside the block")
 		}
 		exprs = append(exprs, node.Unwrap())
 		p.SkipSeparator(token.TSemicolon)
@@ -235,7 +236,7 @@ func (p *Parser) parseFn() ast.Node {
 	p.SkipNewlines()
 	valueExpr := p.parseValueExpression(0)
 	if !valueExpr.Has() {
-		errors.ThrowAtToken(p.Peek(), errors.ParserError, "expected value expression after assignment, but none was found")
+		p.ThrowExpectedValueExpression("after assignment")
 	}
 
 	val := valueExpr.Unwrap()
@@ -327,4 +328,23 @@ func (p *Parser) parseFnTypeParams() []ast.Node {
 	}
 	p.ExpectAndEat(token.TRightParen)
 	return params
+}
+
+// <target>(<value-expr>, ...)
+func (p *Parser) parseApplication(left ast.Node) ast.Node {
+	tok := p.ExpectAndEat(token.TLeftParen)
+	args := []ast.Node{}
+	for {
+		if p.IsNext(token.TRightParen) {
+			break
+		}
+		arg := p.parseValueExpression(0)
+		if !arg.Has() {
+			p.ThrowExpectedValueExpression("as argument")
+		}
+		args = append(args, arg.Unwrap())
+		p.SkipSeparator(token.TComma)
+	}
+	p.ExpectAndEat(token.TRightParen)
+	return ast.NewApplication(tok, left, args)
 }

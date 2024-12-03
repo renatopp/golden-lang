@@ -117,7 +117,7 @@ func WithRecovery(f func()) (err error) {
 		if r := recover(); r != nil {
 			err = ToGoldenError(r)
 			// err = gerr.WithStack(string(debug.Stack()))
-			// println(string(debug.Stack()))
+			println(string(debug.Stack()))
 		}
 	}()
 	f()

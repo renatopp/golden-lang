@@ -8,7 +8,9 @@ import (
 
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/token"
+	"github.com/renatopp/golden/internal/helpers/codegen"
 	"github.com/renatopp/golden/internal/helpers/errors"
+	"github.com/renatopp/golden/internal/helpers/naming"
 	"github.com/renatopp/golden/internal/helpers/tmpl"
 )
 
@@ -20,8 +22,9 @@ var _ ast.Visitor = &Writer{}
 
 type Writer struct {
 	*ast.Visiter
-	backend *Javascript
-	stack   []string
+	backend    *Javascript
+	stack      []string
+	identLevel int
 }
 
 func NewWriter(backend *Javascript) *Writer {
@@ -42,7 +45,7 @@ func (w *Writer) Pop() string {
 
 func (w *Writer) Generate(root *ast.Module) string {
 	root.Visit(w)
-	return tmpl.Generate(template_module, map[string]any{
+	return tmpl.GenerateString(template_module, map[string]any{
 		"Exprs": w.Pop(),
 	})
 }
@@ -65,7 +68,7 @@ func (w *Writer) VisitVarDecl(node *ast.VarDecl) ast.Node {
 	node.ValueExpr = node.ValueExpr.Visit(w)
 	value := w.Pop()
 
-	w.Push("export let " + name + " = " + value)
+	w.Push(w.visibility(name) + "let " + name + " = " + value)
 	return node
 }
 
@@ -157,4 +160,42 @@ func (w *Writer) VisitBlock(node *ast.Block) ast.Node {
 
 	w.Push(strings.Join(exprs, "\n"))
 	return node
+}
+
+func (w *Writer) VisitFnDecl(node *ast.FnDecl) ast.Node {
+	name := ""
+	if node.Name.Has() {
+		name = node.Name.Unwrap().Value
+	}
+	export := w.visibility(name)
+
+	params := codegen.JoinList(", ", node.Params, func(p *ast.FnDeclParam) string {
+		p.Visit(w)
+		return w.Pop()
+	})
+
+	w.identLevel++
+	node.ValueExpr.Visit(w)
+	body := w.ident(w.Pop())
+	w.identLevel--
+
+	w.Push(fmt.Sprintf("%sfunction %s(%s) {\n%s\n}", export, name, params, body))
+	return node
+}
+
+func (w *Writer) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
+	w.Push(node.Name.Value)
+	return node
+}
+
+func (w *Writer) visibility(name string) string {
+	if naming.IsPrivateName(name) {
+		return ""
+	}
+	return "export "
+}
+
+func (w *Writer) ident(block string) string {
+	identing := strings.Repeat("  ", w.identLevel)
+	return identing + strings.ReplaceAll(block, "\n", "\n"+identing)
 }

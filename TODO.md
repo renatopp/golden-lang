@@ -2,8 +2,11 @@
 
 [ ] Review string usage: change string from " to ' (?) and add automatic offset for multiline. Also add `` for raw string
 [ ] Implement functions
-  [ ] Implement function calls
+  [x] Implement function calls
+  [ ] Optimization: add return statement for auto returns
   [ ] Implement function backend javascript
+    [ ] Functions signature
+    [ ] Value return
   [ ] Implement function backend golang
   [ ] Test closure
 [ ] Check parse errors `fn(a, b`

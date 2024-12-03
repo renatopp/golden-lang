@@ -214,6 +214,20 @@ func (c *Checker) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	return node
 }
 
+func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
+	name := node.Value
+	bind := c.scope().Types.Get(name, nil)
+	if bind == nil {
+		errors.ThrowAtNode(node, errors.NameNotFound, "type '%s' not defined", name)
+	}
+	if !bind.IsSolved() {
+		bind.DefinitionNode.Visit(c)
+		bind.Type = bind.DefinitionNode.GetType().Unwrap()
+	}
+	node.SetType(bind.Type)
+	return node
+}
+
 func (c *Checker) VisitBinOp(node *ast.BinOp) ast.Node {
 	node.LeftExpr.Visit(c)
 	node.RightExpr.Visit(c)
@@ -295,11 +309,11 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 	defer c.popInitialization()
 
 	node.TypeExpr = node.TypeExpr.Visit(c)
-	node.Parameters = iter.Map(node.Parameters, func(p *ast.FnDeclParam) *ast.FnDeclParam { return p.Visit(c).(*ast.FnDeclParam) })
+	node.Params = iter.Map(node.Params, func(p *ast.FnDeclParam) *ast.FnDeclParam { return p.Visit(c).(*ast.FnDeclParam) })
 
 	c.pushScope(c.scope().New())
 	tps := []ast.Type{}
-	for _, p := range node.Parameters {
+	for _, p := range node.Params {
 		tp := p.Type.Unwrap()
 		tps = append(tps, tp)
 		c.declare(p.Name, p, tp)
@@ -329,20 +343,6 @@ func (c *Checker) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
 	return node
 }
 
-func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
-	name := node.Value
-	bind := c.scope().Types.Get(name, nil)
-	if bind == nil {
-		errors.ThrowAtNode(node, errors.NameNotFound, "type '%s' not defined", name)
-	}
-	if !bind.IsSolved() {
-		bind.DefinitionNode.Visit(c)
-		bind.Type = bind.DefinitionNode.GetType().Unwrap()
-	}
-	node.SetType(bind.Type)
-	return node
-}
-
 func (c *Checker) VisitTypeFn(node *ast.TypeFn) ast.Node {
 	node.Parameters = iter.Map(node.Parameters, func(p ast.Node) ast.Node { return p.Visit(c) })
 	node.ReturnExpr = node.ReturnExpr.Visit(c)
@@ -353,5 +353,22 @@ func (c *Checker) VisitTypeFn(node *ast.TypeFn) ast.Node {
 	}
 
 	node.SetType(types.NewFunction(node, tps, node.ReturnExpr.GetType().Unwrap()))
+	return node
+}
+
+func (c *Checker) VisitApplication(node *ast.Application) ast.Node {
+	node.Target = node.Target.Visit(c)
+	node.Args = iter.Map(node.Args, func(a ast.Node) ast.Node { return a.Visit(c) })
+
+	fn := node.Target.GetType().Unwrap().(*types.Function)
+	if len(node.Args) != len(fn.Params) {
+		errors.ThrowAtNode(node, errors.TypeError, "expected %d arguments, but got %d", len(fn.Params), len(node.Args))
+	}
+
+	for i, a := range node.Args {
+		c.expectNodeWithCompatibleType(a, fn.Params[i])
+	}
+
+	node.SetType(fn.Return)
 	return node
 }

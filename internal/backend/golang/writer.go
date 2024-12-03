@@ -42,7 +42,7 @@ func (w *Writer) Pop() string {
 
 func (w *Writer) Generate(packageName string, root *ast.Module) string {
 	root.Visit(w)
-	return tmpl.Generate(template_module, map[string]any{
+	return tmpl.GenerateString(template_module, map[string]any{
 		"PackageName": packageName,
 		"Exprs":       w.Pop(),
 	})

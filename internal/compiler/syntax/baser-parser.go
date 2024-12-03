@@ -1,6 +1,7 @@
 package syntax
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/renatopp/golden/internal/compiler/token"
@@ -93,6 +94,11 @@ func (p *BaseParser) ExpectAndEat(kinds ...token.TokenKind) *token.Token {
 	return p.Eat()
 }
 
+func (p *BaseParser) ThrowExpectedValueExpression(msg string, args ...any) {
+	next := p.Peek()
+	errors.ThrowAtToken(next, errors.ParserError, "expected value expression %s, got '%s' instead", fmt.Sprintf(msg, args...), next.Display())
+}
+
 func (p *BaseParser) ValuePrecedence(t *token.Token) int {
 	switch {
 	case t.Is(token.TAssign):
@@ -117,8 +123,8 @@ func (p *BaseParser) ValuePrecedence(t *token.Token) int {
 		return 110
 	case t.Is(token.TPercent):
 		return 120
-		// case t.Is(token.TLparen):
-		// return 130
+	case t.Is(token.TLeftParen):
+		return 130
 		// case t.Is(token.TDot):
 		// return 140
 	}

@@ -1,9 +1,12 @@
-let z = 1
-fn mul(a Int) Fn(Int, Int) = 
-  fn(b Int, c Int) Int = 
-    a + b + c + z
+-- let z = 1
+-- fn mul(a Int) Fn(Int, Int) Int = 
+--   fn(b Int, c Int) Int = 
+--     a + b + c + z
+-- 
+-- fn main() = {
+--   mul(10)(2, 5)
+-- }
 
+fn main() = 0
 
-fn main() = {
-  
-}
+fn add(a, b Int) Int = 0
