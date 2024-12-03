@@ -58,14 +58,14 @@ func (w *Writer) VisitModule(node *ast.Module) ast.Node {
 	return node
 }
 
-func (w *Writer) VisitConst(node *ast.Const) ast.Node {
+func (w *Writer) VisitVarDecl(node *ast.VarDecl) ast.Node {
 	node.Name.Visit(w)
 	name := w.Pop()
 
 	node.ValueExpr = node.ValueExpr.Visit(w)
 	value := w.Pop()
 
-	w.Push("export const " + name + " = " + value)
+	w.Push("export let " + name + " = " + value)
 	return node
 }
 

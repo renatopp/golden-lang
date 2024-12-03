@@ -109,23 +109,23 @@ func (c *Checker) expectNodeWithCompatibleType(node ast.Node, types ...ast.Type)
 	errors.ThrowAtNode(node, errors.TypeError, "expected one of  %s, but got '%s'", names, tp.GetSignature())
 }
 
-func (c *Checker) expectCompatibleNodeTypes(a, b ast.Node) {
-	aWrappedType := a.GetType()
-	bWrappedType := b.GetType()
+func (c *Checker) expectCompatibleNodeTypes(receiver, giver ast.Node) {
+	aWrappedType := receiver.GetType()
+	bWrappedType := giver.GetType()
 
 	if !aWrappedType.Has() {
-		errors.ThrowAtNode(a, errors.InternalError, "expression has 'unknown' type")
+		errors.ThrowAtNode(receiver, errors.InternalError, "expression has 'unknown' type")
 	}
 
 	if !bWrappedType.Has() {
-		errors.ThrowAtNode(b, errors.InternalError, "expression has 'unknown' type")
+		errors.ThrowAtNode(giver, errors.InternalError, "expression has 'unknown' type")
 	}
 
-	aType := aWrappedType.Unwrap()
-	bType := bWrappedType.Unwrap()
+	receiverType := aWrappedType.Unwrap()
+	giverType := bWrappedType.Unwrap()
 
-	if !aType.IsCompatible(bType) {
-		errors.ThrowAtNode(a, errors.TypeError, "expected type '%s', but got '%s'", bType.GetSignature(), aType.GetSignature())
+	if !receiverType.IsCompatible(giverType) {
+		errors.ThrowAtNode(receiver, errors.TypeError, "expected type '%s', but got '%s'", receiverType.GetSignature(), giverType.GetSignature())
 	}
 }
 
@@ -138,7 +138,7 @@ func (c *Checker) PreCheck(root *ast.Module) {
 
 	for _, e := range root.Exprs {
 		switch n := e.(type) {
-		case *ast.Const:
+		case *ast.VarDecl:
 			v := n.Name.Value
 			c.scope().Values.Set(v, env.VB(n, nil))
 		}
@@ -146,10 +146,6 @@ func (c *Checker) PreCheck(root *ast.Module) {
 }
 
 func (c *Checker) Check(root *ast.Module) (res *ast.Module, err error) {
-	tp := root.GetType().Unwrap().(*types.Module)
-	c.pushScope(tp.Scope)
-	defer c.popScope()
-
 	err = errors.WithRecovery(func() {
 		res = c.VisitModule(root).(*ast.Module)
 	})
@@ -157,11 +153,13 @@ func (c *Checker) Check(root *ast.Module) (res *ast.Module, err error) {
 }
 
 func (c *Checker) VisitModule(node *ast.Module) ast.Node {
+	c.pushScope(node.Type.Unwrap().(*types.Module).Scope)
+	defer c.popScope()
 	node.Exprs = iter.Map(node.Exprs, func(e ast.Node) ast.Node { return e.Visit(c) })
 	return node
 }
 
-func (c *Checker) VisitConst(node *ast.Const) ast.Node {
+func (c *Checker) VisitVarDecl(node *ast.VarDecl) ast.Node {
 	if node.Type.Has() {
 		return node
 	}
@@ -213,10 +211,6 @@ func (c *Checker) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	}
 	node.SetType(bind.Type)
 
-	return node
-}
-
-func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
 	return node
 }
 
@@ -289,5 +283,75 @@ func (c *Checker) VisitBlock(node *ast.Block) ast.Node {
 	}
 	node.SetType(tp)
 
+	return node
+}
+
+func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
+	if node.Type.Has() {
+		return node
+	}
+
+	c.pushInitialization(node)
+	defer c.popInitialization()
+
+	node.TypeExpr = node.TypeExpr.Visit(c)
+	node.Parameters = iter.Map(node.Parameters, func(p *ast.FnDeclParam) *ast.FnDeclParam { return p.Visit(c).(*ast.FnDeclParam) })
+
+	c.pushScope(c.scope().New())
+	tps := []ast.Type{}
+	for _, p := range node.Parameters {
+		tp := p.Type.Unwrap()
+		tps = append(tps, tp)
+		c.declare(p.Name, p, tp)
+	}
+	node.ValueExpr = node.ValueExpr.Visit(c)
+	c.popScope()
+
+	c.expectCompatibleNodeTypes(node.TypeExpr, node.ValueExpr)
+
+	fnType := types.NewFunction(node, tps, node.TypeExpr.GetType().Unwrap())
+	node.SetType(fnType)
+
+	if node.Name.Has() {
+		name := node.Name.Unwrap()
+		name.SetType(fnType)
+		c.declare(name, node, fnType)
+	}
+
+	return node
+}
+
+func (c *Checker) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
+	node.TypeExpr = node.TypeExpr.Visit(c)
+	tp := node.TypeExpr.GetType().Unwrap()
+	node.Name.SetType(tp)
+	node.SetType(tp)
+	return node
+}
+
+func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
+	name := node.Value
+	bind := c.scope().Types.Get(name, nil)
+	if bind == nil {
+		errors.ThrowAtNode(node, errors.NameNotFound, "type '%s' not defined", name)
+	}
+	if !bind.IsSolved() {
+		bind.DefinitionNode.Visit(c)
+		bind.Type = bind.DefinitionNode.GetType().Unwrap()
+	}
+	node.SetType(bind.Type)
+	return node
+}
+
+func (c *Checker) VisitTypeFn(node *ast.TypeFn) ast.Node {
+	node.Parameters = iter.Map(node.Parameters, func(p ast.Node) ast.Node { return p.Visit(c) })
+	node.ReturnExpr = node.ReturnExpr.Visit(c)
+
+	tps := []ast.Type{}
+	for _, p := range node.Parameters {
+		tps = append(tps, p.GetType().Unwrap())
+	}
+
+	node.SetType(types.NewFunction(node, tps, node.ReturnExpr.GetType().Unwrap()))
 	return node
 }

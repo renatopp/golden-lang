@@ -74,7 +74,7 @@ func (b *Builder) build() *BuildResult {
 	b.buildDependencyGraph()
 	b.buildGlobalScope()
 	b.semanticAnalysis()
-	// b.checkMain()
+	b.checkMain()
 	b.generateCode()
 
 	return res
@@ -190,11 +190,11 @@ func (b *Builder) buildDependencyGraphLoop(registry map[string]*File, file *File
 
 func (b *Builder) buildGlobalScope() {
 	b.ctx.GlobalScope = env.NewScope()
-	// b.ctx.GlobalScope.Types.Set(types.Int.GetSignature(), env.B(types.Int))
-	// b.ctx.GlobalScope.Types.Set(types.Float.GetSignature(), env.B(types.Float))
-	// b.ctx.GlobalScope.Types.Set(types.Bool.GetSignature(), env.B(types.Bool))
-	// b.ctx.GlobalScope.Types.Set(types.String.GetSignature(), env.B(types.String))
-	// b.ctx.GlobalScope.Types.Set(types.Void.GetSignature(), env.B(types.Void))
+	b.ctx.GlobalScope.Types.Set(types.Int.GetSignature(), env.TB(types.Int, nil))
+	b.ctx.GlobalScope.Types.Set(types.Float.GetSignature(), env.TB(types.Float, nil))
+	b.ctx.GlobalScope.Types.Set(types.Bool.GetSignature(), env.TB(types.Bool, nil))
+	b.ctx.GlobalScope.Types.Set(types.String.GetSignature(), env.TB(types.String, nil))
+	b.ctx.GlobalScope.Types.Set(types.Void.GetSignature(), env.TB(types.Void, nil))
 }
 
 func (b *Builder) semanticAnalysis() {

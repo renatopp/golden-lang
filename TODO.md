@@ -1,15 +1,17 @@
 # TODO
 
-[x] Correct parse comments --
-[x] Implement golden build command to generate the binary
 [ ] Review string usage: change string from " to ' (?) and add automatic offset for multiline. Also add `` for raw string
-[ ] Implement let instead of consts
 [ ] Implement functions
+  [ ] Implement function calls
+  [ ] Implement function backend javascript
+  [ ] Implement function backend golang
+  [ ] Test closure
+[ ] Check parse errors `fn(a, b`
 [ ] Implement module imports
-
 
 ## After functions
 
+[ ] Implement xor operator into a lambda function
 [ ] Convert <=> operator into a lambda function that is called inplace
 
     - `let x = a <=> b` => `let x = (:{ let a_=a;let b_=b; if a < b then -1 else if a > b then 1 else 0 })`

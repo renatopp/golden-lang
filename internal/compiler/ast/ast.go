@@ -70,17 +70,17 @@ func (n *Module) Visit(v Visitor) Node                 { return v.VisitModule(n)
 //
 //
 
-type Const struct {
+type VarDecl struct {
 	BaseNode
 	Name      *VarIdent
 	TypeExpr  safe.Optional[Node]
 	ValueExpr Node
 }
 
-func NewConst(tok *token.Token, name *VarIdent, tpexpr safe.Optional[Node], valexpr Node) *Const {
-	return &Const{NewBaseNode(tok), name, tpexpr, valexpr}
+func NewVarDecl(tok *token.Token, name *VarIdent, tpexpr safe.Optional[Node], valexpr Node) *VarDecl {
+	return &VarDecl{NewBaseNode(tok), name, tpexpr, valexpr}
 }
-func (n *Const) Visit(v Visitor) Node { return v.VisitConst(n) }
+func (n *VarDecl) Visit(v Visitor) Node { return v.VisitVarDecl(n) }
 
 //
 //
@@ -196,3 +196,64 @@ type Block struct {
 
 func NewBlock(tok *token.Token, exprs []Node) *Block { return &Block{NewBaseNode(tok), exprs} }
 func (n *Block) Visit(v Visitor) Node                { return v.VisitBlock(n) }
+
+//
+//
+//
+//
+//
+//
+
+type FnDecl struct {
+	BaseNode
+	Name       safe.Optional[*VarIdent]
+	Parameters []*FnDeclParam
+	TypeExpr   Node
+	ValueExpr  Node
+}
+
+func NewFnDecl(tok *token.Token, name safe.Optional[*VarIdent], params []*FnDeclParam, ret Node, val Node) *FnDecl {
+	return &FnDecl{
+		BaseNode:   NewBaseNode(tok),
+		Name:       name,
+		Parameters: params,
+		TypeExpr:   ret,
+		ValueExpr:  val,
+	}
+}
+
+func (n *FnDecl) Visit(v Visitor) Node { return v.VisitFnDecl(n) }
+
+type FnDeclParam struct {
+	BaseNode
+	Name     *VarIdent
+	TypeExpr Node
+}
+
+func NewFnDeclParam(name *VarIdent, tp Node) *FnDeclParam {
+	return &FnDeclParam{
+		BaseNode: NewBaseNode(name.GetToken()),
+		Name:     name,
+		TypeExpr: tp,
+	}
+}
+func (n *FnDeclParam) Visit(v Visitor) Node { return v.VisitFnDeclParam(n) }
+
+//
+//
+//
+
+type TypeFn struct {
+	BaseNode
+	Parameters []Node
+	ReturnExpr Node
+}
+
+func NewTypeFn(tok *token.Token, params []Node, ret Node) *TypeFn {
+	return &TypeFn{
+		BaseNode:   NewBaseNode(tok),
+		Parameters: params,
+		ReturnExpr: ret,
+	}
+}
+func (n *TypeFn) Visit(v Visitor) Node { return v.VisitTypeFn(n) }

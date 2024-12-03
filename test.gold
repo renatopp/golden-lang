@@ -1,14 +1,9 @@
-const unary1 = -1
-const unary2 = +1
-const unary3 = !false
-const a = 1 + 1
-const b = 1 * { 1 + 2 } 
-const c = 1.0
-const d = true
-const e = 'asd
-fas
-dfasdfasdf'
+let z = 1
+fn mul(a Int) Fn(Int, Int) = 
+  fn(b Int, c Int) Int = 
+    a + b + c + z
 
-const f = false or true
-const g = a > b
--- const f = 
+
+fn main() = {
+  
+}

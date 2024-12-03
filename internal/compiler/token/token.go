@@ -18,14 +18,19 @@ const (
 	TNewline             // \n
 	TComment             // -- comment
 	TSemicolon           // ;
+	TComma               // ,
 
-	TConst     // const
 	TVarIdent  // variable identifier
 	TTypeIdent // type identifier
+	TLet       // const
+	TFn        // fn
+	TFN        // Fn
 
 	// Groupings
 	TLeftBrace  // {
 	TRightBrace // }
+	TLeftParen  // (
+	TRightParen // )
 
 	// Primitive Constants
 	TInt    // 0, 1, 2
@@ -80,11 +85,16 @@ func (t *Token) Is(kind ...TokenKind) bool {
 
 var literal2kind = map[string]TokenKind{
 	";":     TSemicolon,
-	"const": TConst,
+	",":     TComma,
+	"let":   TLet,
+	"fn":    TFn,
+	"Fn":    TFN,
 	"true":  TTrue,
 	"false": TFalse,
 	"{":     TLeftBrace,
 	"}":     TRightBrace,
+	"(":     TLeftParen,
+	")":     TRightParen,
 	"+":     TPlus,
 	"-":     TMinus,
 	"*":     TStar,
@@ -110,11 +120,16 @@ var kind2literal = map[TokenKind]string{
 	TNewline:      "\\n",
 	TComment:      "--",
 	TSemicolon:    ";",
-	TConst:        "const",
+	TComma:        ",",
+	TLet:          "let",
+	TFn:           "fn",
+	TFN:           "Fn",
 	TVarIdent:     "value identifier",
 	TTypeIdent:    "type identifier",
 	TLeftBrace:    "{",
 	TRightBrace:   "}",
+	TLeftParen:    "(",
+	TRightParen:   ")",
 	TInt:          "int",
 	THex:          "hex",
 	TOctal:        "oct",

@@ -55,4 +55,8 @@ func NewTypeBinding(t ast.Type, n ast.Node) *TypeBinding {
 	}
 }
 
+func (b *TypeBinding) IsSolved() bool {
+	return b.Type != nil
+}
+
 var TB = NewTypeBinding

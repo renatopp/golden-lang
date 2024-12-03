@@ -18,24 +18,24 @@ Comments are prefixed by `--` and goes to the end of the line.
 
 Everything in the language is an expression, which means that every command and computation has a type and a value. The most basic types are `Int`, `Float`, `String`, `Bool` and `Void`, but Void cannot be assigned to anything.
 
-```go
-const int = 1 + 1_000_000 - 100 
-const float = 1.0 + 1e10 + -1e100
-const bool = true or false
-const string1 = "This is a string and
-                 strings are multi line by default.
-                 The ones starting with \" have automatic
-                 offset, thus it will be evaluated without
-                 the spaces in the left."
-const string2 = `Raw strings are also multi line, but they
-                 will be evaluate as is, with all spaces.`
+```rust
+let int = 1 + 1_000_000 - 100 
+let float = 1.0 + 1e10 + -1e100
+let bool = true or false
+let string1 = "This is a string and
+               strings are multi line by default.
+               The ones starting with \" have automatic
+               offset, thus it will be evaluated without
+               the spaces in the left."
+let string2 = `Raw strings are also multi line, but they
+               will be evaluate as is, with all spaces.`
 ```
 
 Blocks are also expressions, and you can use blocks anywhere you would with other expressions. Blocks describe list of expressions and are evaluated to its last expression. If no expression is provided, block evaluates to `()`, which is a `Void` value.
 
 ```rust
-const a = 1 * { 4 + 2 }
-const b = 3 * { const x = 5; x*x }
+let a = 1 * { 4 + 2 }
+let b = 3 * { let x = 5; x*x }
 ```
 
 Operations are:
@@ -69,6 +69,7 @@ Functions represents the behavior of the program. They can be declared in the mo
 -- These are equivalents
 fn func = <expr>
 fn func() = <expr>
+fn func() Void = <expr>
 
 -- These are equivalents
 fn func(a, b Int) Int = <expr>
@@ -87,4 +88,3 @@ fn multiAdd(x Int) Fn(Int, Int) Int =
 
 ## Modules
 
-Modules are first class.

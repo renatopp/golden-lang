@@ -59,7 +59,7 @@ func (w *Writer) VisitModule(node *ast.Module) ast.Node {
 	return node
 }
 
-func (w *Writer) VisitConst(node *ast.Const) ast.Node {
+func (w *Writer) VisitVarDecl(node *ast.VarDecl) ast.Node {
 	node.Name.Visit(w)
 	name := w.Pop()
 

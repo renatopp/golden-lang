@@ -43,10 +43,10 @@ func (p *AstPrinter) VisitModule(node *ast.Module) ast.Node {
 	return node
 }
 
-func (p *AstPrinter) VisitConst(node *ast.Const) ast.Node {
+func (p *AstPrinter) VisitVarDecl(node *ast.VarDecl) ast.Node {
 	p.inc()
 	defer p.dec()
-	p.print(node, "[const]")
+	p.print(node, "[let]")
 	node.Name.Visit(p)
 	node.TypeExpr.If(func(n ast.Node) { n.Visit(p) })
 	node.ValueExpr.Visit(p)
@@ -88,13 +88,6 @@ func (p *AstPrinter) VisitVarIdent(node *ast.VarIdent) ast.Node {
 	return node
 }
 
-func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
-	p.inc()
-	defer p.dec()
-	p.print(node, "[type-ident:%s]", node.Value)
-	return node
-}
-
 func (p *AstPrinter) VisitBinOp(node *ast.BinOp) ast.Node {
 	p.inc()
 	defer p.dec()
@@ -117,5 +110,41 @@ func (p *AstPrinter) VisitBlock(node *ast.Block) ast.Node {
 	defer p.dec()
 	p.print(node, "[block]")
 	iter.Each(node.Exprs, func(e ast.Node) { e.Visit(p) })
+	return node
+}
+
+func (p *AstPrinter) VisitFnDecl(node *ast.FnDecl) ast.Node {
+	p.inc()
+	defer p.dec()
+	p.print(node, "[fn-decl]")
+	node.Name.If(func(n *ast.VarIdent) { n.Visit(p) })
+	iter.Each(node.Parameters, func(n *ast.FnDeclParam) { n.Visit(p) })
+	node.TypeExpr.Visit(p)
+	node.ValueExpr.Visit(p)
+	return node
+}
+
+func (p *AstPrinter) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
+	p.inc()
+	defer p.dec()
+	p.print(node, "[fn-decl-param]")
+	node.Name.Visit(p)
+	node.TypeExpr.Visit(p)
+	return node
+}
+
+func (p *AstPrinter) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
+	p.inc()
+	defer p.dec()
+	p.print(node, "[type-ident:%s]", node.Value)
+	return node
+}
+
+func (p *AstPrinter) VisitTypeFn(node *ast.TypeFn) ast.Node {
+	p.inc()
+	defer p.dec()
+	p.print(node, "[type-fn]")
+	iter.Each(node.Parameters, func(n ast.Node) { n.Visit(p) })
+	node.ReturnExpr.Visit(p)
 	return node
 }

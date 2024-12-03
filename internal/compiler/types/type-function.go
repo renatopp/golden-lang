@@ -37,7 +37,7 @@ func (f *Function) GetSignature() string {
 		ret = " " + f.Return.GetSignature()
 	}
 
-	return fmt.Sprintf("Fn (%s)%s", p, ret)
+	return fmt.Sprintf("Fn(%s)%s", p, ret)
 }
 
 func (f *Function) GetDefault() (ast.Node, error) {

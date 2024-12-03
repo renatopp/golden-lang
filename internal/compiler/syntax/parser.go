@@ -31,6 +31,7 @@ func NewParser(tokens []*token.Token) *Parser {
 	p.ValueSolver.RegisterPrefixFn(token.TMinus, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(token.TBang, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(token.TLeftBrace, p.parseBlock)
+	p.ValueSolver.RegisterPrefixFn(token.TFn, p.parseFn)
 
 	p.ValueSolver.RegisterInfixFn(token.TPlus, p.parseBinOp)
 	p.ValueSolver.RegisterInfixFn(token.TMinus, p.parseBinOp)
@@ -48,6 +49,9 @@ func NewParser(tokens []*token.Token) *Parser {
 	p.ValueSolver.RegisterInfixFn(token.TOr, p.parseBinOp)
 	p.ValueSolver.RegisterInfixFn(token.TXor, p.parseBinOp)
 
+	p.TypeSolver.RegisterPrefixFn(token.TTypeIdent, p.parseTypeIdentType)
+	p.TypeSolver.RegisterPrefixFn(token.TFN, p.parseFnType)
+
 	return p
 }
 
@@ -62,6 +66,10 @@ func (p *Parser) parseValueExpression(prec int) safe.Optional[ast.Node] {
 	return p.ValueSolver.SolveExpression(prec)
 }
 
+func (p *Parser) parseTypeExpression(prec int) safe.Optional[ast.Node] {
+	return p.TypeSolver.SolveExpression(prec)
+}
+
 // file
 func (p *Parser) parseModule() *ast.Module {
 	exprs := []ast.Node{}
@@ -71,14 +79,24 @@ func (p *Parser) parseModule() *ast.Module {
 		if p.Peek().Is(token.TEof) {
 			break
 		}
-		exprs = append(exprs, p.parseConst())
+
+		switch p.Peek().Kind {
+		case token.TLet:
+			exprs = append(exprs, p.parseLet())
+		case token.TFn:
+			exprs = append(exprs, p.parseFn())
+		default:
+			errors.ThrowAtToken(p.Peek(), errors.ParserError, "unexpected token '%s'", p.Peek().Literal)
+		}
+
+		p.SkipSeparator(token.TSemicolon)
 	}
 	return ast.NewModule(first, exprs)
 }
 
-// const <var-ident> <type-expr>? = <value-expr>
-func (p *Parser) parseConst() *ast.Const {
-	tok := p.ExpectAndEat(token.TConst)       // const
+// let <var-ident> <type-expr>? = <value-expr>
+func (p *Parser) parseLet() *ast.VarDecl {
+	tok := p.ExpectAndEat(token.TLet)         // let
 	name := p.parseVarIdent().(*ast.VarIdent) // var-ident
 	// TODO: add type expression parsing // type-expr
 	assign := p.ExpectAndEat(token.TAssign) // =
@@ -86,7 +104,7 @@ func (p *Parser) parseConst() *ast.Const {
 	if !val.Has() {
 		errors.ThrowAtToken(assign, errors.ParserError, "expected value expression after assignment, but none was found")
 	}
-	return ast.NewConst(tok, name, safe.None[ast.Node](), val.Unwrap())
+	return ast.NewVarDecl(tok, name, safe.None[ast.Node](), val.Unwrap())
 }
 
 // foo, bar, _bar, _1, a_1, ...
@@ -192,4 +210,121 @@ func (p *Parser) parseBlock() ast.Node {
 	}
 	p.ExpectAndEat(token.TRightBrace)
 	return ast.NewBlock(tok, exprs)
+}
+
+// fn <var-ident>?(<var-ident> <type-expr>, ...):<type-expr> = ...
+func (p *Parser) parseFn() ast.Node {
+	tok := p.ExpectAndEat(token.TFn)
+
+	name := safe.None[*ast.VarIdent]()
+	if p.IsNext(token.TVarIdent) {
+		name = safe.Some(p.parseVarIdent().(*ast.VarIdent))
+	}
+
+	params := []*ast.FnDeclParam{}
+	if p.IsNext(token.TLeftParen) {
+		params = p.parseFnParams()
+	}
+
+	var returnExpr ast.Node = ast.NewTypeIdent(p.Peek(), "Void")
+	if expr := p.parseTypeExpression(0); expr.Has() {
+		returnExpr = expr.Unwrap()
+	}
+
+	p.ExpectAndEat(token.TAssign)
+	p.SkipNewlines()
+	valueExpr := p.parseValueExpression(0)
+	if !valueExpr.Has() {
+		errors.ThrowAtToken(p.Peek(), errors.ParserError, "expected value expression after assignment, but none was found")
+	}
+
+	val := valueExpr.Unwrap()
+	if _, ok := val.(*ast.Block); !ok {
+		val = ast.NewBlock(tok, []ast.Node{val})
+	}
+
+	return ast.NewFnDecl(tok, name, params, returnExpr, val)
+}
+
+// (<var-ident> <type-expr>, ...)
+func (p *Parser) parseFnParams() []*ast.FnDeclParam {
+	params := []*ast.FnDeclParam{}
+	p.ExpectAndEat(token.TLeftParen)
+	for {
+		if p.IsNext(token.TRightParen) {
+			break
+		}
+		p.Expect(token.TVarIdent)
+		name := p.parseVarIdent().(*ast.VarIdent)
+		typeExpr := p.parseTypeExpression(0)
+		params = append(params, ast.NewFnDeclParam(name, typeExpr.Or(nil)))
+		p.SkipSeparator(token.TComma)
+	}
+	last := p.ExpectAndEat(token.TRightParen)
+
+	// treat backfilling of type expressions
+	if len(params) > 0 {
+		lastNode := params[len(params)-1]
+		lastType := lastNode.TypeExpr
+		if lastType == nil {
+			errors.ThrowAtToken(last, errors.ParserError, "expected type expression after parameter name, but none was found")
+			return nil
+		}
+		for i := len(params) - 1; i >= 0; i-- {
+			p := params[i]
+			if p.TypeExpr == nil {
+				params[i].TypeExpr = lastType
+			} else {
+				lastType = p.TypeExpr
+			}
+		}
+	}
+
+	return params
+}
+
+//
+//
+//
+
+// Int, Float, ...
+func (p *Parser) parseTypeIdentType() ast.Node {
+	tok := p.ExpectAndEat(token.TTypeIdent)
+	return ast.NewTypeIdent(tok, tok.Literal)
+}
+
+// Fn(<type-expr>, ...):<type-expr>
+func (p *Parser) parseFnType() ast.Node {
+	tok := p.ExpectAndEat(token.TFN)
+
+	params := []ast.Node{}
+	if p.IsNext(token.TLeftParen) {
+		params = p.parseFnTypeParams()
+	}
+
+	var returnExpr ast.Node = ast.NewTypeIdent(p.Peek(), "Void")
+	if expr := p.parseTypeExpression(0); expr.Has() {
+		returnExpr = expr.Unwrap()
+	}
+
+	return ast.NewTypeFn(tok, params, returnExpr)
+}
+
+// (<type-expr>, ...)
+func (p *Parser) parseFnTypeParams() []ast.Node {
+	params := []ast.Node{}
+	p.ExpectAndEat(token.TLeftParen)
+	for {
+		if p.IsNext(token.TRightParen) {
+			break
+		}
+		typeExpr := p.parseTypeExpression(0)
+		if !typeExpr.Has() {
+			errors.ThrowAtToken(p.Peek(), errors.ParserError, "expected type expression, but none was found")
+		}
+		params = append(params, typeExpr.Unwrap())
+		p.SkipSeparator(token.TComma)
+	}
+	p.ExpectAndEat(token.TRightParen)
+	return params
 }
