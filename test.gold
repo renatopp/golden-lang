@@ -1,16 +1,22 @@
-let z = 1
-fn mul(a Int) Fn(Int, Int) Int = 
-  fn(b Int, c Int) Int = 
-    a + b + c + z
 
-fn main() = {
-  mul(10)(2, 5)
+fn fib(n Int) Int =
+  return if n <= 1 then n else fib(n - 1) + fib(n - 2)
+
+func fib(n int64) int64 {
+  var _1 int64
+  if n <= 1 {
+    _1 = n
+  } else {
+    _1 = fib(n - 1) + fib(n - 2)
+  }
+  return _1
 }
 
--- let x = 1
 
--- fn main() = add(x, 5)
-
--- fn add(a, b Int) Int = {
---   return a + b
--- }
+func fib(n int64) int64 {
+  if n <= 1 {
+    return n
+  } else {
+    return fib(n - 1) + fib(n - 2)
+  }
+}

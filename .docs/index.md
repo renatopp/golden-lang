@@ -88,3 +88,26 @@ fn multiAdd(x Int) Fn(Int, Int) Int =
 
 ## Modules
 
+Modules can be defined in two ways: by file and by explicit declaration.
+
+In Golden, every file represents a module and the file name will be used as name to the module. Thus, the file name must follow the same naming rules ([a-z_][a-zA-Z0-9_]*). Explicit declarations lets you create submodules inside the file module.
+
+```
+module name(param Type, param Type) = {
+  ...
+}
+```
+
+where params follow the same rules of function parameters.
+
+Inside a module, you can declare types, functions and variables, and you can use them before declaration, because declaration in module-level does not follow a strict order.
+
+Modules export everything as default unless it starts with `_`, which denotes private field.
+
+You can import module files with:
+
+```
+import "@/sample/x/y/foo"
+import "@/sample/x/y/bar" as baz
+```
+

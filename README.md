@@ -32,11 +32,11 @@ classDef experiment fill:#fff400,color:black,stroke-width:0
 classDef partial fill:#a3ff00,color:black,stroke-width:0
 classDef stable fill:#2cba00,color:white,stroke-width:0
 
-build[Build]:::partial
+build[Build]:::stable
 lexer[Lexer]:::stable
 parser[Parser]:::stable
 semantic[Semantics]:::stable
-opt[Optimizations]:::experiment
+opt[Optimizations]:::stable
 backend[Backend]:::experiment
 
 build --> lexer
@@ -68,6 +68,6 @@ Legend:
 - [x] Modules
 - [x] Constants `const`
 - [x] Primitive Types: `Int`, `String`, `Float`, `Bool`
-- [ ] Imports
-- [ ] Functions: `Fn` type, functions declaration
+- [x] Functions: `Fn` type, functions declaration
+- [ ] Modules and Imports
 
