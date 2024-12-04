@@ -157,3 +157,11 @@ func (p *AstPrinter) VisitApplication(node *ast.Application) ast.Node {
 	iter.Each(node.Args, func(n ast.Node) { n.Visit(p) })
 	return node
 }
+
+func (p *AstPrinter) VisitReturn(node *ast.Return) ast.Node {
+	p.inc()
+	defer p.dec()
+	p.print(node, "[return]")
+	node.ValueExpr.Visit(p)
+	return node
+}

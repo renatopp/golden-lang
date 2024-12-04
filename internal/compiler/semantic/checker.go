@@ -26,12 +26,14 @@ var _ ast.Visitor = &Checker{}
 type Checker struct {
 	scopeStack          *ds.Stack[*env.Scope]
 	initializationStack *ds.Stack[ast.Node]
+	functionStack       *ds.Stack[*FunctionScope]
 }
 
 func NewChecker() *Checker {
 	return &Checker{
 		scopeStack:          ds.NewStack[*env.Scope](),
 		initializationStack: ds.NewStack[ast.Node](),
+		functionStack:       ds.NewStack[*FunctionScope](),
 	}
 }
 
@@ -308,23 +310,26 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 	c.pushInitialization(node)
 	defer c.popInitialization()
 
-	node.TypeExpr = node.TypeExpr.Visit(c)
-	node.Params = iter.Map(node.Params, func(p *ast.FnDeclParam) *ast.FnDeclParam { return p.Visit(c).(*ast.FnDeclParam) })
+	fnScope := c.scope().New()
+	c.functionStack.Push(NewFunctionScope(node, fnScope))
+	defer c.functionStack.Pop(nil)
 
-	c.pushScope(c.scope().New())
+	node.TypeExpr = node.TypeExpr.Visit(c)
 	tps := []ast.Type{}
-	for _, p := range node.Params {
-		tp := p.Type.Unwrap()
+	for i := range node.Params {
+		node.Params[i] = node.Params[i].Visit(c).(*ast.FnDeclParam)
+		tp := node.Params[i].Type.Unwrap()
 		tps = append(tps, tp)
-		c.declare(p.Name, p, tp)
 	}
+	fnType := types.NewFunction(node, tps, node.TypeExpr.GetType().Unwrap())
+	node.SetType(fnType)
+
+	c.pushScope(fnScope)
+	iter.Each(node.Params, func(p *ast.FnDeclParam) { c.declare(p.Name, p, p.Type.Unwrap()) })
 	node.ValueExpr = node.ValueExpr.Visit(c)
 	c.popScope()
 
 	c.expectCompatibleNodeTypes(node.TypeExpr, node.ValueExpr)
-
-	fnType := types.NewFunction(node, tps, node.TypeExpr.GetType().Unwrap())
-	node.SetType(fnType)
 
 	if node.Name.Has() {
 		name := node.Name.Unwrap()
@@ -370,5 +375,20 @@ func (c *Checker) VisitApplication(node *ast.Application) ast.Node {
 	}
 
 	node.SetType(fn.Return)
+	return node
+}
+
+func (c *Checker) VisitReturn(node *ast.Return) ast.Node {
+	if c.functionStack.Len() == 0 {
+		errors.ThrowAtNode(node, errors.InternalError, "return statement outside of function")
+	}
+
+	node.ValueExpr = node.ValueExpr.Visit(c)
+	node.SetType(node.ValueExpr.GetType().Unwrap())
+	fs := c.functionStack.Top(nil)
+	fs.Returns = append(fs.Returns, node)
+
+	c.expectNodeWithCompatibleType(node.ValueExpr, fs.Fn.TypeExpr.GetType().Unwrap())
+
 	return node
 }

@@ -25,6 +25,7 @@ const (
 	TLet       // const
 	TFn        // fn
 	TFN        // Fn
+	TReturn    // return
 
 	// Groupings
 	TLeftBrace  // {
@@ -84,34 +85,35 @@ func (t *Token) Is(kind ...TokenKind) bool {
 }
 
 var literal2kind = map[string]TokenKind{
-	";":     TSemicolon,
-	",":     TComma,
-	"let":   TLet,
-	"fn":    TFn,
-	"Fn":    TFN,
-	"true":  TTrue,
-	"false": TFalse,
-	"{":     TLeftBrace,
-	"}":     TRightBrace,
-	"(":     TLeftParen,
-	")":     TRightParen,
-	"+":     TPlus,
-	"-":     TMinus,
-	"*":     TStar,
-	"/":     TSlash,
-	"%":     TPercent,
-	">":     TGreater,
-	">=":    TGreaterEqual,
-	"<":     TLess,
-	"<=":    TLessEqual,
-	"<=>":   TSpaceShip,
-	"==":    TEqual,
-	"!=":    TNotEqual,
-	"and":   TAnd,
-	"or":    TOr,
-	"xor":   TXor,
-	"!":     TBang,
-	"=":     TAssign,
+	";":      TSemicolon,
+	",":      TComma,
+	"let":    TLet,
+	"fn":     TFn,
+	"Fn":     TFN,
+	"return": TReturn,
+	"true":   TTrue,
+	"false":  TFalse,
+	"{":      TLeftBrace,
+	"}":      TRightBrace,
+	"(":      TLeftParen,
+	")":      TRightParen,
+	"+":      TPlus,
+	"-":      TMinus,
+	"*":      TStar,
+	"/":      TSlash,
+	"%":      TPercent,
+	">":      TGreater,
+	">=":     TGreaterEqual,
+	"<":      TLess,
+	"<=":     TLessEqual,
+	"<=>":    TSpaceShip,
+	"==":     TEqual,
+	"!=":     TNotEqual,
+	"and":    TAnd,
+	"or":     TOr,
+	"xor":    TXor,
+	"!":      TBang,
+	"=":      TAssign,
 }
 
 var kind2literal = map[TokenKind]string{
@@ -124,6 +126,7 @@ var kind2literal = map[TokenKind]string{
 	TLet:          "let",
 	TFn:           "fn",
 	TFN:           "Fn",
+	TReturn:       "return",
 	TVarIdent:     "value identifier",
 	TTypeIdent:    "type identifier",
 	TLeftBrace:    "{",

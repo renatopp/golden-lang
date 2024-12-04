@@ -220,5 +220,14 @@ func NewApplication(tok *token.Token, target Node, args []Node) *Application {
 		Args:     args,
 	}
 }
-
 func (n *Application) Visit(v Visitor) Node { return v.VisitApplication(n) }
+
+type Return struct {
+	BaseNode
+	ValueExpr Node
+}
+
+func NewReturn(tok *token.Token, val Node) *Return {
+	return &Return{BaseNode: NewBaseNode(tok), ValueExpr: val}
+}
+func (n *Return) Visit(v Visitor) Node { return v.VisitReturn(n) }

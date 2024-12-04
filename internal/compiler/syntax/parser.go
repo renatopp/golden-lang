@@ -32,6 +32,7 @@ func NewParser(tokens []*token.Token) *Parser {
 	p.ValueSolver.RegisterPrefixFn(token.TBang, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(token.TLeftBrace, p.parseBlock)
 	p.ValueSolver.RegisterPrefixFn(token.TFn, p.parseFn)
+	p.ValueSolver.RegisterPrefixFn(token.TReturn, p.parseReturn)
 
 	p.ValueSolver.RegisterInfixFn(token.TPlus, p.parseBinOp)
 	p.ValueSolver.RegisterInfixFn(token.TMinus, p.parseBinOp)
@@ -282,6 +283,17 @@ func (p *Parser) parseFnParams() []*ast.FnDeclParam {
 	}
 
 	return params
+}
+
+func (p *Parser) parseReturn() ast.Node {
+	tok := p.ExpectAndEat(token.TReturn)
+	value := p.parseValueExpression(0)
+
+	var val ast.Node = ast.NewBlock(tok, []ast.Node{})
+	if value.Has() {
+		val = value.Unwrap()
+	}
+	return ast.NewReturn(tok, val)
 }
 
 //

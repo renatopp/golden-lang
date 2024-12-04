@@ -22,6 +22,7 @@ type Visitor interface {
 	VisitFnDeclParam(*FnDeclParam) Node
 	VisitTypeFn(*TypeFn) Node
 	VisitApplication(*Application) Node
+	VisitReturn(*Return) Node
 }
 
 // Use it to replace nodes in the AST.
@@ -78,5 +79,9 @@ func (v *Visiter) VisitTypeFn(node *TypeFn) Node {
 func (v *Visiter) VisitApplication(node *Application) Node {
 	node.Target = node.Target.Visit(v)
 	node.Args = iter.Map(node.Args, func(n Node) Node { return n.Visit(v) })
+	return node
+}
+func (v *Visiter) VisitReturn(node *Return) Node {
+	node.ValueExpr = node.ValueExpr.Visit(v)
 	return node
 }
