@@ -25,12 +25,15 @@ type Writer struct {
 	backend    *Javascript
 	stack      []string
 	identLevel int
+	funcLevel  int
 }
 
 func NewWriter(backend *Javascript) *Writer {
-	return &Writer{
+	w := &Writer{
 		backend: backend,
 	}
+	w.Visiter = ast.NewVisiter(w)
+	return w
 }
 
 func (w *Writer) Push(s string) {
@@ -175,8 +178,10 @@ func (w *Writer) VisitFnDecl(node *ast.FnDecl) ast.Node {
 	})
 
 	w.identLevel++
+	w.funcLevel++
 	node.ValueExpr.Visit(w)
 	body := w.ident(w.Pop())
+	w.funcLevel--
 	w.identLevel--
 
 	w.Push(fmt.Sprintf("%sfunction %s(%s) {\n%s\n}", export, name, params, body))
@@ -188,8 +193,29 @@ func (w *Writer) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
 	return node
 }
 
+func (w *Writer) VisitReturn(node *ast.Return) ast.Node {
+	node.ValueExpr.Visit(w)
+	value := w.Pop()
+
+	w.Push("return " + value)
+	return node
+}
+
+func (w *Writer) VisitApplication(node *ast.Application) ast.Node {
+	node.Target.Visit(w)
+	target := w.Pop()
+
+	args := codegen.JoinList(", ", node.Args, func(a ast.Node) string {
+		a.Visit(w)
+		return w.Pop()
+	})
+
+	w.Push(fmt.Sprintf("%s(%s)", target, args))
+	return node
+}
+
 func (w *Writer) visibility(name string) string {
-	if naming.IsPrivateName(name) {
+	if naming.IsPrivateName(name) || w.funcLevel > 0 {
 		return ""
 	}
 	return "export "

@@ -27,6 +27,7 @@ type BuildOptions struct {
 	OnAstReady             *events.Signal2[*File, *ast.Module]
 	OnDependencyGraphReady *events.Signal1[[]*File]
 	OnTypeCheckReady       *events.Signal3[*File, *ast.Module, *env.Scope]
+	OnOptimizationReady    *events.Signal2[*File, *ast.Module]
 }
 
 func NewBuildOptions(fileName string) *BuildOptions {
@@ -45,5 +46,6 @@ func NewBuildOptions(fileName string) *BuildOptions {
 		OnAstReady:             events.NewSignal2[*File, *ast.Module](),
 		OnDependencyGraphReady: events.NewSignal1[[]*File](),
 		OnTypeCheckReady:       events.NewSignal3[*File, *ast.Module, *env.Scope](),
+		OnOptimizationReady:    events.NewSignal2[*File, *ast.Module](),
 	}
 }

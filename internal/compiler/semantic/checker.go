@@ -143,6 +143,13 @@ func (c *Checker) PreCheck(root *ast.Module) {
 		case *ast.VarDecl:
 			v := n.Name.Value
 			c.scope().Values.Set(v, env.VB(n, nil))
+		case *ast.FnDecl:
+			if n.Name.Has() {
+				v := n.Name.Unwrap().Value
+				c.scope().Values.Set(v, env.VB(n, nil))
+			} else {
+				errors.ThrowAtNode(n, errors.InternalError, "functions must have a name in module scope")
+			}
 		}
 	}
 }
@@ -326,7 +333,7 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 
 	c.pushScope(fnScope)
 	iter.Each(node.Params, func(p *ast.FnDeclParam) { c.declare(p.Name, p, p.Type.Unwrap()) })
-	node.ValueExpr = node.ValueExpr.Visit(c)
+	node.ValueExpr = node.ValueExpr.Visit(c).(*ast.Block)
 	c.popScope()
 
 	c.expectCompatibleNodeTypes(node.TypeExpr, node.ValueExpr)

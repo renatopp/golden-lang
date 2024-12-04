@@ -245,7 +245,7 @@ func (p *Parser) parseFn() ast.Node {
 		val = ast.NewBlock(tok, []ast.Node{val})
 	}
 
-	return ast.NewFnDecl(tok, name, params, returnExpr, val)
+	return ast.NewFnDecl(tok, name, params, returnExpr, val.(*ast.Block))
 }
 
 // (<var-ident> <type-expr>, ...)

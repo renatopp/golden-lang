@@ -53,6 +53,7 @@ func (c *Run) Run() error {
 		opts.OnAstReady.Subscribe(debug.PrettyPrintAst)
 		opts.OnDependencyGraphReady.Subscribe(printDependencyGraph)
 		opts.OnTypeCheckReady.Subscribe(printTypedAst)
+		opts.OnOptimizationReady.Subscribe(debug.PrettyPrintAst)
 	}
 
 	if flagTarget != nil {

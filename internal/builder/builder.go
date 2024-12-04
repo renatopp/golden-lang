@@ -6,12 +6,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/env"
+	"github.com/renatopp/golden/internal/compiler/optimizations"
 	"github.com/renatopp/golden/internal/compiler/semantic"
 	"github.com/renatopp/golden/internal/compiler/types"
 	"github.com/renatopp/golden/internal/helpers/ds"
 	"github.com/renatopp/golden/internal/helpers/errors"
 	"github.com/renatopp/golden/internal/helpers/fs"
+	"github.com/renatopp/golden/internal/helpers/safe"
 )
 
 type BuildResult struct {
@@ -75,6 +78,7 @@ func (b *Builder) build() *BuildResult {
 	b.buildGlobalScope()
 	b.semanticAnalysis()
 	b.checkMain()
+	b.applyOptimizations()
 	b.generateCode()
 
 	return res
@@ -249,6 +253,16 @@ func (b *Builder) checkMain() {
 
 	if !types.NoopFn.IsCompatible(main.Type) {
 		errors.Throw(errors.InvalidEntryFile, "entry module '%s' 'main' function has an invalid signature", b.ctx.EntryModule.Path)
+	}
+}
+
+func (b *Builder) applyOptimizations() {
+	pipeline := optimizations.NewPipeline(
+		optimizations.NewAddReturnToFunctions(),
+	)
+	for _, mod := range b.ctx.DependencyOrder {
+		mod.Root = safe.Some(pipeline.Run(mod.Root.Unwrap()).(*ast.Module))
+		b.ctx.Options.OnOptimizationReady.Emit(mod, mod.Root.Unwrap())
 	}
 }
 

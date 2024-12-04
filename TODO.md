@@ -2,15 +2,15 @@
 
 [ ] Implement functions
   [x] Implement function calls
-  [ ] Add return statement
-  [ ] Create pass structure
-  [ ] pass: add auto return
+  [x] Add return statement
+  [x] Create pass structure
+  [x] pass: add auto return
   [ ] pass: add block to function
   [ ] pass: add xor to function
   [ ] pass: add <=> to function
   [ ] Javascript:
-    [ ] Gen return
-    [ ] Gen function with blocks
+    [x] Gen return
+    [x] Gen function with blocks
     [ ] Gen function call
   [ ] Go:
     [ ] Gen function signature

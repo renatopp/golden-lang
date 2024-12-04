@@ -162,10 +162,10 @@ type FnDecl struct {
 	Name      safe.Optional[*VarIdent]
 	Params    []*FnDeclParam
 	TypeExpr  Node
-	ValueExpr Node
+	ValueExpr *Block
 }
 
-func NewFnDecl(tok *token.Token, name safe.Optional[*VarIdent], params []*FnDeclParam, ret Node, val Node) *FnDecl {
+func NewFnDecl(tok *token.Token, name safe.Optional[*VarIdent], params []*FnDeclParam, ret Node, val *Block) *FnDecl {
 	return &FnDecl{
 		BaseNode:  NewBaseNode(tok),
 		Name:      name,

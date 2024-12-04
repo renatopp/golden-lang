@@ -8,7 +8,10 @@ import (
 
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/token"
+	"github.com/renatopp/golden/internal/compiler/types"
+	"github.com/renatopp/golden/internal/helpers/codegen"
 	"github.com/renatopp/golden/internal/helpers/errors"
+	"github.com/renatopp/golden/internal/helpers/naming"
 	"github.com/renatopp/golden/internal/helpers/tmpl"
 )
 
@@ -20,14 +23,19 @@ var _ ast.Visitor = &Writer{}
 
 type Writer struct {
 	*ast.Visiter
-	backend *Golang
-	stack   []string
+	backend   *Golang
+	stack     []string
+	identer   *codegen.Identer
+	funcLevel int
 }
 
 func NewWriter(backend *Golang) *Writer {
-	return &Writer{
+	w := &Writer{
 		backend: backend,
+		identer: codegen.NewIdenter(),
 	}
+	w.Visiter = ast.NewVisiter(w)
+	return w
 }
 
 func (w *Writer) Push(s string) {
@@ -63,15 +71,23 @@ func (w *Writer) VisitVarDecl(node *ast.VarDecl) ast.Node {
 	node.Name.Visit(w)
 	name := w.Pop()
 
+	w.resolveType(node.Type.Unwrap())
+	type_ := w.Pop()
+
 	node.ValueExpr = node.ValueExpr.Visit(w)
 	value := w.Pop()
 
-	w.Push("var " + name + " = " + value)
+	w.Push(fmt.Sprintf("var %s %s = %s", name, type_, value))
 	return node
 }
 
 func (w *Writer) VisitVarIdent(node *ast.VarIdent) ast.Node {
-	w.Push(node.Value)
+	w.Push(w.name(node.Value))
+	return node
+}
+
+func (w *Writer) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
+	errors.ThrowAtNode(node, errors.InternalError, "TypeIdent should not be visited, use resolveType instead")
 	return node
 }
 
@@ -158,4 +174,102 @@ func (w *Writer) VisitBlock(node *ast.Block) ast.Node {
 
 	w.Push(strings.Join(exprs, "\n"))
 	return node
+}
+
+func (w *Writer) VisitFnDecl(node *ast.FnDecl) ast.Node {
+	name := ""
+	if node.Name.Has() {
+		name = w.name(node.Name.Unwrap().Value)
+	}
+
+	w.resolveType(node.TypeExpr.GetType().Unwrap())
+	type_ := w.Pop()
+
+	params := codegen.JoinList(", ", node.Params, func(p *ast.FnDeclParam) string {
+		p.Visit(w)
+		return w.Pop()
+	})
+
+	w.identer.Inc()
+	w.funcLevel++
+	node.ValueExpr.Visit(w)
+	body := w.identer.Indent(w.Pop())
+	w.funcLevel--
+	w.identer.Dec()
+
+	w.Push(fmt.Sprintf("func %s(%s) %s {\n%s\n}", name, params, type_, body))
+	return node
+}
+
+func (w *Writer) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
+	node.Name.Visit(w)
+	name := w.Pop()
+
+	w.resolveType(node.TypeExpr.GetType().Unwrap())
+	tp := w.Pop()
+
+	w.Push(fmt.Sprintf("%s %s", name, tp))
+	return node
+}
+
+func (w *Writer) VisitApplication(node *ast.Application) ast.Node {
+	node.Target.Visit(w)
+	target := w.Pop()
+
+	args := codegen.JoinList(", ", node.Args, func(a ast.Node) string {
+		a.Visit(w)
+		return w.Pop()
+	})
+
+	w.Push(fmt.Sprintf("%s(%s)", target, args))
+	return node
+}
+
+func (w *Writer) VisitReturn(node *ast.Return) ast.Node {
+	node.ValueExpr.Visit(w)
+	value := w.Pop()
+
+	w.Push(fmt.Sprintf("return %s", value))
+	return node
+}
+
+func (w *Writer) name(n string) string {
+	if naming.IsPrivateName(n) {
+		return strings.ToLower(n[:1]) + n[1:]
+	} else {
+		return strings.ToUpper(n[:1]) + n[1:]
+	}
+}
+
+func (w *Writer) resolveType(tp ast.Type) {
+	switch tp := tp.(type) {
+	case *types.Primitive:
+		switch tp.Name {
+		case "Int":
+			w.Push("int64")
+		case "Float":
+			w.Push("float64")
+		case "String":
+			w.Push("string")
+		case "Bool":
+			w.Push("bool")
+		default:
+			errors.Throw(errors.NotImplemented, "primitive type %v not implemented in go backend", tp)
+		}
+
+	case *types.Unit:
+		w.Push("any")
+
+	case *types.Function:
+		params := codegen.JoinList(", ", tp.Params, func(p ast.Type) string {
+			w.resolveType(p)
+			return w.Pop()
+		})
+		w.resolveType(tp.Return)
+		returns := w.Pop()
+		w.Push(fmt.Sprintf("func(%s) %s", params, returns))
+
+	default:
+		errors.Throw(errors.InternalError, "unknown type %s", tp.GetSignature())
+	}
 }
