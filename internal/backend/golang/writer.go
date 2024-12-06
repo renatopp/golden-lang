@@ -258,7 +258,7 @@ func (w *Writer) resolveType(tp ast.Type) {
 		}
 
 	case *types.Unit:
-		w.Push("any")
+		w.Push("")
 
 	case *types.Function:
 		params := codegen.JoinList(", ", tp.Params, func(p ast.Type) string {

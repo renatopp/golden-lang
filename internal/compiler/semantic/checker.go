@@ -20,7 +20,6 @@ type Checker struct {
 	state               *State
 	scopeStack          *ds.Stack[*env.Scope]
 	initializationStack *ds.Stack[ast.Node]
-	functionStack       *ds.Stack[*FunctionScope]
 }
 
 func NewChecker() *Checker {
@@ -28,20 +27,23 @@ func NewChecker() *Checker {
 		state:               NewState(),
 		scopeStack:          ds.NewStack[*env.Scope](),
 		initializationStack: ds.NewStack[ast.Node](),
-		functionStack:       ds.NewStack[*FunctionScope](),
 	}
 }
 
 // Scoping
 
+func (c *Checker) pushState(node ast.Node) {
+	c.state = c.state.New(node)
+}
+func (c *Checker) popState() {
+	c.state = c.state.parent
+}
 func (c *Checker) pushScope(scope *env.Scope) {
 	c.scopeStack.Push(scope)
 }
-
 func (c *Checker) popScope() *env.Scope {
 	return c.scopeStack.Pop(nil)
 }
-
 func (c *Checker) scope() *env.Scope {
 	scope := c.scopeStack.Top(nil)
 	if scope == nil {
@@ -49,7 +51,6 @@ func (c *Checker) scope() *env.Scope {
 	}
 	return scope
 }
-
 func (c *Checker) declare(name ast.Node, node ast.Node, tp ast.Type) {
 	scope := c.scope().Values
 	lit := name.GetToken().Literal
@@ -76,7 +77,6 @@ func (c *Checker) pushInitialization(node ast.Node) {
 	}
 	c.initializationStack.Push(node)
 }
-
 func (c *Checker) popInitialization() ast.Node {
 	return c.initializationStack.Pop(nil)
 }
@@ -105,7 +105,6 @@ func (c *Checker) expectNodeWithCompatibleType(node ast.Node, types ...ast.Type)
 	}, "or")
 	errors.ThrowAtNode(node, errors.TypeError, "expected one of  %s, but got '%s'", names, tp.GetSignature())
 }
-
 func (c *Checker) expectCompatibleNodeTypes(receiver, giver ast.Node) {
 	aWrappedType := receiver.GetType()
 	bWrappedType := giver.GetType()
@@ -157,6 +156,10 @@ func (c *Checker) Check(root *ast.Module) (res *ast.Module, err error) {
 }
 
 func (c *Checker) VisitModule(node *ast.Module) ast.Node {
+	c.pushState(node)
+	defer c.popState()
+	c.state.WithModule(node)
+
 	c.pushScope(node.Type.Unwrap().(*types.Module).Scope)
 	defer c.popScope()
 	node.Exprs = iter.Map(node.Exprs, func(e ast.Node) ast.Node { return e.Visit(c) })
@@ -164,6 +167,8 @@ func (c *Checker) VisitModule(node *ast.Module) ast.Node {
 }
 
 func (c *Checker) VisitVarDecl(node *ast.VarDecl) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	if node.Type.Has() {
 		return node
 	}
@@ -184,26 +189,36 @@ func (c *Checker) VisitVarDecl(node *ast.VarDecl) ast.Node {
 }
 
 func (c *Checker) VisitInt(node *ast.Int) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.SetType(types.Int)
 	return node
 }
 
 func (c *Checker) VisitFloat(node *ast.Float) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.SetType(types.Float)
 	return node
 }
 
 func (c *Checker) VisitString(node *ast.String) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.SetType(types.String)
 	return node
 }
 
 func (c *Checker) VisitBool(node *ast.Bool) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.SetType(types.Bool)
 	return node
 }
 
 func (c *Checker) VisitVarIdent(node *ast.VarIdent) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	name := node.Value
 	bind := c.scope().Values.Get(name, nil)
 	if bind == nil {
@@ -219,6 +234,8 @@ func (c *Checker) VisitVarIdent(node *ast.VarIdent) ast.Node {
 }
 
 func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	name := node.Value
 	bind := c.scope().Types.Get(name, nil)
 	if bind == nil {
@@ -233,6 +250,8 @@ func (c *Checker) VisitTypeIdent(node *ast.TypeIdent) ast.Node {
 }
 
 func (c *Checker) VisitBinOp(node *ast.BinOp) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.LeftExpr.Visit(c)
 	node.RightExpr.Visit(c)
 
@@ -275,6 +294,8 @@ func (c *Checker) VisitBinOp(node *ast.BinOp) ast.Node {
 }
 
 func (c *Checker) VisitUnaryOp(node *ast.UnaryOp) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.RightExpr.Visit(c)
 
 	switch node.Op {
@@ -291,20 +312,25 @@ func (c *Checker) VisitUnaryOp(node *ast.UnaryOp) ast.Node {
 }
 
 func (c *Checker) VisitBlock(node *ast.Block) ast.Node {
+	c.pushState(node)
+	defer c.popState()
+	c.state.WithBlock(node)
+
 	c.pushScope(c.scope().New())
 	defer c.popScope()
 
-	var tp ast.Type = types.Void
 	for _, exp := range node.Exprs {
 		exp.Visit(c)
-		tp = exp.GetType().Unwrap()
 	}
-	node.SetType(tp)
-
+	node.SetType(types.Void)
 	return node
 }
 
 func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
+	c.pushState(node)
+	defer c.popState()
+	c.state.WithFunction(node)
+
 	if node.Type.Has() {
 		return node
 	}
@@ -313,9 +339,6 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 	defer c.popInitialization()
 
 	fnScope := c.scope().New()
-	c.functionStack.Push(NewFunctionScope(node, fnScope))
-	defer c.functionStack.Pop(nil)
-
 	node.TypeExpr = node.TypeExpr.Visit(c)
 	tps := []ast.Type{}
 	for i := range node.Params {
@@ -326,12 +349,13 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 	fnType := types.NewFunction(node, tps, node.TypeExpr.GetType().Unwrap())
 	node.SetType(fnType)
 
+	c.state.EnableReturn()
 	c.pushScope(fnScope)
 	iter.Each(node.Params, func(p *ast.FnDeclParam) { c.declare(p.Name, p, p.Type.Unwrap()) })
 	node.ValueExpr = node.ValueExpr.Visit(c).(*ast.Block)
 	c.popScope()
 
-	c.expectCompatibleNodeTypes(node.TypeExpr, node.ValueExpr)
+	// c.expectCompatibleNodeTypes(node.TypeExpr, node.ValueExpr)
 
 	if node.Name.Has() {
 		name := node.Name.Unwrap()
@@ -343,6 +367,8 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 }
 
 func (c *Checker) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.TypeExpr = node.TypeExpr.Visit(c)
 	tp := node.TypeExpr.GetType().Unwrap()
 	node.Name.SetType(tp)
@@ -351,6 +377,8 @@ func (c *Checker) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
 }
 
 func (c *Checker) VisitTypeFn(node *ast.TypeFn) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.Parameters = iter.Map(node.Parameters, func(p ast.Node) ast.Node { return p.Visit(c) })
 	node.ReturnExpr = node.ReturnExpr.Visit(c)
 
@@ -364,6 +392,8 @@ func (c *Checker) VisitTypeFn(node *ast.TypeFn) ast.Node {
 }
 
 func (c *Checker) VisitApplication(node *ast.Application) ast.Node {
+	c.pushState(node)
+	defer c.popState()
 	node.Target = node.Target.Visit(c)
 	node.Args = iter.Map(node.Args, func(a ast.Node) ast.Node { return a.Visit(c) })
 
@@ -381,16 +411,17 @@ func (c *Checker) VisitApplication(node *ast.Application) ast.Node {
 }
 
 func (c *Checker) VisitReturn(node *ast.Return) ast.Node {
-	if c.functionStack.Len() == 0 {
-		errors.ThrowAtNode(node, errors.InternalError, "return statement outside of function")
+	c.pushState(node)
+	defer c.popState()
+	if !c.state.CanReturn() {
+		errors.ThrowAtNode(node, errors.InternalError, "invalid return statement")
 	}
 
 	node.ValueExpr = node.ValueExpr.Visit(c)
 	node.SetType(node.ValueExpr.GetType().Unwrap())
-	fs := c.functionStack.Top(nil)
-	fs.Returns = append(fs.Returns, node)
+	c.state.AddReturn(node)
+	fn := c.state.currentFunction
 
-	c.expectNodeWithCompatibleType(node.ValueExpr, fs.Fn.TypeExpr.GetType().Unwrap())
-
+	c.expectNodeWithCompatibleType(node.ValueExpr, fn.TypeExpr.GetType().Unwrap())
 	return node
 }

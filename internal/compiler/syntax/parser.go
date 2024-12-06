@@ -32,7 +32,6 @@ func NewParser(tokens []*token.Token) *Parser {
 	p.ValueSolver.RegisterPrefixFn(token.TBang, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(token.TLeftBrace, p.parseBlock)
 	p.ValueSolver.RegisterPrefixFn(token.TFn, p.parseFn)
-	p.ValueSolver.RegisterPrefixFn(token.TReturn, p.parseReturn)
 
 	p.ValueSolver.RegisterInfixFn(token.TPlus, p.parseBinOp)
 	p.ValueSolver.RegisterInfixFn(token.TMinus, p.parseBinOp)
@@ -233,19 +232,10 @@ func (p *Parser) parseFn() ast.Node {
 		returnExpr = expr.Unwrap()
 	}
 
-	p.ExpectAndEat(token.TAssign)
 	p.SkipNewlines()
-	valueExpr := p.parseValueExpression(0)
-	if !valueExpr.Has() {
-		p.ThrowExpectedValueExpression("after assignment")
-	}
-
-	val := valueExpr.Unwrap()
-	if _, ok := val.(*ast.Block); !ok {
-		val = ast.NewBlock(tok, []ast.Node{val})
-	}
-
-	return ast.NewFnDecl(tok, name, params, returnExpr, val.(*ast.Block))
+	p.Expect(token.TLeftBrace)
+	val := p.parseValueExpression(0).Unwrap().(*ast.Block)
+	return ast.NewFnDecl(tok, name, params, returnExpr, val)
 }
 
 // (<var-ident> <type-expr>, ...)

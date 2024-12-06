@@ -258,7 +258,7 @@ func (b *Builder) checkMain() {
 
 func (b *Builder) applyOptimizations() {
 	pipeline := optimizations.NewPipeline(
-		optimizations.NewAddReturnToFunctions(),
+	// optimizations.NewAddReturnToFunctions(),
 	)
 	for _, mod := range b.ctx.DependencyOrder {
 		mod.Root = safe.Some(pipeline.Run(mod.Root.Unwrap()).(*ast.Module))
