@@ -25,13 +25,13 @@
         { "match": "\\\\." }
       ]
     },
-    { "name": "keyword.other.golden", "match": "\\b(fn|let|data|import)\\b" },
+    { "name": "keyword.other.golden", "match": "\\b(fn|let|data|import|return|if|then|else|case|match)\\b" },
     { "name": "keyword.operator.assignment.golden", "match": "(=)" },
     { "name": "keyword.operator.comparison.golden", "match": "(<=|>=|==|<|>|!=|<=>)" },
     { "name": "keyword.operator.arithmetic.golden", "match": "(\\+|\\-|\\*|/|%)" },
-    { "name": "keyword.operator.logical.golden", "match": "(and|or|xor|!)" },
+    { "name": "keyword.operator.logical.golden", "match": "\\b(and|or|xor|!)\\b" },
     { "name": "keyword.operator.pipe.golden", "match": "(\\|)" },
-    { "name": "storage.type.golden", "match": "_*[A-Z][a-zA-Z0-9_]*" }
+    { "name": "storage.type.golden", "match": "[A-Z_][a-zA-Z0-9_]*" }
   ],
   "repository": { }
 }
