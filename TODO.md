@@ -4,7 +4,7 @@
 [ ] rethinking
   [x] remove = from fn
   [x] remove auto return from blocks (including typechecking value)
-  [ ] currentReturns in state must be a property inside an object
+  [x] currentReturns in state must be a property inside an object
   [ ] check for mandatory return if return is not void
   [ ] only enable blocks to have return
   [ ] use () for expressions

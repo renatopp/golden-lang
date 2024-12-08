@@ -349,13 +349,10 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 	fnType := types.NewFunction(node, tps, node.TypeExpr.GetType().Unwrap())
 	node.SetType(fnType)
 
-	c.state.EnableReturn()
 	c.pushScope(fnScope)
 	iter.Each(node.Params, func(p *ast.FnDeclParam) { c.declare(p.Name, p, p.Type.Unwrap()) })
 	node.ValueExpr = node.ValueExpr.Visit(c).(*ast.Block)
 	c.popScope()
-
-	// c.expectCompatibleNodeTypes(node.TypeExpr, node.ValueExpr)
 
 	if node.Name.Has() {
 		name := node.Name.Unwrap()
@@ -413,9 +410,6 @@ func (c *Checker) VisitApplication(node *ast.Application) ast.Node {
 func (c *Checker) VisitReturn(node *ast.Return) ast.Node {
 	c.pushState(node)
 	defer c.popState()
-	if !c.state.CanReturn() {
-		errors.ThrowAtNode(node, errors.InternalError, "invalid return statement")
-	}
 
 	node.ValueExpr = node.ValueExpr.Visit(c)
 	node.SetType(node.ValueExpr.GetType().Unwrap())

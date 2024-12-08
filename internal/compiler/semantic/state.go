@@ -2,10 +2,17 @@ package semantic
 
 import (
 	"github.com/renatopp/golden/internal/compiler/ast"
-	"github.com/renatopp/golden/internal/helpers/errors"
 )
 
 type Feature uint64
+
+type StateReturns struct {
+	List []ast.Node
+}
+
+func NewStateReturns() *StateReturns {
+	return &StateReturns{List: []ast.Node{}}
+}
 
 type State struct {
 	parent          *State
@@ -13,7 +20,7 @@ type State struct {
 	currentModule   *ast.Module
 	currentFunction *ast.FnDecl
 	currentBlock    *ast.Block
-	currentReturns  []ast.Node
+	currentReturns  *StateReturns
 }
 
 func NewState() *State {
@@ -23,13 +30,11 @@ func NewState() *State {
 		currentModule:   nil,
 		currentFunction: nil,
 		currentBlock:    nil,
-		currentReturns:  nil,
+		currentReturns:  NewStateReturns(),
 	}
 }
 
 func (s *State) New(node ast.Node) *State {
-	s.parent.checkCircularInitialization(node)
-
 	return &State{
 		parent:          s,
 		node:            node,
@@ -40,18 +45,6 @@ func (s *State) New(node ast.Node) *State {
 	}
 }
 
-func (s *State) checkCircularInitialization(node ast.Node) {
-	if s == nil || s.node == nil {
-		return
-	}
-	if s.node.IsEqual(node) {
-		errors.ThrowAtNode(node, errors.CircularReferenceError, "circular initialization detected")
-	}
-	if s.parent != nil {
-		s.parent.checkCircularInitialization(node)
-	}
-}
-
 func (s *State) Node() ast.Node { return s.node }
 
 func (s *State) WithModule(module *ast.Module) *State { s.currentModule = module; return s }
@@ -59,14 +52,14 @@ func (s *State) Module() *ast.Module                  { return s.currentModule }
 
 func (s *State) WithFunction(fn *ast.FnDecl) *State {
 	s.currentFunction = fn
-	s.currentReturns = []ast.Node{}
+	s.currentReturns = NewStateReturns()
 	return s
 }
 func (s *State) Function() *ast.FnDecl { return s.currentFunction }
 
-func (s *State) Returns() []ast.Node { return s.currentReturns }
+func (s *State) Returns() []ast.Node { return s.currentReturns.List }
 func (s *State) AddReturn(node ast.Node) *State {
-	s.currentReturns = append(s.currentReturns, node)
+	s.currentReturns.List = append(s.currentReturns.List, node)
 	return s
 }
 

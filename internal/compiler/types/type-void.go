@@ -30,4 +30,9 @@ func (t *Unit) GetSignature() string { return "Void" }
 func (t *Unit) GetDefault() (ast.Node, error) {
 	return nil, fmt.Errorf("cannot create a default value for void type")
 }
-func (t *Unit) IsCompatible(other ast.Type) bool { return true }
+func (t *Unit) IsCompatible(other ast.Type) bool {
+	if _, ok := other.(*Unit); ok {
+		return true
+	}
+	return false
+}
