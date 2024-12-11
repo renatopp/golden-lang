@@ -39,7 +39,7 @@ const (
 	TOctal  // 0o0, 0o1, 0o2
 	TBinary // 0b0, 0b1, 0b2
 	TFloat  // 1.0, 1e10, 1.0e10
-	TString // 'string'
+	TString // "string"
 	TTrue   // true
 	TFalse  // false
 

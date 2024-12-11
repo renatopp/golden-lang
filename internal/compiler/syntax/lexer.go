@@ -161,10 +161,10 @@ func (l *Lexer) next() (*token.Token, bool) {
 			}
 
 		// Strings
-		case runes.IsOneOf(c0, '\''):
+		case runes.IsOneOf(c0, '"'):
 			return &token.Token{
 				Kind:    token.TString,
-				Literal: l.eatRawString(),
+				Literal: l.eatString(),
 				Loc:     l.span(),
 			}, true
 
@@ -416,6 +416,52 @@ func (l *Lexer) eatBinary() string {
 		res += string(c)
 		l.eat()
 	}
+	return res
+}
+
+func (l *Lexer) eatString() string {
+	res := ""
+	escaping := false
+	first := l.eat()
+	for {
+		c := l.scanner.Peek()
+
+		if runes.IsOneOf(c, '\r') {
+			l.eat()
+			continue
+		}
+
+		if runes.IsEof(c) {
+			errors.ThrowAtLocation(l.span(), errors.ParserError, "unexpected end of file")
+			break
+		} else if runes.IsOneOf(c, '\n') {
+			errors.ThrowAtLocation(l.span(), errors.ParserError, "unexpected new line")
+			break
+		}
+
+		if !escaping && c == first {
+			break
+		}
+
+		if !escaping && c == '\\' {
+			escaping = true
+			l.eat()
+			continue
+		}
+
+		if escaping && c != first {
+			escaping = false
+			r, err := strconv.Unquote(`"\` + string(c) + `"`)
+			if err != nil {
+				errors.ThrowAtLocation(l.span(), errors.ParserError, "%v", err.Error())
+			}
+			c = []rune(r)[0]
+		}
+
+		res += string(c)
+		l.eat()
+	}
+	l.eat()
 	return res
 }
 

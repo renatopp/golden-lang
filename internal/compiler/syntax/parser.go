@@ -215,9 +215,12 @@ func (p *Parser) parseBlock() ast.Node {
 	exprs := []ast.Node{}
 	p.SkipNewlines()
 	for !p.IsNext(token.TRightBrace) {
-		if p.IsNext(token.TReturn) {
+		switch {
+		case p.IsNext(token.TLet):
+			exprs = append(exprs, p.parseLet())
+		case p.IsNext(token.TReturn):
 			exprs = append(exprs, p.parseReturn())
-		} else {
+		default:
 			node := p.parseValueExpression(0)
 			if !node.Has() {
 				p.ThrowExpectedValueExpression("inside the block")

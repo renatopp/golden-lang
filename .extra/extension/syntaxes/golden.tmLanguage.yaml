@@ -14,11 +14,11 @@ patterns:
     match: "\\b(\\d+(_\\d+)*|0x[0..9A..F]|0o[0..7]|0b[0..1])\\b"
   - name: "constant.language.golden"
     match: "\\b(true|false|void)\\b"
-  - name: "string.quoted.single.golden"
-    begin: "'"
-    end: "'"
+  - name: "string.quoted.double.golden"
+    begin: '"'
+    end: '"'
     patterns:
-      - match": "\\\\'"
+      - match": "\\\\\""
   - name: "string.quoted.backtick.golden"
     begin: "`"
     end: "`"
