@@ -30,7 +30,7 @@ func NewParser(tokens []*token.Token) *Parser {
 	p.ValueSolver.RegisterPrefixFn(token.TPlus, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(token.TMinus, p.parseUnaryOp)
 	p.ValueSolver.RegisterPrefixFn(token.TBang, p.parseUnaryOp)
-	p.ValueSolver.RegisterPrefixFn(token.TLeftBrace, p.parseBlock)
+	p.ValueSolver.RegisterPrefixFn(token.TLeftParen, p.parseParen)
 	p.ValueSolver.RegisterPrefixFn(token.TFn, p.parseFn)
 
 	p.ValueSolver.RegisterInfixFn(token.TPlus, p.parseBinOp)
@@ -186,6 +186,19 @@ func (p *Parser) parseUnaryOp() ast.Node {
 	return ast.NewUnaryOp(tok, tok.Literal, right.Unwrap())
 }
 
+// (<value-expr>)
+func (p *Parser) parseParen() ast.Node {
+	p.ExpectAndEat(token.TLeftParen)
+	p.SkipNewlines()
+	node := p.parseValueExpression(0)
+	if !node.Has() {
+		p.ThrowExpectedValueExpression("inside the parentheses")
+	}
+	p.SkipNewlines()
+	p.ExpectAndEat(token.TRightParen)
+	return node.Unwrap()
+}
+
 // <value-expr><op><value-expr>
 func (p *Parser) parseBinOp(left ast.Node) ast.Node {
 	tok := p.Eat()
@@ -238,7 +251,7 @@ func (p *Parser) parseFn() ast.Node {
 
 	p.SkipNewlines()
 	p.Expect(token.TLeftBrace)
-	val := p.parseValueExpression(0).Unwrap().(*ast.Block)
+	val := p.parseBlock().(*ast.Block)
 	return ast.NewFnDecl(tok, name, params, returnExpr, val)
 }
 
@@ -282,12 +295,7 @@ func (p *Parser) parseFnParams() []*ast.FnDeclParam {
 func (p *Parser) parseReturn() ast.Node {
 	tok := p.ExpectAndEat(token.TReturn)
 	value := p.parseValueExpression(0)
-
-	var val ast.Node = ast.NewBlock(tok, []ast.Node{})
-	if value.Has() {
-		val = value.Unwrap()
-	}
-	return ast.NewReturn(tok, val)
+	return ast.NewReturn(tok, value)
 }
 
 //

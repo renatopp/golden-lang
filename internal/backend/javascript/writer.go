@@ -194,10 +194,13 @@ func (w *Writer) VisitFnDeclParam(node *ast.FnDeclParam) ast.Node {
 }
 
 func (w *Writer) VisitReturn(node *ast.Return) ast.Node {
-	node.ValueExpr.Visit(w)
-	value := w.Pop()
-
-	w.Push("return " + value)
+	if node.ValueExpr.Has() {
+		node.ValueExpr.Unwrap().Visit(w)
+		value := w.Pop()
+		w.Push("return " + value)
+	} else {
+		w.Push("return")
+	}
 	return node
 }
 

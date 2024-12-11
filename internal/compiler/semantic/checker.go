@@ -360,6 +360,10 @@ func (c *Checker) VisitFnDecl(node *ast.FnDecl) ast.Node {
 		c.declare(name, node, fnType)
 	}
 
+	if fnType.Return != types.Void && !c.state.HasReturns() {
+		errors.ThrowAtNode(node, errors.TypeError, "missing return statement")
+	}
+
 	return node
 }
 
@@ -411,11 +415,15 @@ func (c *Checker) VisitReturn(node *ast.Return) ast.Node {
 	c.pushState(node)
 	defer c.popState()
 
-	node.ValueExpr = node.ValueExpr.Visit(c)
-	node.SetType(node.ValueExpr.GetType().Unwrap())
+	if node.ValueExpr.Has() {
+		node.ValueExpr = safe.Map(node.ValueExpr, func(n ast.Node) ast.Node { return n.Visit(c) })
+		node.SetType(node.ValueExpr.Unwrap().GetType().Unwrap())
+	} else {
+		node.SetType(types.Void)
+	}
+
 	c.state.AddReturn(node)
 	fn := c.state.currentFunction
-
-	c.expectNodeWithCompatibleType(node.ValueExpr, fn.TypeExpr.GetType().Unwrap())
+	c.expectNodeWithCompatibleType(node, fn.TypeExpr.GetType().Unwrap())
 	return node
 }

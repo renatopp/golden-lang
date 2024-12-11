@@ -87,6 +87,6 @@ func (v *Visiter) VisitApplication(node *Application) Node {
 	return node
 }
 func (v *Visiter) VisitReturn(node *Return) Node {
-	node.ValueExpr = node.ValueExpr.Visit(v.self)
+	node.ValueExpr = safe.Map(node.ValueExpr, func(n Node) Node { return n.Visit(v.self) })
 	return node
 }

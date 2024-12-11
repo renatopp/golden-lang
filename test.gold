@@ -1,3 +1,6 @@
-fn main { 
-  return
+fn main {
+}
+
+fn add(a, b Int) Int {
+  return a + (b*2)
 }

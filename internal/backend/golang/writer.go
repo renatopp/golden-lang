@@ -226,10 +226,13 @@ func (w *Writer) VisitApplication(node *ast.Application) ast.Node {
 }
 
 func (w *Writer) VisitReturn(node *ast.Return) ast.Node {
-	node.ValueExpr.Visit(w)
-	value := w.Pop()
-
-	w.Push(fmt.Sprintf("return %s", value))
+	if node.ValueExpr.Has() {
+		node.ValueExpr.Unwrap().Visit(w)
+		value := w.Pop()
+		w.Push(fmt.Sprintf("return %s", value))
+	} else {
+		w.Push("return")
+	}
 	return node
 }
 

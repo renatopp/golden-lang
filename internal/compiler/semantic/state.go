@@ -58,6 +58,7 @@ func (s *State) WithFunction(fn *ast.FnDecl) *State {
 func (s *State) Function() *ast.FnDecl { return s.currentFunction }
 
 func (s *State) Returns() []ast.Node { return s.currentReturns.List }
+func (s *State) HasReturns() bool    { return len(s.currentReturns.List) > 0 }
 func (s *State) AddReturn(node ast.Node) *State {
 	s.currentReturns.List = append(s.currentReturns.List, node)
 	return s

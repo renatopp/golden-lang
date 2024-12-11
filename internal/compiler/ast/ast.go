@@ -224,10 +224,10 @@ func (n *Application) Visit(v Visitor) Node { return v.VisitApplication(n) }
 
 type Return struct {
 	BaseNode
-	ValueExpr Node
+	ValueExpr safe.Optional[Node]
 }
 
-func NewReturn(tok *token.Token, val Node) *Return {
+func NewReturn(tok *token.Token, val safe.Optional[Node]) *Return {
 	return &Return{BaseNode: NewBaseNode(tok), ValueExpr: val}
 }
 func (n *Return) Visit(v Visitor) Node { return v.VisitReturn(n) }
