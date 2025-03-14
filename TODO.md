@@ -1,16 +1,17 @@
 # TODO
 
-
-[x] rethinking
-  [x] remove = from fn
-  [x] remove auto return from blocks (including typechecking value)
-  [x] currentReturns in state must be a property inside an object
-  [x] check for mandatory return if return is not void
-  [x] only enable blocks to have return
-  [x] use () for expressions
-  [x] Change string from ' to " (?) and add automatic offset for multiline. Also add `` for raw string
-
-
-[ ] open
+[ ] checks
   [ ] remove/error on unused variables
   [ ] remove/error on statements and expressions after return
+
+[ ] modules
+  [ ] add import statements
+  [ ] add precheck imports
+  [ ] include imports in the scope
+  [ ] resolve access
+  [ ] validate public access
+  [ ] generate imports
+  [ ] generate accesses
+
+[ ] submodules
+  [ ] parse submodules
