@@ -1,5 +1,5 @@
 fn main {
-  let x = "sample"
+    add(2, 3)
 }
 
 fn add(a, b Int) Int {

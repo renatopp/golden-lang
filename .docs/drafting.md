@@ -1,4 +1,4 @@
-# 
+# Language Draft
 
 Focus:
 
@@ -20,234 +20,207 @@ Other considerations:
 - GRPC
 - Localization: datetime, timezone, currency, language
 
-## Default types
+Basis:
+
+- Function only - no method allowed!
+- ADTs
+- Immutability as default
+
+## Custom Data Types
+
+### ADTs
 
 ```
-let a0 = 'Hello, World!';
-let b0 = 42;
-let c0 = 3.14;
-let d0 = true;
-let e0 = []Int{1, 2, 3};
-let f0 = [String]Int{'a':a, 'b':2, 'c':3};
-let g0 = (1, 'renato')
+-- General form:
+type TypeName = Constructor1 | Constructor2 | ...
 
-let a1 String = 'Hello, World!';
-let b1 Int = 42;
-let c1 Float = 3.14;
-let d1 Bool = true;
-let e1 []Int = [1, 2, 3];
-let f1 [String]Int = ['a':a, 'b':2, 'c':3];
-let g1 (Int, String) = (1, 'renato')
+-- Unit definition
+type Unit = A | B()
 
-let a2 String
-let b2 Int
-let c2 Float
-let d2 Bool
-let e2 []Int
-let f2 [String]Int
-let g2 (Int, String)
+-- Tuple definition
+type Tuple = C(Int) | D(String, Int)
+
+-- Record definition
+type Record = E(a Int, b String) | F(a Int)
+
+-- Shortcut
+type FullLength = FullLength(Int, String)
+type Shortcut(Int, String)
+```
+
+### Type Alias
+
+```
+-- When using existing types
+type Number = Int | Float
+```
+
+### Generics
+
+```
+type Tree<T> = Leaf(T) | Node(T, Tree<T>, Tree<T>)
+```
+
+## Functions and Traits
+
+### Basic Functions
+
+```
+fn main() { ... }
+fn foo(a Int, b String) Int { ... }
+fn sum(a, b Int) Int {
+    return a + b
+}
+```
+
+### Open Functions and Traits
+
+```
+-- json.gold file
+open fn toJson<T>(value T) String
+open fn fromJson<T>(json String) T { ... } -- default implementation
+trait Serializable { toJson, fromJson }
+```
+
+```
+-- main.gold file
+type MyType
+
+impl json.toJson(value MyType) String {
+    return "..."
+}
+
+impl json.fromJson(json String) MyType {
+    return MyType
+}
+
+fn run(s json.Serializable) {
+    json.ToJson(s)
+}
 ```
 
 ## Capabilities
 
 ```
--- Option 1:
-let a = []Int{1, 2, 3}
-let *a = []Int{1, 2, 3}
-let #a = []Int{1, 2, 3}
-let &a = []Int{1, 2, 3}
-fn sample(z, *a, #b, &c Int)
+let a = 1 -- immutable
+let *b = 2 -- mutable
+let @c = 3 -- wrapped
 
--- Option 2:
-let mut a = []Int{1, 2, 3}
-let box a = []Int{1, 2, 3}
-let var a = []Int{1, 2, 3}
-fn sample(z, mut a, box b, var Int) var Int
-```
-
-## Custom type definition
-
-- ADT
-- Interfaces
-- Aliases
-
-```
--- ADT
-type Tree<T> = Empty | Node(T, Tree<T>, Tree<T>)
-type User(
-    id Int
-    name String
-    email String
-    age Int
-    active Bool
+type Struct(
+    a Int
+    *b Int
+    @c Int
 )
-
--- Interface
-type Stringer {
-    string() String
-}
-
--- Alias
-type Number = Int | Float
 ```
 
 ## Async
 
 ```
--- Promises
-let calls = []Promise{
-  async fetch('https://api.github.com/users/renatopp'),
-  async fetch('https://api.github.com/users/r2pdev')
-}
-let results = await promise.all(calls)
-
--- Channels
-let channel = Channel<Int>(10)
-channel.send(42)
-channel.receive()
-
--- Box / Async
-let box counter = Box<Int>(0)
-counter.set(42) -- atomic
-
-unwrap(box)
-
-```
-
-## Error handling
-
-```
-fn withError() Result {
-    return Error('Something went wrong')
+-- run function asynchroniously
+fn func() Int {
+    return 1
 }
 
-fn main() {
-    -- propagates de error up
-    withError()!
+let p = async func() -- returns a Promise<Int>
+let result = await p -- result is an Int
 
-    -- handle the error
-    let result = withError()
-    match result {
-        Ok => println('Success')
-        Error => println('Error')
+-- communicate via channel
+fn consumer(c Channel<Int>) {
+    for i in c {
+        print(i)
     }
 }
-```
+async consumer()
 
-## Testing
+let c = Channel<Int>(10)
+c.send(1)
 
-```
-fn testSample(runner) {
-    assert.equal(...)
+-- access shared memory
+let @a = 0
+
+for i in int.range(10) {
+    async fn() {
+        unwrap a as c {
+            c += 1
+        } -- how to define unwrapping with read only? imu as read, mut as write?
+    }()
 }
 ```
 
-## Loops and conditionals
+## Error Handling
 
 ```
-for value in iterator {}
-for value, key in iterator {}
-for value, key, index in iterator {}
-for condition {}
-for {}
+fn open() Result<String, Error> { ... }
+```
 
-if condition {} else if {} else {}
+## Loops and Conditionals
+
+```
+for {} -- inifinite loop
+for condition {} -- while loop
+for i in range(10) {} -- iterator loop
+
+if condition {} 
+else if {}
+else {}
+
+if {
+    condition -> ...
+    condition -> ...
+    else      -> ...
+} -- switch case?
 
 match value {
     1 -> ...
-    2 -> ...
     _ -> ...
-}
-
-case condition -> ...
-case {
-    condition -> ...
-    condition -> ...
-    else -> ...
-}
-```
-
-## Examples: Algorithms
-
-### Quicksort
+} -- pattern matcher
 
 ```
-fn quicksort(arr []Int) []Int {
-    if arr.length() <= 1 {
-        return arr
-    }
-    let pivot = arr[arr.length() / 2]
-    let left = arr.filter(x: x < pivot)
-    let middle = arr.filter(x: x == pivot)
-    let right = arr.filter(x: x > pivot)
-    return quicksort(left) + middle + quicksort(right)
-}
+
+## Practical Examples
+
+
+### Async Fetch Http
+
+You need to build a function that takes a list of API endpoints, fetches data from all of them concurrently, and
+returns a consolidated JSON object. Each API returns a JSON response with a data field (e.g., { "data": [1, 2, 3] }).
+The function should combine the data arrays from all responses into a single array, sort it in ascending order, and
+return the result as a JSON object with a result field (e.g., { "result": [1, 1, 2, 3, 4, 5, ...] }). Handle errors
+gracefully (e.g., skip failed APIs) and ensure the process is optimized for performance by fetching data concurrently.
+Optionally, add a timeout and retry mechanism for robustness.
+
+```
+import 'fetch'
+
+type Response(
+    data List<Int>
+)
+
+let endpoints = List<String>([
+    "https://api.example.com/data1",
+    "https://api.example.com/data2",
+    "https://api.example.com/data3"
+])
 
 fn main() {
-    let arr = []Int{3, 6, 8, 10, 1, 2, 1}
-    let sorted = quicksort(arr)
-    println(sorted)
+    endpoints
+    | list.map(url: async retrieve(url))
+    | await promise.all()
+    | list.flatten()
+    | list.sortBy(int.compare)
+}
+
+fn retrieve(url String) List<Int> {
+    fetch.get(url)
+    | result.mapOk(res: res.body)
+    | result.mapOk(json.parse<Response>) 
+    | result.mapOk(res: res.data)
+    | result.or(err: List<Int>())
 }
 ```
 
-### Sieve of Eratosthenes
+### 
 
 ```
-fn sieve(limit Int) []Int {
-    let sieve = List.repeat<Bool>(True, limit + 1)
-    sieve[0] = False
-    sieve[1] = False
-
-    for i in Int.range(2, Int(math.sqrt(limit)) + 1) {
-        if sieve[i] {
-            for multiple in Int.rangeStep(i*i, limit + 1, i) {
-                sieve[multiple] = False
-            }
-        }
-    }
-    
-    let primes = []Int{}
-    for prime, i in isPrime {
-        if prime {
-            primes.append(i)
-        }
-    }
-    
-    return primes
-}
-
-fn main() {
-    let primes = sieve(50)
-    println(primes)
-}
-```
-
-### Fibonacci with Memoization
 
 ```
-fn fibonacci(n Int, memo [Int]Int) Int {
-    case {
-        n in memo -> return memo[n]
-        n <= 2    -> return 1
-    }
-    
-    memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)
-    return memo[n]    
-}
-
-fn main() {
-    let result = fibonacci(10, [Int]Int{})
-    println(result)
-}
-```
-
-### Dining Philosophers Problem (Concurrency)
-### Monte Carlo Pi Estimation (Parallelism)
-### Search Algorithm
-
-## Examples: Data Structures
-
-### Trie
-### LRU Cache
-### Markov Chain
-### Circular Buffer
