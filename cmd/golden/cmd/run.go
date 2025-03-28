@@ -7,6 +7,7 @@ import (
 
 	"github.com/renatopp/golden/internal/backend/golang"
 	"github.com/renatopp/golden/internal/backend/javascript"
+	"github.com/renatopp/golden/internal/backend/interpreter"
 	"github.com/renatopp/golden/internal/builder"
 	"github.com/renatopp/golden/internal/compiler/ast"
 	"github.com/renatopp/golden/internal/compiler/env"
@@ -36,7 +37,7 @@ func (c *Run) Run() error {
 	flagDebug := flag.Bool("debug", false, "enable debug information")
 	flagLevel := flag.String("log-level", "error", "log level")
 	flagWorkingDir := flag.String("working-dir", ".", "working directory")
-	flagTarget := flag.String("target", "go", "output backend")
+	flagTarget := flag.String("target", "eval", "output backend")
 	flag.Parse()
 
 	args := flag.Args()
@@ -62,6 +63,8 @@ func (c *Run) Run() error {
 			opts.OutputTarget = golang.NewBackend()
 		case "js":
 			opts.OutputTarget = javascript.NewBackend()
+		case "eval":
+			opts.OutputTarget = interpreter.NewBackend()
 		default:
 			return fmt.Errorf("unknown backend: %s", *flagTarget)
 		}
