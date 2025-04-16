@@ -114,7 +114,7 @@ result := with {
   os.read('file')!
   | json.parse<Config>()!
   | (x: x.tools)()
-  | iter.map(x: load(x))
+  | iter.map(load)
   | promise.all()
   | promise.wait()
   | result.errors()!
@@ -143,5 +143,27 @@ opaque struct Object {
 }
 
 o := Object{}
+
+```
+
+
+```
+
+import int
+
+fn abs(x Int) Int
+fn add(a, b Int) Int
+fn clamp(v, a, b Int) Int
+fn compare(a, b Int) Int
+fn is_even(x Int) Bool
+fn is_odd(x Int) Bool
+fn max(a, ...bs Int) Int
+fn min(a, ...bs Int) Int
+fn modulo(a, b Int) Int!
+
+
+
+
+
 
 ```

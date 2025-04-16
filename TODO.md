@@ -7,8 +7,8 @@
 
 # Expressions and Types
 
-[ ] Process operations (+, -, /, *, **, //, <, >, <=, >=, <=>, and, or, !, ==, !=)
-[ ] Int, Float, String, Bool
+[ ] Process operations (+, -, /, *, **, //, <, >, <=, >=, <=>, and, or, xor, !, ==, !=)
+[ ] Int, Float, String, Bool, Byte
 
 
 # Variables
