@@ -13,11 +13,15 @@ func (b *Interpreter) Initialize(targetPath string) {}
 
 func (b *Interpreter) BeforeCodeGeneration() {}
 
-func (b *Interpreter) GenerateCode(filePath string, root *ast.Module, entry bool) {}
+func (b *Interpreter) GenerateCode(filePath string, root *ast.Module, entry bool) {
+
+}
 
 func (b *Interpreter) AfterCodeGeneration() {}
 
-func (b *Interpreter) Run() {}
+func (b *Interpreter) Run() {
+
+}
 
 func (b *Interpreter) Build(outputPath string) {}
 
