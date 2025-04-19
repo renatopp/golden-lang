@@ -9,53 +9,51 @@ Golden language is being designed to """improve""" Golang in a general way. It t
 - Promise-like layer upon goroutines allowing more flexibility and control over async.
 - Differentiating exception and panics (on is recoverable and other is not).
 - Reference only, no more ambiguity between value and pointer with interfaces.
+- Generics are designed from beginning, so they can be used in methods and our notation makes the code cleaner.
+- Fix the ugly mascot.
 
-## Basics
+## Details
 
-- Modules
-- Type checking
-- Primitive types
-- Composite types
-- Assignments
-- Expressions
-- Blocks
+- [Basics](./01_basics.md)
+  - Rules Conventions
+  - Modules
+  - Type checking
+  - Primitive types
+  - Composite types
+  - Assignments
+  - Expressions
+  - Blocks
 
-## Functions
+- [Functions](./02_functions.md)
+  - High order
+  - Anonymous functions
+  - Function generics
+  - Captures
+  - Pipelines
+  - Documentation
+  - Lambdas
 
-- High order
-- Anonymous functions
-- Function generics
-- Captures
-- Pipelines
-- Documentation
+- [Flow Control](./03_flow-control.md)
+  - Ifs
+  - For loops
+  - Pattern matching
+  - With
 
-## Flow control
+- [Data types](./04_data-types.md)
+  - Structs and Enums
+  - Struct Updates
+  - Generics
+  - Opaque Types
+  - Interfaces
+  - Alias
 
-- Ifs
-- For loops
-- Pattern matching
-- With
+- [Error Handling](./05_error-handling.md)
+  - Error
+  - Results
+  - Immediate Return
+  - Panics
 
-## Data types
-
-- Structs and Enums
-- Struct Updates
-- Generics
-- Opaque Types
-- Interfaces
-- Alias
-
-## Error Handling
-
-- Error
-- Results
-- Immediate Return
-- Exceptions
-- Recovering
-- Panics
-
-## Async
-
-- Promises
-- Goroutines
-- Channels
+- [Async](./06_async.md)
+  - Promises
+  - Goroutines
+  - Channels
